@@ -1,0 +1,10 @@
+{
+	"foo": [
+		{
+            "trafficClass": "dst net 18.26.4.24/32",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+	]
+}

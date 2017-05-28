@@ -1,0 +1,43 @@
+{
+    "entries": [
+        {
+            "priority": 100,
+            "timeout": 0,
+            "isPermanent": true,
+            "deviceId": "nf4:001",
+            "selector": {
+                "criteria": [
+                    {
+                        "type": "ETH_TYPE",
+                        "ethType": "0x800"
+                    },
+                    {
+                        "type": "IN_PORT",
+                        "port": "1"
+                    },
+                    {
+                        "type": "IPV4_SRC",
+                        "ip": "192.168.0.4/24"
+                    },
+                    {
+                        "type": "UDP_DST",
+                        "udpPort": "53"
+                    }
+                ]
+            },
+            "treatment": {
+                "instructions": [
+                    {
+                        "type":"L2MODIFICATION",
+                        "subtype":"ETH_DST",
+                        "mac":"98:76:54:32:01:00"
+                    },
+                    {
+                        "type": "OUTPUT",
+                        "port": "1"
+                    }
+                ]
+            }
+        }
+    ]
+}

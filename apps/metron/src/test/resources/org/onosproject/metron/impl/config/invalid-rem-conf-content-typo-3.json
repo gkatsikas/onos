@@ -1,0 +1,30 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "remove" : {
+                "servicechains" : [
+                    {
+                        "name"    : "fw-10rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-1000rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "napt-snort",
+                        "typeeee"  : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "snort",
+                        "type"     : "generic",
+                        "networkId": 1
+                    }
+                ]
+            }
+        }
+    }
+}

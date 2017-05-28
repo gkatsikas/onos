@@ -1,0 +1,22 @@
+{
+  "type": "object",
+  "required": [
+    "name",
+    "type",
+    "id"],
+  "properties": {
+    "name": {
+      "type": "String",
+      "example": "NF5"
+    },
+    "type": {
+      "type": "String",
+      "example": "ROUTER"
+    },
+    "id": {
+      "type": "String",
+      "example": "kth-router-nf1"
+    }
+  }
+}
+
