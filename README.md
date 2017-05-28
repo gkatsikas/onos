@@ -1,159 +1,77 @@
-# ONOS : Open Network Operating System
+Metron
+=========
+[Metron][metron-paper] is a high performance and ultra efficient NFV service chaining platform to appear in [USENIX NSDI 2018][metron-nsdi-page].
 
 
-## What is ONOS?
-ONOS is the only SDN controller platform that supports the transition from
-legacy “brown field” networks to SDN “green field” networks. This enables
-exciting new capabilities, and disruptive deployment and operational cost points
-for network operators.
+About
+----
+Metron's control plane is based on the [ONOS SDN controller][onos], which we extended with [southbound drivers][metron-driver] that allow Metron to monitor and configure commodity servers.
+These drivers are now part of the [official ONOS distribution 1.13.0][onos-master] (since February 22, 2018).
 
-## Top-Level Features
+[Metron's data plane][metron-agent] extends [FastClick][fastclick], which in turn uses [DPDK][dpdk] as a high performance network I/O subsystem.
 
-* High availability through clustering and distributed state management.
-* Scalability through clustering and sharding of network device control.
-* Performance that is good for a first release, and which has an architecture
-  that will continue to support improvements.
-* Northbound abstractions for a global network view, network graph, and
-  application intents.
-* Pluggable southbound for support of OpenFlow, P4Runtime, and new or legacy
-  protocols.
-* Graphical user interface to view multi-layer topologies and inspect elements
-  of the topology.
-* REST API for access to Northbound abstractions as well as CLI commands.
-* CLI for debugging.
-* Support for both proactive and reactive flow setup.
-* SDN-IP application to support interworking with traditional IP networks
-  controlled by distributed routing protocols such as BGP.
-* IP-Optical use case demonstration.
+This repository (mirrors [ONOS master][onos-master]) provides the source code of ONOS extended with Metron controller's drivers for commodity servers.
 
 
-## Getting started
+Setup
+----
+Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
-### Dependencies
 
-The following packages are required:
-
-* git
-* zip
-* curl
-* unzip
-* python2.7
-* python3 (needed by Bazel)
-
-### Build ONOS from source
-
-ONOS is built with [Bazel](https://bazel.build/), an open-source build tool
-developed by Google. We suggest downloading and installing Bazel using the
-[official instructions](https://docs.bazel.build/versions/master/install.html).
-
-The minimum required Bazel version is 1.0.0
-
-1. Clone the code from the ONOS Gerrit repository
-```bash
-$ git clone https://gerrit.onosproject.org/onos
-```
-
-2. Optionally, you can add the ONOS developer environment to your bash profile.
-   This will provide access to a number of handy commands to run, test and debug
-   ONOS. No need to do this step again if you had done this before:
-```bash
-$ cd onos
-$ cat << EOF >> ~/.bash_profile
-export ONOS_ROOT="`pwd`"
-source $ONOS_ROOT/tools/dev/bash_profile
-EOF
-$ . ~/.bash_profile
-```
-
-3. Build ONOS with Bazel
-```bash
-$ cd $ONOS_ROOT
-$ bazel build onos
-```
-
-### Start ONOS on local machine
-
-To run ONOS locally on the development machine, simply run the following command:
-
+Build & Deploy
+----
+To build and deploy ONOS, do:
 ```bash
 $ bazel run onos-local [-- [clean] [debug]]
 ```
 
-Or simpler one, if you have added the ONOS developer environment to your bash
-profile:
 
+Activate Metron's commodity server drivers
+----
+To activate Metron's server drivers using the ONOS CLI, do:
 ```bash
-$ ok [clean] [debug]
+app activate server
 ```
 
-The above command will create a local installation from the ONOS tarbal
-(re-building if necessary) and will start the ONOS server in the background. In
-the foreground, it will display a continuous view of the ONOS (Apache Karaf) log
-file. Options following the double-dash (–) are passed through to the ONOS
-Apache Karaf and can be omitted. Here, the `clean` option forces a clean
-installation, removing any state from previous executions. The `debug` option
-means that the default debug port 5005 will be available for attaching a remote
-debugger.
+Alternatively, you can activate Metron's server drivers from the ''Applications'' tab of the ONOS UI.
+The name of these drivers is: ''Server Device Drivers''.
 
-### Interacting with ONOS
 
-To access ONOS UI, use a browser to open:
+Deploy a Metron data plane agent
+----
+To connect a commodity server device to ONOS, see [Metron's data plane agent][metron-agent].
 
-[http://localhost:8181/onos/ui](http://localhost:8181/onos/ui)
 
-Or simpler, use the `onos-gui localhost` command.
-
-The default username and password is `onos`/`rocks`.
-
-To attach to the ONOS CLI console, run:
-
-```bash
-$ onos localhost
+Citing Metron
+----
+If you use Metron in your work, please cite our [paper][metron-paper]:
+```
+@inproceedings{katsikas-metron.nsdi18,
+	author       = {Katsikas, Georgios P. and Barbette, Tom and Kosti\'{c}, Dejan and Steinert, Rebecca and Maguire Jr., Gerald Q.},
+	title        = {{Metron: NFV Service Chains at the True Speed of the Underlying Hardware}},
+	booktitle    = {To appear in the proceedings of the 15th USENIX Conference on Networked Systems Design and Implementation},
+	series       = {NSDI'18},
+	year         = {2018},
+	url          = {https://people.kth.se/~dejanko/documents/publications/metron-nsdi18.pdf},
+	address      = {Renton, WA},
+	publisher    = {{USENIX} Association}
+}
 ```
 
-### Unit Tests
 
-To run ONOS unit tests, including code Checkstyle validation, run the following
-command:
+Getting help
+----
+Contact georgios.katsikas at ri.se if you encounter any problems with Metron.
 
-```bash
-$ bazel query 'tests(//...)' | xargs bazel test
-```
+The ONOS README is available [here][onos-readme].
 
-Or better yet, to run code Checkstyle and all unit tests use the following
-convenience alias:
-
-```bash
-$ ot
-```
-
-## Contributing
-
-ONOS code is hosted and maintained using [Gerrit](https://gerrit.onosproject.org/).
-
-Code on GitHub is only a mirror. The ONOS project does **NOT** accept code
-through pull requests on GitHub.
-
-To contribute to ONOS, please refer to [Sample Gerrit
-Workflow](https://wiki.onosproject.org/display/ONOS/Sample+Gerrit+Workflow). It
-should include most of the things you'll need to get your contribution started!
-
-## More information
-
-For more information, please check out our wiki page or mailing lists:
-
-* [Wiki](https://wiki.onosproject.org/)
-* [Google group](https://groups.google.com/a/onosproject.org/forum/#!forum/onos-dev)
-* [Slack](https://onosproject.slack.com)
-
-## License
-
-ONOS (Open Network Operating System) is published under [Apache License
-2.0](https://github.com/opennetworkinglab/onos/blob/master/LICENSE.txt)
-
-## Acknowledgements
-YourKit supports open source projects with innovative and intelligent tools
-for monitoring and profiling Java and .NET applications.
-YourKit is the creator of [YourKit Java Profiler](https://www.yourkit.com/java/profiler/), [YourKit .NET Profiler](https://www.yourkit.com/.net/profiler/) and [YourKit YouMonitor](https://www.yourkit.com/youmonitor/).
-
-![YourKit](https://www.yourkit.com/images/yklogo.png)
+[metron-paper]: https://people.kth.se/~dejanko/documents/publications/metron-nsdi18.pdf
+[metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
+[onos]: https://onosproject.org/
+[metron-driver]: https://github.com/opennetworkinglab/onos/tree/master/drivers/server
+[metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
+[onos-master]: https://github.com/opennetworkinglab/onos
+[fastclick]: https://github.com/tbarbette/fastclick
+[dpdk]: https://dpdk.org/
+[onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
+[onos-readme]: README.onos.md
