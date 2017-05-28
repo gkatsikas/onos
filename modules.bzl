@@ -210,6 +210,7 @@ ONOS_APPS = [
     # "//apps/yms:onos-apps-yms-oar",
     "//apps/ofagent:onos-apps-ofagent-oar",
     "//apps/mappingmanagement:onos-apps-mappingmanagement-oar",
+    "//apps/metron:onos-apps-metron-oar",
     "//apps/config:onos-apps-config-oar",
     "//apps/configsync:onos-apps-configsync-oar",
     "//apps/configsync-netconf:onos-apps-configsync-netconf-oar",

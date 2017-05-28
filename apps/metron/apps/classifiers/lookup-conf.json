@@ -1,0 +1,28 @@
+{
+    "entries": [
+        {
+            "trafficClass": "dst net 139.165.164.0/28",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 139.165.47.0/24",
+            "outputPort": 0,
+            "priority": 2,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 139.165.181.22/24",
+            "outputPort": 0,
+            "priority": 3,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 139.165.32.0/18",
+            "outputPort": 0,
+            "priority": 4,
+            "action": "allow"
+        }
+    ]
+}

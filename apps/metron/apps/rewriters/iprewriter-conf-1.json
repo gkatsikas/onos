@@ -1,0 +1,10 @@
+{
+    "entries": [
+        {
+            "pattern": "10.0.0.4 1000-65535 192.168.23.5 80 0 0",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+    ]
+}

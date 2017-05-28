@@ -1,0 +1,201 @@
+
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "add" : {
+                "serviceChains" : [
+                    {
+                        "name"       : "metron-net-mac-singleport-fw-10rules-hw",
+                        "type"       : "generic",
+                        "networkId"  : 1,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 5,
+                        "scale"      : true,
+                        "autoScale"  : false,
+                        "scope"      : "network-mac",
+                        "components" : [
+                            {
+                                "name"  : "nf1",
+                                "type"  : "click",
+                                "class" : "firewall",
+                                "id"    : "kth-firewall-nf1"
+                            }
+                        ],
+                        "processors": [
+                            {
+                                "name"  : "nf1",
+                                "blocks": [
+                                    {
+                                        "block": "FromDevice",
+                                        "instance": "nf1_fd1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Strip",
+                                        "instance": "nf1_strip1",
+                                        "configArgs": "LENGTH 14",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "MarkIPHeader",
+                                        "instance": "nf1_mark1",
+                                        "configArgs": "OFFSET 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "IPFilter",
+                                        "instance": "nf1_ipFl1",
+                                        "configArgs": "FILE",
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/10rules.json"
+                                    },
+                                    {
+                                        "block": "Discard",
+                                        "instance": "nf1_disc1",
+                                        "configArgs": "",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "EtherEncap",
+                                        "instance": "nf1_ethEncap1",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC ec:f4:bb:d5:ff:08, DST ec:f4:bb:d6:06:80",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Queue",
+                                        "instance": "nf1_q1",
+                                        "configArgs": "CAPACITY 1024",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "ToDevice",
+                                        "instance": "nf1_td1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    }
+                                ],
+                                "graph" : [
+                                    {
+                                        "src": {
+                                            "instance": "nf1_fd1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_ipFl1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ipFl1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ipFl1",
+                                            "port": 1
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_disc1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_td1",
+                                            "port": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "topology": {
+                            "network": {
+                                "ingressPoints": [
+                                    {
+                                        "deviceId": "of:000000223d4b0182",
+                                        "portIds": [
+                                            {
+                                                "portId": 1
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "egressPoints": [
+                                    {
+                                        "deviceId": "of:000000223d4b0182",
+                                        "portIds": [
+                                            {
+                                                "portId": 1
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "server": [
+                                {
+                                    "src" : {
+                                        "entity"      : "source",
+                                        "interface"   : "-"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    }
+                                },
+                                {
+                                    "src" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "destination",
+                                        "interface"   : "-"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

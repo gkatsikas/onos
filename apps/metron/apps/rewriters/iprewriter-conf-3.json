@@ -1,0 +1,10 @@
+{
+    "entries": [
+        {
+            "pattern": "23.67.45.6 30-56 2.8.3.5 1000 0 0",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+    ]
+}

@@ -1,0 +1,10 @@
+{
+    "entries": [
+        {
+            "pattern": "- - 19.18.0.2 - 0 0",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+    ]
+}

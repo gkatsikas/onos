@@ -1,0 +1,10 @@
+{
+	"entries": [
+		{
+            "trafficClass": "(dst tcp port >= 1023) && (dst tcp port < 1000)",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+	]
+}

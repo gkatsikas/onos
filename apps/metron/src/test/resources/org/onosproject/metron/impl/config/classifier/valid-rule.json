@@ -1,0 +1,46 @@
+{
+	"entries": [
+		{
+            "trafficClass": "ether proto arp and arp type req",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto arp and arp type res",
+            "outputPort": 1,
+            "priority": 2,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto ipv4",
+            "outputPort": 2,
+            "priority": 3,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto ipv6",
+            "outputPort": 3,
+            "priority": 4,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto vlan",
+            "outputPort": 4,
+            "priority": 5,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto mpls",
+            "outputPort": 5,
+            "priority": 6,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "ether proto any",
+            "outputPort": 6,
+            "priority": 7,
+            "action": "allow"
+        }
+	]
+}
