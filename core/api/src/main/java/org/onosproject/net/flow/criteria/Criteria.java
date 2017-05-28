@@ -646,7 +646,7 @@ public final class Criteria {
     /**
      * Dummy Criterion used with @see{FilteringObjective}.
      */
-    private static class DummyCriterion implements Criterion {
+    public static class DummyCriterion implements Criterion {
 
         @Override
         public Type type() {

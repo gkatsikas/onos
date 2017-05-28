@@ -1,0 +1,10 @@
+{
+	"entries": [
+		{
+            "trafficClass": "ether proto arp and type req",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+	]
+}

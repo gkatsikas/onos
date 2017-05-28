@@ -1,0 +1,58 @@
+{
+    "entries": [
+        {
+            "trafficClass": "(dst tcp port > 1023)",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(dst net 10.0.0.0/24) or (ip proto tcp)",
+            "outputPort": 1,
+            "priority": 2,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "!(dst net 10.0.0.1/24 or ip proto tcp)",
+            "outputPort": 2,
+            "priority": 3,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(dst tcp port 80) and (src tcp port 8080) and (src ether host 00:00:00:00:00:0a)",
+            "outputPort": 3,
+            "priority": 4,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(dst net 10.0.0.0/24) and ((ip proto tcp) or (ip proto udp) or (ip proto icmp))",
+            "outputPort": 4,
+            "priority": 5,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "((src net 10.0.0.0/24) && !(dst net 10.0.0.0/31 || dst net 10.0.0.255/32 || dst net 11.0.0.0/31 || dst net 11.0.0.255/32))",
+            "outputPort": 5,
+            "priority": 6,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(dst net 10.0.0.1/24 or dst net 11.0.0.1/24 or dst net 12.0.0.1/24) and (src net 100.0.0.1/24 or src net 101.0.0.1/24 or src net 102.0.0.1/24) and (ip proto tcp or ip proto udp)",
+            "outputPort": 6,
+            "priority": 7,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(dst net 10.0.0.0/24 and ip proto tcp and src net 20.0.0.0/24 and dst tcp port 80)",
+            "outputPort": 7,
+            "priority": 8,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "(ip vers 15 and ip hl 1 and ip id 65535 and ip dscp 63 and ip ect and ip ce and ip ttl 255 and icmp type 1 and tcp opt syn and tcp win 65535)",
+            "outputPort": 8,
+            "priority": 9,
+            "action": "allow"
+        }
+    ]
+}

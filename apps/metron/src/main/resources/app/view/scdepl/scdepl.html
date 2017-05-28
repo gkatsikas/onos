@@ -1,0 +1,27 @@
+<!-- partial HTML -->
+<div id="ov-scdepl">
+    <div id="chart-loader" ng-show="!scId && showLoader">
+        No Service Chains
+    </div>
+    <div ng-show="!scId">
+        <canvas id="bar" class="chart chart-bar" chart-data="data"
+                chart-labels="labels" chart-legend="true" chart-click="onClick"
+                chart-series="series" chart-options="options" height="100%">
+        </canvas>
+    </div>
+    <div ng-show="scId">
+        <h2>
+            Chart for Service Chain {{scId || "(No service chain selected)"}}
+        </h2>
+        <div class="ctrl-btns">
+            <select ng-options="serviceChainId as serviceChainId for serviceChainId in serviceChainIds"
+                    ng-model="selectedItem" ng-change="onChange(selectedItem)">
+                <option value="">-- select a service chain --</option>
+            </select>
+        </div>
+        <canvas id="line" class="chart chart-line" chart-data="data"
+                chart-labels="labels" chart-legend="true"
+                chart-series="series" chart-options="options" height="100%">
+        </canvas>
+    </div>
+</div>

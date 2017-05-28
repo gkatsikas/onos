@@ -1,0 +1,8 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "removeAll" : {
+            }
+        }
+    }
+}

@@ -1,0 +1,18 @@
+{
+  "type": "object",
+  "required": [
+    "registered"
+  ],
+  "properties": {
+    "registered_nfs": {
+      "type": "array",
+      "items": {
+        "name": "string",
+        "id"  : "string",
+        "type": "string"
+      },
+      "example": "[]"
+    }
+  }
+}
+

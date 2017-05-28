@@ -1,0 +1,10 @@
+{
+	"foo": [
+		{
+            "trafficClass": "(dst tcp port == 1023)",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        }
+	]
+}

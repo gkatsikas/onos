@@ -1,0 +1,51 @@
+REQUIRED_APPS = [
+    'org.onosproject.drivers.server',
+]
+
+BUNDLES = [
+  '//apps/metron:onos-apps-metron',
+]
+
+COMPILE_DEPS = [
+    '//lib:CORE_DEPS',
+    '//lib:JACKSON',
+    '//lib:KRYO',
+    '//core/api:onos-api',
+    '//core/common:onos-core-common',
+    '//core/store/serializers:onos-core-serializers',
+    '//cli:onos-cli',
+    '//drivers/server:onos-drivers-server',
+    '//lib:jackson-core',
+    '//lib:javax.ws.rs-api',
+    '//lib:joda-time',
+    '//lib:org.apache.karaf.shell.console',
+    '//incubator/api:onos-incubator-api',
+    '//protocols/rest/api:onos-protocols-rest-api',
+    '//utils/rest:onlab-rest',
+]
+
+TEST_DEPS = [
+    '//lib:TEST_ADAPTERS',
+    '//core/api:onos-api-tests',
+    '//utils/osgi:onlab-osgi-tests',
+]
+
+osgi_jar_with_tests (
+    deps = COMPILE_DEPS,
+    test_deps = TEST_DEPS,
+    web_context = '/onos/metron',
+    api_title = 'Metron NFV Controller REST API',
+    api_version = '1.0.0',
+    api_description = 'REST API for interacting with the Metron NFV Controller',
+    api_package = 'org.onosproject.metron.impl.rest',
+)
+
+onos_app(
+    title = 'Metron NFV Controller',
+    category = 'Traffic Steering',
+    origin = 'KTH Royal Institute of Technology &amp; RISE SICS',
+    url = 'https://bitbucket.org/nslab/onos/branch/metron-ctrl',
+    description = 'Metron provides high performance NFV service chaining by synergetically utilizing network and server processing.',
+    included_bundles = BUNDLES,
+    required_apps = REQUIRED_APPS,
+)

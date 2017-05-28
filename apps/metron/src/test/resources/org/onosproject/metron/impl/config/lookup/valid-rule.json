@@ -1,0 +1,34 @@
+{
+	"entries": [
+		{
+            "trafficClass": "dst net 18.26.4.24/32",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 18.26.4.255/32",
+            "outputPort": 0,
+            "priority": 2,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 18.26.4.0/32",
+            "outputPort": 0,
+            "priority": 3,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 18.26.4.0/24",
+            "outputPort": 1,
+            "priority": 4,
+            "action": "allow"
+        },
+        {
+            "trafficClass": "dst net 0.0.0.0/0 and gw 18.26.4.1",
+            "outputPort": 1,
+            "priority": 5,
+            "action": "allow"
+        }
+	]
+}

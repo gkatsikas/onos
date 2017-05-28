@@ -1,0 +1,50 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "remove" : {
+                "servicechains" : [
+                    {
+                        "name"     : "fw-8rules-hw-napt",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-9rules-hw-sw-napt",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-10rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-1000rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-2000rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "fw-4000rules-hw",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "napt-snort",
+                        "type"     : "generic",
+                        "networkId": 1
+                    },
+                    {
+                        "name"     : "snort",
+                        "type"     : "generic",
+                        "networkId": 1
+                    }
+                ]
+            }
+        }
+    }
+}

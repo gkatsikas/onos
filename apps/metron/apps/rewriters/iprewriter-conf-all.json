@@ -1,0 +1,22 @@
+{
+    "entries": [
+        {
+            "pattern": "10.0.0.4 - 192.168.23.5 1000-65535 0 0",
+            "outputPort": 0,
+            "priority": 1,
+            "action": "allow"
+        },
+        {
+            "pattern": "- - 19.18.0.2 - 0 0",
+            "outputPort": 1,
+            "priority": 2,
+            "action": "allow"
+        },
+        {
+            "pattern": "23.67.45.6 30-56 2.8.3.5 1000-65535 0 0",
+            "outputPort": 2,
+            "priority": 3,
+            "action": "allow"
+        }
+    ]
+}
