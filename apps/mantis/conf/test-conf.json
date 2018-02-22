@@ -1,0 +1,90 @@
+{
+    "apps": {
+        "org.onosproject.mantis.configuration": {
+            "configuration": {
+                "database": {
+                    "ip": "127.0.0.1",
+                    "port": 8086,
+                    "username": "root",
+                    "password": "root",
+                    "databaseName": "mantis",
+                    "batchWrite": true,
+                    "batchWriteSize": 60,
+                    "retentionPolicy": "last_01_hours",
+                    "loadTable": "load",
+                    "predictionTable": "load_prediction",
+                    "predictionDelayTable": "load_prediction_delay"
+                },
+                "prediction": {
+                    "ingressPoints": [
+                        {
+                            "ingressDevice": "of:000000223d4b0182",
+                            "ingressPorts": [
+                                {
+                                    "port": 1
+                                },
+                                {
+                                    "port": 2
+                                },
+                                {
+                                    "port": 3
+                                },
+                                {
+                                    "port": 4
+                                },
+                                {
+                                    "port": 5
+                                }
+                            ]
+                        },
+                        {
+                            "ingressDevice": "of:0000000000000001",
+                            "ingressPorts": [
+                                {
+                                    "port": 1
+                                },
+                                {
+                                    "port": 2
+                                }
+                            ]
+                        }
+                    ],
+                    "predictionConf": {
+                        "predictionMechanisms": [
+                            {
+                                "predictionMethod": "sma",
+                                "timeWindowSize": 60,
+                                "dataWindowSize": 10,
+                                "trainingFraction": 0.7
+                            },
+                            {
+                                "predictionMethod": "sma_influxdb",
+                                "timeWindowSize": 60,
+                                "dataWindowSize": 10,
+                                "trainingFraction": 0.7
+                            },
+                            {
+                                "predictionMethod": "ewma",
+                                "timeWindowSize": 60,
+                                "dataWindowSize": 10,
+                                "trainingFraction": 0.7,
+                                "parameters": {
+                                    "alpha": 0.4
+                                }
+                            },
+                            {
+                                "predictionMethod": "holt_winters_influxdb",
+                                "timeWindowSize": 60,
+                                "dataWindowSize": 10,
+                                "trainingFraction": 0.7,
+                                "parameters": {
+                                    "seasonalPatternSec": 0
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
