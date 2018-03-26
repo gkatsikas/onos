@@ -609,7 +609,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             if (tagging) {
                 rxFilter = this.tagService().getTaggingMechanismOfTrafficClassGroup(tcGroupId);
                 rxFilterValue = this.tagService().getFirstUsedTagOfTrafficClassGroup(tcGroupId);
-                log.info("[{}] \t Traffic class {} ----------> Tag {}", label(), tcGroupId, rxFilterValue);
+                log.info("[{}] \t Traffic class {} -> Tag {}", label(), tcGroupId, rxFilterValue);
                 tagMap.put(tcGroupId, rxFilterValue);
             }
 

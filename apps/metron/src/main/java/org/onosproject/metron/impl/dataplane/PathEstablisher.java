@@ -403,7 +403,10 @@ public final class PathEstablisher implements PathEstablisherInterface {
                 "Invalid action port for exit rule"
             );
 
-            log.info("[{}] \t\t Ingress rule on {}: Match {} -> Action {}", label, targetDev, matchPort, actionPort);
+            log.info(
+                "[{}] \t\t Ingress rule on {}: Match port {} AND Tag {} -> Action port {}",
+                label, targetDev, matchPort, tag, actionPort
+            );
 
             // Install the rule
             rules.addAll(installRulesOnDevice(appId, targetDev, matchPort, tag, actionPort));
@@ -427,7 +430,7 @@ public final class PathEstablisher implements PathEstablisherInterface {
          * towards an egress point.
          */
         for (Link link : this.bwdLinks) {
-            log.info(
+            log.debug(
                 "[{}] \t\t Src {}/{} -> Dst {}/{}", label,
                 link.src().deviceId(), link.src().port().toLong(),
                 link.dst().deviceId(), link.dst().port().toLong()
@@ -455,7 +458,10 @@ public final class PathEstablisher implements PathEstablisherInterface {
                 "Invalid action port for egress rule"
             );
 
-            log.info("[{}] \t\t Egress rule on {}: Match {} -> Action {}", label, targetDev, matchPort, actionPort);
+            log.info(
+                "[{}] \t\t Egress rule on {}: Match port {} -> Action port {}",
+                label, targetDev, matchPort, actionPort
+            );
 
             // Install the rule
             rules.addAll(installRulesOnDevice(appId, targetDev, matchPort, null, actionPort));
