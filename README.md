@@ -1,12 +1,12 @@
 Metron
 =========
-[Metron][metron-paper] is a high performance and ultra efficient NFV service chaining platform to appear in [USENIX NSDI 2018][metron-nsdi-page].
+[Metron][metron-paper] is an ultra high performance and efficient NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
 
 
 About
 ----
 Metron's control plane is based on the [ONOS SDN controller][onos], which we extended with [southbound drivers][metron-driver] that allow Metron to monitor and configure commodity servers.
-These drivers are now part of the [official ONOS distribution 1.13.0][onos-master] (since February 22, 2018).
+These drivers are now part of the [official ONOS distribution][onos-master] (since February 22, 2018).
 
 [Metron's data plane][metron-agent] extends [FastClick][fastclick], which in turn uses [DPDK][dpdk] as a high performance network I/O subsystem.
 
@@ -49,12 +49,16 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 @inproceedings{katsikas-metron.nsdi18,
 	author       = {Katsikas, Georgios P. and Barbette, Tom and Kosti\'{c}, Dejan and Steinert, Rebecca and Maguire Jr., Gerald Q.},
 	title        = {{Metron: NFV Service Chains at the True Speed of the Underlying Hardware}},
-	booktitle    = {To appear in the proceedings of the 15th USENIX Conference on Networked Systems Design and Implementation},
+	booktitle    = {15th USENIX Conference on Networked Systems Design and Implementation (NSDI 18)},
 	series       = {NSDI'18},
 	year         = {2018},
-	url          = {https://people.kth.se/~dejanko/documents/publications/metron-nsdi18.pdf},
+	isbn         = {978-1-931971-43-0},
+	pages        = {171--186},
+	numpages     = {16},
+	url          = {https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf},
 	address      = {Renton, WA},
-	publisher    = {{USENIX} Association}
+	acmid        = {},
+	publisher    = {USENIX Association}
 }
 ```
 
