@@ -81,7 +81,7 @@ Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
 
 The ONOS README is available [here][onos-readme].
 
-[metron-paper]: https://people.kth.se/~dejanko/documents/publications/metron-nsdi18.pdf
+[metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
 [onos]: https://onosproject.org/
 [metron-driver]: https://github.com/opennetworkinglab/onos/tree/master/drivers/server
