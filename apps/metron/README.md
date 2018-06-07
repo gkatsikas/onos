@@ -114,14 +114,17 @@ Citing Metron
 If you use Metron in your work, please cite our [paper][metron-paper]:
 ```
 @inproceedings{katsikas-metron.nsdi18,
-  author       = {Katsikas, Georgios P. and Barbette, Tom and Kosti\'{c}, Dejan and Steinert, Rebecca and Maguire Jr., Gerald Q.},
-  title        = {{Metron: NFV Service Chains at the True Speed of the Underlying Hardware}},
-  booktitle    = {To appear in the proceedings of the 15th USENIX Conference on Networked Systems Design and Implementation},
-  series       = {NSDI'18},
-  year         = {2018},
-  url          = {https://people.kth.se/~dejanko/documents/publications/metron-nsdi18.pdf},
-  address      = {Renton, WA},
-  publisher    = {{USENIX} Association}
+	author       = {Katsikas, Georgios P. and Barbette, Tom and Kosti\'{c}, Dejan and Steinert, Rebecca and Maguire Jr., Gerald Q.},
+	title        = {{Metron: NFV Service Chains at the True Speed of the Underlying Hardware}},
+	booktitle    = {15th USENIX Conference on Networked Systems Design and Implementation (NSDI 18)},
+	series       = {NSDI'18},
+	year         = {2018},
+	isbn         = {978-1-931971-43-0},
+	pages        = {171--186},
+	numpages     = {16},
+	url          = {https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf},
+	address      = {Renton, WA},
+	publisher    = {{USENIX} Association}
 }
 ```
 
@@ -142,4 +145,3 @@ The ONOS README is available [here][onos-readme].
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
 [onos-ui-apps]: http://127.0.0.1:8181/onos/ui/index.html#/app
 [onos-readme]: ../../README.onos.md
-[metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
