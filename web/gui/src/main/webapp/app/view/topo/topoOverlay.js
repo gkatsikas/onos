@@ -202,6 +202,11 @@
             tt: function () { return topoLion('btn_show_view_port'); },
             path: 'port',
         },
+        showCpuView: {
+            gid: 'cpuTable',
+            tt: function () { return topoLion('btn_show_view_cpu'); },
+            path: 'cpu',
+        },
         showGroupView: {
             gid: 'groupTable',
             tt: function () { return topoLion('btn_show_view_group'); },

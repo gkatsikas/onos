@@ -1,9 +1,9 @@
-<!-- Meter partial HTML -->
-<div id="ov-meter">
+<!-- CPU partial HTML -->
+<div id="ov-cpu">
     <div class="tabular-header">
         <h2>
-            Meters for Device {{devId || "(No device selected)"}}
-            ({{tableData.length}} total)
+            CPU Cores for Device {{devId || "(No device selected)"}}
+            ({{tableData.length}} CPUs total)
         </h2>
 
         <div class="ctrl-btns">
@@ -29,18 +29,18 @@
                  tooltip tt-msg="portTip"
                  ng-click="nav('port')"></div>
 
-            <div class="active"
-                 icon icon-id="cpuTable" icon-size="42"
-                 tooltip tt-msg="cpuTip"
-                 ng-click="nav('cpu')"></div>
+            <div class="current-view"
+                 icon icon-id="cpuTable" icon-size="42"></div>
 
             <div class="active"
                  icon icon-id="groupTable" icon-size="42"
                  tooltip tt-msg="groupTip"
                  ng-click="nav('group')"></div>
 
-            <div class="current-view"
-                 icon icon-id="meterTable" icon-size="42"></div>
+            <div class="active"
+                 icon icon-id="meterTable" icon-size="42"
+                 tooltip tt-msg="meterTip"
+                 ng-click="nav('meter')"></div>
 
             <div class="active"
                  icon icon-id="pipeconfTable" icon-size="42"
@@ -53,23 +53,24 @@
             <select ng-model="queryBy">
                 <option value="" disabled>Search By</option>
                 <option value="$">All Fields</option>
-                <option value="id">Meter ID</option>
-                <option value="app_id">App ID</option>
-                <option value="state">State</option>
+                <option value="id">CPU ID</option>
+                <option value="cpu_vendor">CPU Vendor</option>
+                <option value="cpu_freq">CPU Frequency</option>
+                <option value="cpu_status">CPU Status</option>
+                <option value="cpu_load">CPU Load</option>
             </select>
         </div>
-
     </div>
 
     <div class="summary-list" onos-table-resize>
         <div class="table-header" onos-sortable-header>
             <table>
                 <tr>
-                    <td colId="id" sortable>Meter ID </td>
-                    <td colId="app_id" sortable>App ID </td>
-                    <td colId="state" sortable>State </td>
-                    <td class="right" colId="packets" sortable>Packets </td>
-                    <td class="right" colId="bytes" sortable>Bytes </td>
+                    <td colId="id" col-width="60px" sortable>CPU ID </td>
+                    <td colId="cpu_vendor" sortable>CPU Vendor </td>
+                    <td colId="cpu_freq" sortable>CPU Frequency </td>
+                    <td colId="cpu_status" sortable>CPU Status </td>
+                    <td colId="cpu_load" sortable>CPU Load </td>
                 </tr>
             </table>
         </div>
@@ -82,25 +83,21 @@
                     </td>
                 </tr>
 
-                <tr ng-repeat-start="meter in tableData | filter:queryFilter  track by $index"
-                    ng-click="selectCallback($event, meter)"
-                    ng-class="{selected: meter.id === selId}"
-                    ng-repeat-complete row-id="{{meter.id}}">
-                    <td>{{meter.id}}</td>
-                    <td>{{meter.app_id}}</td>
-                    <td>{{meter.state}}</td>
-                    <td class="right">{{meter.packets}}</td>
-                    <td class="right">{{meter.bytes}}</td>
-                </tr>
-                <tr row-id="{{meter.id}}" ng-repeat-end>
-                    <td class="bands" colspan="5"
-                        ng-bind-html="meter.bands"></td>
+                <tr ng-repeat="cpu in tableData | filter: customFilter(queryFilter, query) track by $index"
+                    ng-click="selectCallback($event, cpu)"
+                    ng-class="{selected: cpu.id === selId}"
+                    ng-repeat-complete row-id="{{cpu.id}}">
+                    <td>{{cpu.id}}</td>
+                    <td>{{cpu.cpu_vendor}}</td>
+                    <td>{{cpu.cpu_freq}}</td>
+                    <td>{{cpu.cpu_status}}</td>
+                    <td>{{cpu.cpu_load}}</td>
                 </tr>
             </table>
         </div>
 
     </div>
 
-    <meter-details-panel></meter-details-panel>
+    <cpu-details-panel></cpu-details-panel>
 
 </div>

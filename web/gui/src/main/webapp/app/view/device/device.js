@@ -227,6 +227,7 @@
             $scope.panelData = {};
             $scope.flowTip = 'Show flow view for selected device';
             $scope.portTip = 'Show port view for selected device';
+            $scope.cpuTip = 'Show cpu view for selected device';
             $scope.groupTip = 'Show group view for selected device';
             $scope.meterTip = 'Show meter view for selected device';
             $scope.pipeconfTip = 'Show pipeconf view for selected device';

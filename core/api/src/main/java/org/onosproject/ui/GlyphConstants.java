@@ -53,6 +53,7 @@ public final class GlyphConstants {
 
     public static final String FLOW_TABLE = "flowTable";
     public static final String PORT_TABLE = "portTable";
+    public static final String CPU_TABLE = "cpuTable";
     public static final String GROUP_TABLE = "groupTable";
     public static final String METER_TABLE = "meterTable";
     public static final String PIPECONF_TABLE = "pipeconfTable";

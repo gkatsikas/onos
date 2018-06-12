@@ -66,6 +66,7 @@
         deviceTable: 'switch',
         flowTable: 'flowTable',
         portTable: 'portTable',
+        cpuTable: 'cpuTable',
         groupTable: 'groupTable',
         meterTable: 'meterTable',
         pipeconfTable: 'pipeconfTable',

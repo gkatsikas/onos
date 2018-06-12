@@ -45,7 +45,7 @@
         panelPadding = 64,
         panelSpacing = 20,
         panelOpts = {
-            width: 260, // summary and detail panel width
+            width: 300, // summary and detail panel width
         };
 
     function getInstance(_summaryPanel_) {

@@ -115,7 +115,7 @@ public class PortViewMessageHandler extends UiMessageHandler {
 
         @Override
         protected void populateTable(TableModel tm, ObjectNode payload) {
-            String uri = string(payload, "devId");
+            String uri = string(payload, DEV_ID);
             boolean nz = bool(payload, NZ);
             boolean delta = bool(payload, DELTA);
             if (!Strings.isNullOrEmpty(uri)) {

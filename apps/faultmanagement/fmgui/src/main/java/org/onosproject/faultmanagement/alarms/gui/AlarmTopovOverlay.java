@@ -67,6 +67,7 @@ public class AlarmTopovOverlay extends UiTopoOverlay {
         pp.addButton(ALARM1_BUTTON);
 
         pp.removeButtons(CoreButtons.SHOW_PORT_VIEW)
+                .removeButtons(CoreButtons.SHOW_CPU_VIEW)
                 .removeButtons(CoreButtons.SHOW_GROUP_VIEW)
                 .removeButtons(CoreButtons.SHOW_METER_VIEW);
     }

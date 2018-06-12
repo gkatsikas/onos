@@ -35,7 +35,7 @@
         idSum = 'topo-p-summary',
         idDet = 'topo-p-detail',
         panelOpts = {
-            width: 260, // summary and detail panel width
+            width: 300, // summary and detail panel width
         },
         sumMax = 226, // summary panel max height
         padTop = 16, // summary panel padding below masthead

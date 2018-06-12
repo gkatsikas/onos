@@ -154,6 +154,7 @@ public abstract class TopologyViewMessageHandlerBase extends TopoologyTrafficMes
         DEVICE_GLYPHS.put(Device.Type.MICROWAVE, "m_microwave");
         DEVICE_GLYPHS.put(Device.Type.OLT, "m_olt");
         DEVICE_GLYPHS.put(Device.Type.ONU, "m_onu");
+        DEVICE_GLYPHS.put(Device.Type.SERVER, "m_endstation");
         DEVICE_GLYPHS.put(Device.Type.OPTICAL_AMPLIFIER, "unknown"); // TODO glyph needed
         DEVICE_GLYPHS.put(Device.Type.OTHER, "m_other");
         DEVICE_GLYPHS.put(Device.Type.SERVER, "m_endpoint");
@@ -544,6 +545,7 @@ public abstract class TopologyViewMessageHandlerBase extends TopoologyTrafficMes
         pp.addButton(CoreButtons.SHOW_DEVICE_VIEW)
                 .addButton(CoreButtons.SHOW_FLOW_VIEW)
                 .addButton(CoreButtons.SHOW_PORT_VIEW)
+                .addButton(CoreButtons.SHOW_CPU_VIEW)
                 .addButton(CoreButtons.SHOW_GROUP_VIEW)
                 .addButton(CoreButtons.SHOW_METER_VIEW);
     }

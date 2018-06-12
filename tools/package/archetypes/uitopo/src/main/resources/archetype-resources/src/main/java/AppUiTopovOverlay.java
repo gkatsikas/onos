@@ -76,6 +76,7 @@ public class AppUiTopovOverlay extends UiTopoOverlay {
                 .addButton(BAR_BUTTON);
 
         pp.removeButtons(CoreButtons.SHOW_PORT_VIEW)
+                .removeButtons(CoreButtons.SHOW_CPU_VIEW)
                 .removeButtons(CoreButtons.SHOW_GROUP_VIEW)
                 .removeButtons(CoreButtons.SHOW_METER_VIEW);
     }

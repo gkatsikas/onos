@@ -33,7 +33,7 @@
         className = 'topo2-p',
         panelOpts = {
             show: true,
-            width: 260, // summary and detail panel width
+            width: 300, // summary and detail panel width
         },
         handlerMap = {
             showSummary: handleSummaryData,

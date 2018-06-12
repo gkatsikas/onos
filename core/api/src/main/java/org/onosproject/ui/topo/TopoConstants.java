@@ -73,6 +73,9 @@ public final class TopoConstants {
         public static final ButtonId SHOW_PORT_VIEW =
                 new ButtonId("showPortView");
 
+        public static final ButtonId SHOW_CPU_VIEW =
+                new ButtonId("showCpuView");
+
         public static final ButtonId SHOW_GROUP_VIEW =
                 new ButtonId("showGroupView");
 

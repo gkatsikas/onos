@@ -49,6 +49,7 @@ describe('factory: fw/svg/glyph.js', function() {
             // navigation specific glyphs
             flowTable: tablePrefix + 'M102.2,23.6H7.9v',
             portTable: tablePrefix + 'M102.6,23.6v78.5H',
+            cpuTable: tablePrefix + 'M102.6,23.6v78.5H',
             groupTable: 'M16,19.1H8v-13h',
 
             // toolbar specific glyphs
@@ -91,7 +92,7 @@ describe('factory: fw/svg/glyph.js', function() {
             'node', 'switch', 'roadm', 'endstation', 'router',
             'bgpSpeaker', 'chain', 'crown', 'lock', 'topo', 'refresh',
             'garbage',
-            'flowTable', 'portTable', 'groupTable',
+            'flowTable', 'portTable', 'cpuTable', 'groupTable',
             'summary', 'details', 'ports', 'map', 'cycleLabels',
             'oblique', 'filters', 'resetZoom', 'relatedIntents', 'nextIntent',
             'prevIntent', 'intentTraffic', 'allTraffic', 'flows', 'eqMaster'

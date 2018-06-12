@@ -238,6 +238,7 @@
 
                     $scope.deviceTip = lion('tt_ctl_show_device');
                     $scope.portTip = lion('tt_ctl_show_port');
+                    $scope.cpuTip = lion('tt_ctl_show_cpu');
                     $scope.groupTip = lion('tt_ctl_show_group');
                     $scope.meterTip = lion('tt_ctl_show_meter');
                     $scope.pipeconfTip = lion('tt_ctl_show_pipeconf');

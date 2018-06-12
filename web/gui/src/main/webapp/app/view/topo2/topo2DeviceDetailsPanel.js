@@ -51,6 +51,11 @@
             tt: 'Show Port View for this Device',
             path: 'port',
         },
+        showCpuView: {
+            gid: 'cpuTable',
+            tt: 'Show CPU View for this Device',
+            path: 'cpu',
+        },
         showGroupView: {
             gid: 'groupTable',
             tt: 'Show Group View for this Device',

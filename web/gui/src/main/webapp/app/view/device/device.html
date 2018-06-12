@@ -23,6 +23,11 @@
                  ng-click="nav('port')"></div>
 
             <div ng-class="{active: !!selId}"
+                 icon icon-id="cpuTable" icon-size="42"
+                 tooltip tt-msg="cpuTip"
+                 ng-click="nav('cpu')"></div>
+
+            <div ng-class="{active: !!selId}"
                  icon icon-id="groupTable" icon-size="42"
                  tooltip tt-msg="groupTip"
                  ng-click="nav('group')"></div>

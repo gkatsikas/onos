@@ -225,6 +225,7 @@ public class UiExtensionManager
 
                 new UiViewHidden("flow"),
                 new UiViewHidden("port"),
+                new UiViewHidden("cpu"),
                 new UiViewHidden("group"),
                 new UiViewHidden("meter"),
                 new UiViewHidden("pipeconf"),
@@ -246,6 +247,7 @@ public class UiExtensionManager
                         new HostViewMessageHandler(),
                         new FlowViewMessageHandler(),
                         new PortViewMessageHandler(),
+                        new CpuViewMessageHandler(),
                         new GroupViewMessageHandler(),
                         new MeterViewMessageHandler(),
                         new IntentViewMessageHandler(),
