@@ -44,7 +44,7 @@ onos_app(
     title = 'Metron NFV Controller',
     category = 'Traffic Processing &amp; Steering',
     origin = 'KTH Royal Institute of Technology &amp; RISE SICS',
-    url = 'https://bitbucket.org/nslab/onos/branch/metron-ctrl',
+    url = 'https://bitbucket.org/nslab/onos/src/metron-ctrl/',
     description = 'Metron realizes NFV service chains at the speed of the underlying hardware.',
     included_bundles = BUNDLES,
     required_apps = REQUIRED_APPS,

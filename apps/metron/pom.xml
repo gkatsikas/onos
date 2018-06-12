@@ -43,7 +43,7 @@
         <onos.app.title>Metron NFV Controller</onos.app.title>
         <onos.app.origin>KTH Royal Institute of Technology &amp; RISE SICS</onos.app.origin>
         <onos.app.category>Traffic Proceessing &amp; Steering</onos.app.category>
-        <onos.app.url>https://bitbucket.org/nslab/onos/branch/metron-ctrl</onos.app.url>
+        <onos.app.url>https://bitbucket.org/nslab/onos/src/metron-ctrl/</onos.app.url>
         <onos.app.readme>
             Metron manages NFV service chains running on Click and DPDK-based commodity servers.
             Metron uses a smart offloading and tagging approach to provide service chaining at
