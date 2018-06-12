@@ -32,8 +32,7 @@
     <!-- Link to our USENIX NSDI 2018 paper -->
     <url>https://www.usenix.org/conference/nsdi18/presentation/katsikas</url>
     <description>
-        Metron provides high performance NFV service chaining by
-        synergetically utilizing network and server processing.
+        Metron realizes NFV service chains at the speed of the underlying hardware.
     </description>
 
     <properties>
@@ -43,7 +42,7 @@
         <onos.app.name>org.onosproject.metron</onos.app.name>
         <onos.app.title>Metron NFV Controller</onos.app.title>
         <onos.app.origin>KTH Royal Institute of Technology &amp; RISE SICS</onos.app.origin>
-        <onos.app.category>Elastic, High Performance Packet Processing</onos.app.category>
+        <onos.app.category>Traffic Proceessing &amp; Steering</onos.app.category>
         <onos.app.url>https://bitbucket.org/nslab/onos/branch/metron-ctrl</onos.app.url>
         <onos.app.readme>
             Metron manages NFV service chains running on Click and DPDK-based commodity servers.
