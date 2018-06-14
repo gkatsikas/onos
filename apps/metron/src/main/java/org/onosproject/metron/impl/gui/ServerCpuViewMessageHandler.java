@@ -103,7 +103,7 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
                 // Only for devices that report CPU statistics
                 if (devCpuLoad != null) {
                     // We need an array of data points
-                    Map<MetricType, Float[]> data = populateCpuMetricsList(devCpuLoad);
+                    Map<MetricType, Float[]> data = populateCpuDataHistory(devCpuLoad);
                     // Generate a timestamp
                     LocalDateTime ldt = new LocalDateTime(timestamp);
 
@@ -132,7 +132,7 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
                     }
 
                     // Get the latest CPU measurements
-                    Map<MetricType, Float> data = this.populateCpuMetrics(devCpuLoad);
+                    Map<MetricType, Float> data = this.populateCpuData(devCpuLoad);
 
                     // Map them to the CPU cores
                     Map<String, Object> local = Maps.newHashMap();
@@ -150,12 +150,12 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
         }
 
         /**
-         * Turn the monitoring memory into a data structure that can feed the UI memory.
+         * Turn the current monitoring data into a data structure that can feed the UI memory.
          *
          * @param devCpuLoad the monitoring memory that holds the CPU load per core
          * @return a map of metrics to their values
          */
-        private Map<MetricType, Float> populateCpuMetrics(Map<Integer, LruCache<Float>> devCpuLoad) {
+        private Map<MetricType, Float> populateCpuData(Map<Integer, LruCache<Float>> devCpuLoad) {
             Map<MetricType, Float> data = Maps.newHashMap();
 
             int i = 0;
@@ -176,12 +176,12 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
         }
 
         /**
-         * Turn the monitoring memory into a data structure that can feed the UI memory.
+         * Turn the monitoring data history into a data structure that can feed the UI memory.
          *
          * @param devCpuLoad the monitoring memory that holds the CPU load per core
          * @return a map of metrics to their arrays of values
          */
-        private Map<MetricType, Float[]> populateCpuMetricsList(Map<Integer, LruCache<Float>> devCpuLoad) {
+        private Map<MetricType, Float[]> populateCpuDataHistory(Map<Integer, LruCache<Float>> devCpuLoad) {
             Map<MetricType, Float[]> data = Maps.newHashMap();
 
             int i = 0;
@@ -201,11 +201,12 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
                 // Set the data
                 data.put(cmt, ArrayUtils.toObject(filledLoadArray));
 
-                // Keep a timestamp
-                timestamp = System.currentTimeMillis();
-
                 i++;
             }
+
+            // Keep a timestamp
+            timestamp = System.currentTimeMillis();
+
             return data;
         }
 
@@ -244,14 +245,14 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
          * @param cm the chart to be fed with data
          * @param data the data to feed the chart
          * @param time a timestamp
-         * @param numOfDp the number of data points
+         * @param numberOfPoints the number of data points
          */
         private void populateMetrics(
                 ChartModel               cm,
                 Map<MetricType, Float[]> data,
                 LocalDateTime            time,
-                int                      numOfDp) {
-            for (int i = 0; i < numOfDp; i++) {
+                int                      numberOfPoints) {
+            for (int i = 0; i < numberOfPoints; i++) {
                 Map<String, Object> local = Maps.newHashMap();
                 for (MetricType cmt : CPU_CORES_METRICS) {
                     if (data.containsKey(cmt)) {
@@ -259,7 +260,7 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
                     }
                 }
 
-                String calculated = time.minusSeconds(numOfDp - i).toString(TIME_FORMAT);
+                String calculated = time.minusSeconds(numberOfPoints - i).toString(TIME_FORMAT);
 
                 local.put(LABEL, calculated);
                 populateMetric(cm.addDataPoint(calculated), local);
