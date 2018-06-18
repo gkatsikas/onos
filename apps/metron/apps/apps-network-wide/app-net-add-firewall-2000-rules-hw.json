@@ -4,10 +4,11 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "fw-10rules-hw",
+                        "name"       : "fw-2000rules-hw",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
+                        "scope"      : "network",
                         "components" : [
                             {
                                 "name"  : "nf1",
@@ -42,7 +43,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/10rules.json"
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/2000rules.json"
                                     },
                                     {
                                         "block": "Discard",

@@ -8,18 +8,19 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
+                        "scope"      : "network",
                         "components" : [
                             {
-                                "name"       : "nf1",
-                                "type"       : "click",
-                                "class"      : "firewall",
-                                "id"         : "kth-firewall-nf1"
+                                "name"  : "nf1",
+                                "type"  : "click",
+                                "class" : "firewall",
+                                "id"    : "kth-firewall-nf1"
                             },
                             {
-                                "name"       : "nf2",
-                                "type"       : "click",
-                                "class"      : "napt",
-                                "id"         : "kth-napt-nf2"
+                                "name"  : "nf2",
+                                "type"  : "click",
+                                "class" : "napt",
+                                "id"    : "kth-napt-nf2"
                             }
                         ],
                         "processors": [
