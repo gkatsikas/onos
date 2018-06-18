@@ -19,6 +19,7 @@ package org.onosproject.metron.impl.servicechain;
 import org.onosproject.metron.api.config.TrafficPoint;
 import org.onosproject.metron.api.graphs.ServiceChainGraphInterface;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
+import org.onosproject.metron.api.servicechain.ServiceChainScope;
 import org.onosproject.metron.api.servicechain.ServiceChainState;
 import org.onosproject.metron.api.servicechain.ServiceChainInterface;
 
@@ -52,6 +53,7 @@ public class ServiceChain implements ServiceChainInterface {
 
     private String                     name;
     private String                     type;
+    private ServiceChainScope          scope;
     private ServiceChainId             id;
     private int                        cpuCores;
     private ServiceChainState          state;
@@ -62,6 +64,7 @@ public class ServiceChain implements ServiceChainInterface {
     protected ServiceChain(
             String                     name,
             String                     type,
+            ServiceChainScope          scope,
             ServiceChainId             id,
             int                        cpuCores,
             ServiceChainState          state,
@@ -76,6 +79,10 @@ public class ServiceChain implements ServiceChainInterface {
         checkArgument(
             !Strings.isNullOrEmpty(type),
             "Service chain type is NULL or empty"
+        );
+        checkArgument(
+            ServiceChainScope.isValid(scope),
+            "Service chain scope is invalid"
         );
         checkArgument(
             !Strings.isNullOrEmpty(id.toString()),
@@ -107,6 +114,7 @@ public class ServiceChain implements ServiceChainInterface {
 
         this.name              = name;
         this.type              = type;
+        this.scope             = scope;
         this.id                = id;
         this.cpuCores          = cpuCores;
         this.state             = state;
@@ -128,6 +136,7 @@ public class ServiceChain implements ServiceChainInterface {
         return new ServiceChain(
             sc.name,
             sc.type,
+            sc.scope,
             sc.id,
             sc.cpuCores,
             state,
@@ -149,6 +158,7 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChainInterface scNew) {
         scOld.setName(scNew.name());
         scOld.setType(scNew.type());
+        scOld.setScope(scNew.scope());
         scOld.setId(scNew.id());
         scOld.setState(scNew.state());
         scOld.setCpuCores(scNew.cpuCores());
@@ -177,6 +187,16 @@ public class ServiceChain implements ServiceChainInterface {
     @Override
     public void setType(String type) {
         this.type = type;
+    }
+
+    @Override
+    public ServiceChainScope scope() {
+        return this.scope;
+    }
+
+    @Override
+    public void setScope(ServiceChainScope scope) {
+        this.scope = scope;
     }
 
     @Override
@@ -327,6 +347,16 @@ public class ServiceChain implements ServiceChainInterface {
         return null;
     }
 
+    @Override
+    public boolean isServerLevel() {
+        return ServiceChainScope.isServerLevel(this.scope);
+    }
+
+    @Override
+    public boolean isNetworkWide() {
+        return ServiceChainScope.isNetworkWide(this.scope);
+    }
+
     /**
      * Returns a label with the module's identify.
      * Serves for printing.
@@ -352,6 +382,7 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChain that = (ServiceChain) obj;
             if (Objects.equals(this.name, that.name) &&
                 Objects.equals(this.type, that.type) &&
+                Objects.equals(this.scope, that.scope) &&
                 Objects.equals(this.id,   that.id) &&
                 this.cpuCores == that.cpuCores &&
                 Objects.equals(
@@ -379,6 +410,7 @@ public class ServiceChain implements ServiceChainInterface {
         return MoreObjects.toStringHelper(getClass())
                 .add("name",          name)
                 .add("type",          type)
+                .add("scope",         scope.toString())
                 .add("id",            id.toString())
                 .add("cpuCores",      String.valueOf(cpuCores()))
                 .add("state",         state.name())
@@ -403,6 +435,7 @@ public class ServiceChain implements ServiceChainInterface {
     public static final class Builder {
         private String                     name;
         private String                     type;
+        private ServiceChainScope          scope;
         private ServiceChainId             id;
         private int                        cpuCores;
         private ServiceChainState          state = INIT;
@@ -415,7 +448,7 @@ public class ServiceChain implements ServiceChainInterface {
 
         public ServiceChain build() {
             return new ServiceChain(
-                name, type, id, cpuCores, state,
+                name, type, scope, id, cpuCores, state,
                 serviceChainGraph, ingressPoints,
                 egressPoints
             );
@@ -440,6 +473,17 @@ public class ServiceChain implements ServiceChainInterface {
          */
         public Builder type(String type) {
             this.type = type;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with the scope.
+         *
+         * @param scope scope
+         * @return service chain builder
+         */
+        public Builder scope(ServiceChainScope scope) {
+            this.scope = scope;
             return this;
         }
 
