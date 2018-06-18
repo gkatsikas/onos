@@ -57,6 +57,20 @@ public interface ServiceChainInterface {
     void setType(String name);
 
     /**
+     * Returns the scope of this service chain.
+     *
+     * @return service chain's scope
+     */
+    ServiceChainScope scope();
+
+    /**
+     * Sets the scope of this service chain.
+     *
+     * @param scope service chain's scope
+     */
+    void setScope(ServiceChainScope scope);
+
+    /**
      * Returns the ID of this service chain.
      *
      * @return service chain's id
@@ -195,4 +209,18 @@ public interface ServiceChainInterface {
      * @return TrafficPoint object that corresponds to input device
      */
     TrafficPoint egressPointOfDevice(DeviceId deviceId);
+
+    /**
+     * Returns whether a service chain's scope is server-level or not.
+     *
+     * @return boolean scope status
+     */
+    boolean isServerLevel();
+
+    /**
+     * Returns whether a service chain's scope is network-wide or not.
+     *
+     * @return boolean scope status
+     */
+    boolean isNetworkWide();
 }

@@ -31,6 +31,7 @@ import org.onosproject.metron.api.networkfunction.NetworkFunctionClass;
 import org.onosproject.metron.api.networkfunction.NetworkFunctionType;
 import org.onosproject.metron.api.networkfunction.NetworkFunctionInterface;
 import org.onosproject.metron.api.servicechain.ServiceChainInterface;
+import org.onosproject.metron.api.servicechain.ServiceChainScope;
 import org.onosproject.metron.api.graphs.ServiceChainVertexInterface;
 import org.onosproject.metron.api.graphs.ServiceChainEdgeInterface;
 import org.onosproject.metron.api.graphs.ServiceChainGraphInterface;
@@ -118,6 +119,7 @@ public final class ServiceChainAddConfig
     private static final String SC_TYPE       = "type";
     private static final String SC_NETWORK_ID = "networkId";
     private static final String SC_CPU_CORES  = "cpuCores";
+    private static final String SC_SCOPE      = "scope";
     private static final String SC_COMPONENTS = "components";
     private static final String SC_PROCESSORS = "processors";
     private static final String SC_TOPOLOGY   = "topology";
@@ -253,6 +255,7 @@ public final class ServiceChainAddConfig
                 SC_TYPE,
                 SC_NETWORK_ID,
                 SC_CPU_CORES,
+                SC_SCOPE,
                 SC_COMPONENTS,
                 SC_PROCESSORS,
                 SC_TOPOLOGY
@@ -262,6 +265,7 @@ public final class ServiceChainAddConfig
             result &= isString(scNode, SC_TYPE, MANDATORY);
             result &= isNumber(scNode, SC_NETWORK_ID, MANDATORY);
             result &= isNumber(scNode, SC_CPU_CORES,  MANDATORY);
+            result &= isString(scNode, SC_SCOPE, MANDATORY);
 
             JsonNode compNode = scNode.path(SC_COMPONENTS);
             result &= (!compNode.isMissingNode() && compNode.isArray());
@@ -488,6 +492,19 @@ public final class ServiceChainAddConfig
                 "Please specify a positive number of CPU cores to be allocated for this service chain"
             );
 
+            // Deployed on a single server (server-level) or across the network (network-wide)
+            ServiceChainScope scScope = Common.<ServiceChainScope>enumFromString(
+                ServiceChainScope.class,
+                scNode.path(SC_SCOPE).asText().toLowerCase()
+            );
+            checkNotNull(
+                scScope,
+                "Invalid service chain scope. Choose one in: " + Common.<ServiceChainScope>
+                enumTypesToString(
+                    ServiceChainScope.class
+                )
+            );
+
             /**
              * A. Parse the components of the service chain
              */
@@ -527,7 +544,7 @@ public final class ServiceChainAddConfig
                 );
                 checkNotNull(
                     compType,
-                    "Incompatible network function type. Choose one in: " + Common.<NetworkFunctionType>
+                    "Invalid network function type. Choose one in: " + Common.<NetworkFunctionType>
                     enumTypesToString(
                         NetworkFunctionType.class
                     )
@@ -539,7 +556,7 @@ public final class ServiceChainAddConfig
                 );
                 checkNotNull(
                     compClass,
-                    "Incompatible network function class. Choose one in: " + Common.<NetworkFunctionClass>
+                    "Invalid network function class. Choose one in: " + Common.<NetworkFunctionClass>
                     enumTypesToString(
                         NetworkFunctionClass.class
                     )
@@ -578,6 +595,7 @@ public final class ServiceChainAddConfig
                 sortedNfs,
                 scName,
                 scType,
+                scScope,
                 scNetId,
                 scCores
             );
@@ -913,6 +931,7 @@ public final class ServiceChainAddConfig
      * @param nfs a map of NF names to NF processing graphs
      * @param scName the name of the service chain
      * @param scType the type of the service chain
+     * @param scScope the scope of the service chain
      * @param scNetId the network ID of the service chain
      * @param cpuCores the network of CPU cores of the service chain
      * @return a service chain object
@@ -922,6 +941,7 @@ public final class ServiceChainAddConfig
             Map<String, NetworkFunctionInterface> nfs,
             String                                scName,
             String                                scType,
+            ServiceChainScope                     scScope,
             NetworkId                             scNetId,
             int                                   cpuCores) {
         Set<ServiceChainVertexInterface> scVertices = Sets.<ServiceChainVertexInterface>newConcurrentHashSet();
@@ -1064,6 +1084,7 @@ public final class ServiceChainAddConfig
         ServiceChain.Builder scBuilder = ServiceChain.builder()
             .name(scName)
             .type(scType)
+            .scope(scScope)
             .id("sc:" + scName + ":" + scType + ":" +  scNetId.toString())
             .cpuCores(cpuCores)
             .serviceChainGraph(scGraph)

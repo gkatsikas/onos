@@ -1268,7 +1268,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         );
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
-        log.info("");
+        log.debug("");
 
         return compressedTrafficClasses > 0;
     }
@@ -1373,7 +1373,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         }
 
         log.info(
-            "[{}] \t {} traffic class groups are formed",
+            "[{}] {} traffic class groups are formed",
             label(), this.groupedTrafficClasses.size()
         );
 
