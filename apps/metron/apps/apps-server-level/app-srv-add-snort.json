@@ -8,7 +8,7 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
-                        "scope"      : "server",
+                        "scope"      : "server-rules",
                         "components" : [
                             {
                                 "name"  : "nf1",

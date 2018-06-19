@@ -223,4 +223,18 @@ public interface ServiceChainInterface {
      * @return boolean scope status
      */
     boolean isNetworkWide();
+
+    /**
+     * Returns whether a service chain's scope is software-based or not.
+     *
+     * @return boolean scope status
+     */
+    boolean isSoftwareBased();
+
+    /**
+     * Returns whether a service chain's scope is hardware-based or not.
+     *
+     * @return boolean scope status
+     */
+    boolean isHardwareBased();
 }

@@ -82,7 +82,7 @@ public class ServiceChain implements ServiceChainInterface {
         );
         checkArgument(
             ServiceChainScope.isValid(scope),
-            "Service chain scope is invalid"
+            "Service chain scope " + scope + " is invalid"
         );
         checkArgument(
             !Strings.isNullOrEmpty(id.toString()),
@@ -355,6 +355,16 @@ public class ServiceChain implements ServiceChainInterface {
     @Override
     public boolean isNetworkWide() {
         return ServiceChainScope.isNetworkWide(this.scope);
+    }
+
+    @Override
+    public boolean isSoftwareBased() {
+        return ServiceChainScope.isSoftwareBased(this.scope);
+    }
+
+    @Override
+    public boolean isHardwareBased() {
+        return ServiceChainScope.isHardwareBased(this.scope);
     }
 
     /**
