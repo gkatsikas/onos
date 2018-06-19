@@ -8,7 +8,7 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
-                        "scope"      : "network",
+                        "scope"      : "network-mac",
                         "components" : [
                             {
                                 "name"  : "nf1",
