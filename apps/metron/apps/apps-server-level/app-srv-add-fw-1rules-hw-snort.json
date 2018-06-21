@@ -1,0 +1,227 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "add" : {
+                "servicechains" : [
+                    {
+                        "name"       : "fw-1rules-hw-snort",
+                        "type"       : "generic",
+                        "networkId"  : 1,
+                        "cpuCores"   : 1,
+                        "scope"      : "server-rules",
+                        "components" : [
+                            {
+                                "name"  : "nf1",
+                                "type"  : "click",
+                                "class" : "firewall",
+                                "id"    : "kth-firewall-nf1"
+                            },
+                            {
+                                "name"  : "nf2",
+                                "type"  : "standalone",
+                                "class" : "dpi",
+                                "id"    : "snort-nf2"
+                            }
+                        ],
+                        "processors": [
+                            {
+                                "name"  : "nf1",
+                                "blocks": [
+                                    {
+                                        "block": "FromDevice",
+                                        "instance": "nf1_fd1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Strip",
+                                        "instance": "nf1_strip1",
+                                        "configArgs": "LENGTH 14",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "MarkIPHeader",
+                                        "instance": "nf1_mark1",
+                                        "configArgs": "OFFSET 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "IPClassifier",
+                                        "instance": "nf1_ipCl1",
+                                        "configArgs": "FILE",
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/1rules-hw-conf.json"
+                                    },
+                                    {
+                                        "block": "EtherEncap",
+                                        "instance": "nf1_ethEncap1",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 00:00:c0:ae:67:ef, DST 00:00:c0:4f:71:ef",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Queue",
+                                        "instance": "nf1_q1",
+                                        "configArgs": "CAPACITY 1024",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "ToDevice",
+                                        "instance": "nf1_td1",
+                                        "configArgs": "DEVNAME eno2",
+                                        "configFile": ""
+                                    }
+                                ],
+                                "graph" : [
+                                    {
+                                        "src": {
+                                            "instance": "nf1_fd1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_ipCl1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ipCl1",
+                                            "port": -1
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_td1",
+                                            "port": 0
+                                        }
+                                    }
+                                ]
+                            },
+                            {
+                                "name"  : "nf2",
+                                "blocks": [
+                                    {
+                                        "block": "FromSnortDevice",
+                                        "instance": "nf2_fd1",
+                                        "configArgs": "DEVNAME eno1, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "ToSnortDevice",
+                                        "instance": "nf2_td1",
+                                        "configArgs": "DEVNAME eno2",
+                                        "configFile": ""
+                                    }
+                                ],
+                                "graph" : [
+                                    {
+                                        "src": {
+                                            "instance": "nf2_fd1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf2_td1",
+                                            "port": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "topology": {
+                            "network": {
+                                "ingressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.166:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 1
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "egressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.166:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 2
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "server": [
+                                {
+                                    "src" : {
+                                        "entity"      : "source",
+                                        "interface"   : "-"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    }
+                                },
+                                {
+                                    "src" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno2"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "nf2",
+                                        "interface"   : "eno1"
+                                    }
+                                },
+                                {
+                                    "src" : {
+                                        "entity"      : "nf2",
+                                        "interface"   : "eno2"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "destination",
+                                        "interface"   : "-"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
