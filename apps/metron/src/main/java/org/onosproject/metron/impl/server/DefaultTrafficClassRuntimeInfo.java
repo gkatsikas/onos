@@ -20,8 +20,8 @@ import org.onosproject.metron.api.exceptions.DeploymentException;
 import org.onosproject.metron.api.server.TrafficClassRuntimeInfo;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
 
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import org.onosproject.net.DeviceId;
 
@@ -298,19 +298,18 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
     }
 
     @Override
-    public void setNicsOfDevice(DeviceId deviceId, Set<String> nics) {
+    public void setNicsOfDevice(DeviceId deviceId, Set<String> nicIds) {
         Preconditions.checkNotNull(
             deviceId, "Cannot set the NIC IDs of a NULL device for traffic class " + this.trafficClassId
         );
         Preconditions.checkNotNull(
-            nics, "Cannot set the NULL NIC IDs for traffic class " + this.trafficClassId
+            nicIds, "Cannot set the NULL NIC IDs for traffic class " + this.trafficClassId
+        );
+        Preconditions.checkArgument(
+            nicIds.size() > 0, "Attempted to set empty set of NICs for device " + deviceId
         );
 
-        if (nics.size() == 0) {
-            return;
-        }
-
-        this.nics.put(deviceId, nics);
+        this.nics.put(deviceId, nicIds);
     }
 
     @Override

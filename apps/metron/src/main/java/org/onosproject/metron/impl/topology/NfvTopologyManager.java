@@ -21,6 +21,7 @@ import org.onosproject.metron.api.common.Constants;
 import org.onosproject.metron.api.server.ServerService;
 import org.onosproject.metron.api.server.TrafficClassRuntimeInfo;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
+import org.onosproject.metron.api.servicechain.ServiceChainScope;
 import org.onosproject.metron.api.topology.NfvTopologyService;
 
 import org.onosproject.metron.api.structures.Pair;
@@ -673,17 +674,18 @@ public class NfvTopologyManager implements NfvTopologyService {
 
     @Override
     public TrafficClassRuntimeInfo deployTrafficClassOfServiceChain(
-            DeviceId       deviceId,
-            ServiceChainId scId,
-            URI            tcId,
-            String         configurationType,
-            String         configuration,
-            int            numberOfCores,
-            int            maxNumberOfCores,
-            Set<String>    nicIds,
-            boolean        autoscale) {
+            DeviceId          deviceId,
+            ServiceChainId    scId,
+            URI               tcId,
+            ServiceChainScope scScope,
+            String            configurationType,
+            String            configuration,
+            int               numberOfCores,
+            int               maxNumberOfCores,
+            Set<String>       nicIds,
+            boolean           autoscale) {
         return serverService.deployTrafficClassOfServiceChain(
-            deviceId, scId, tcId,
+            deviceId, scId, tcId, scScope,
             configurationType, configuration,
             numberOfCores, maxNumberOfCores,
             nicIds, autoscale
@@ -756,12 +758,12 @@ public class NfvTopologyManager implements NfvTopologyService {
             int            numberOfCores,
             int            maxNumberOfCores,
             Set<String>    nicIds,
-            String         rxFilterMethod) {
+            String         rxFilterMethodStr) {
         return serverService.buildRuntimeInformation(
             deviceId, scId, tcId, primaryNic,
             configurationType, configuration,
             numberOfCores, maxNumberOfCores,
-            nicIds, rxFilterMethod
+            nicIds, rxFilterMethodStr
         );
     }
 

@@ -132,6 +132,6 @@ public interface DeploymentService {
      *
      * @return boolean HW offloading status
      */
-    boolean hasHwOffloading();
+    boolean hwOffloadingEnabled();
 
 }

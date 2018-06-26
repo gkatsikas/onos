@@ -23,6 +23,7 @@ import org.onosproject.metron.api.monitor.MonitorService;
 import org.onosproject.metron.api.server.ServerService;
 import org.onosproject.metron.api.server.TrafficClassRuntimeInfo;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
+import org.onosproject.metron.api.servicechain.ServiceChainScope;
 
 // ONOS Libraries
 import org.onlab.packet.MacAddress;
@@ -33,11 +34,13 @@ import org.onosproject.core.CoreService;
 import org.onosproject.drivers.server.BasicServerDriver;
 import org.onosproject.drivers.server.behavior.MonitoringStatisticsDiscovery;
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
-import org.onosproject.drivers.server.devices.NicDevice;
-import org.onosproject.drivers.server.devices.MacRxFilterValue;
-import org.onosproject.drivers.server.devices.MplsRxFilterValue;
-import org.onosproject.drivers.server.devices.VlanRxFilterValue;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.NicDevice;
+import org.onosproject.drivers.server.devices.nic.FlowRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.MacRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.MplsRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.RssRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.VlanRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
@@ -130,6 +133,8 @@ public class ServerManager
     private static final String NIC_PARAM_RX_METHOD_MAC    = "mac";
     private static final String NIC_PARAM_RX_METHOD_MPLS   = "mpls";
     private static final String NIC_PARAM_RX_METHOD_VLAN   = "vlan";
+    private static final String NIC_PARAM_RX_METHOD_FLOW   = "flow";
+    private static final String NIC_PARAM_RX_METHOD_RSS    = "rss";
 
     private Set<RestSBDevice> devices;
 
@@ -207,15 +212,16 @@ public class ServerManager
 
     @Override
     public TrafficClassRuntimeInfo deployTrafficClassOfServiceChain(
-            DeviceId       deviceId,
-            ServiceChainId scId,
-            URI            tcId,
-            String         configurationType,
-            String         configuration,
-            int            numberOfCores,
-            int            maxNumberOfCores,
-            Set<String>    nicIds,
-            boolean        autoscale) {
+            DeviceId          deviceId,
+            ServiceChainId    scId,
+            URI               tcId,
+            ServiceChainScope scScope,
+            String            configurationType,
+            String            configuration,
+            int               numberOfCores,
+            int               maxNumberOfCores,
+            Set<String>       nicIds,
+            boolean           autoscale) {
         checkNotNull(deviceId, "[" + label() + "] NULL device ID.");
         checkNotNull(scId,     "[" + label() + "] NULL service chain ID.");
         checkNotNull(tcId,     "[" + label() + "] NULL traffic class ID.");
@@ -238,7 +244,8 @@ public class ServerManager
         log.info("[{}] ================================================================", label());
         log.info("[{}] Deploy", label());
         log.info("[{}] \t traffic class {} of", label(), tcId);
-        log.info("[{}] \t service chain {} on", label(), scId);
+        log.info("[{}] \t service chain {}", label(), scId);
+        log.info("[{}] \t with scope {} on", label(), scScope.toString());
         log.info("[{}] \t server {}", label(), deviceId);
         log.info("[{}] \t with configuration type {}", label(), configurationType);
         log.info("[{}] \t with configuration {}", label(), configuration);
@@ -248,8 +255,10 @@ public class ServerManager
         log.info("[{}] \t with auto-scale {}", label(), autoscale ? "true" : "false");
         log.info("[{}] ================================================================", label());
 
+        // TODO: Why always the first?
         String primaryNic = nicIds.iterator().next();
-        String rxFilterMethod = "";
+        RxFilter rxFilterMethod = null;
+        String rxFilterMethodStr = "";
         boolean rxFilterFound = false;
 
         // Get the device's object from the controller
@@ -269,12 +278,14 @@ public class ServerManager
         for (String nicStr : nicIds) {
             for (NicDevice nic : device.nics()) {
                 if (nic.id().equals(nicStr)) {
-                    // TODO: Improve this
-                    // Verify that the NICs support the preferred Rx filter mechanism
-                    if (nic.rxFilterMechanisms().rxFilters().contains(RxFilter.getByName(NIC_PARAM_RX_METHOD_MAC))) {
-                        rxFilterMethod = NIC_PARAM_RX_METHOD_MAC;
-                        rxFilterFound  = true;
-                        break;
+                    for (RxFilter rf : nic.rxFilterMechanisms().rxFilters()) {
+                        // Pick the first supported Rx filter
+                        if (RxFilter.isSupported(rf)) {
+                            rxFilterMethod = rf;
+                            rxFilterMethodStr = rf.toString();
+                            rxFilterFound  = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -285,10 +296,45 @@ public class ServerManager
         }
 
         // The NICs of this device do not support
-        if (!rxFilterFound || rxFilterMethod.isEmpty()) {
+        if (!rxFilterFound || rxFilterMethodStr.isEmpty()) {
             log.error("[{}] \t Unsupported Rx filter method on device {}", label(), deviceId);
             return null;
         }
+
+        // Service chain's scope has to comply with the Rx filter method
+        if (rxFilterMethod == RxFilter.FLOW) {
+            checkArgument(
+                scScope == ServiceChainScope.SERVER_RULES,
+                "[" + label() + "] Metron agent advertized flow-based Rx filtering, " +
+                "but the scope of service chain " + scId + " is not '" + ServiceChainScope.SERVER_RULES + "'."
+            );
+        } else if (rxFilterMethod == RxFilter.MAC) {
+            checkArgument(
+                scScope == ServiceChainScope.NETWORK_MAC,
+                "[" + label() + "] Metron agent advertized MAC-based Rx filtering using VMDq, " +
+                "but the scope of service chain " + scId + " is not '" + ServiceChainScope.NETWORK_MAC + "'."
+            );
+        } else if (rxFilterMethod == RxFilter.VLAN) {
+            checkArgument(
+                scScope == ServiceChainScope.NETWORK_MAC,
+                "[" + label() + "] Metron agent advertized VLAN-based Rx filtering using VMDq, " +
+                "but the scope of service chain " + scId + " is not '" + ServiceChainScope.NETWORK_VLAN + "'."
+            );
+        } else if (rxFilterMethod == RxFilter.MPLS) {
+            checkArgument(
+                false,
+                "[" + label() + "] Metron agent advertized MPLS-based Rx filtering, " +
+                "but the Metron controller does not currently support this type of tagging."
+            );
+        } else if (rxFilterMethod == RxFilter.RSS) {
+            checkArgument(
+                scScope == ServiceChainScope.SERVER_RSS,
+                "[" + label() + "] Metron agent advertized RSS-based Rx filtering, " +
+                "but the scope of service chain " + scId + " is not '" + ServiceChainScope.SERVER_RSS + "'."
+            );
+        }
+
+        log.info("[{}] \t Supported Rx filter method {} on device {}", label(), rxFilterMethodStr, deviceId);
 
         ObjectMapper mapper = new ObjectMapper();
 
@@ -303,7 +349,7 @@ public class ServerManager
 
         // Add the Rx filter method
         ObjectNode rxFilterMethodNode = mapper.createObjectNode().put(
-            NIC_PARAM_RX_METHOD, rxFilterMethod
+            NIC_PARAM_RX_METHOD, rxFilterMethodStr
         );
         chainObjNode.put(NIC_PARAM_RX_FILTER, rxFilterMethodNode);
 
@@ -351,7 +397,7 @@ public class ServerManager
             deviceId, scId, tcId, primaryNic,
             configurationType, configuration,
             numberOfCores, maxNumberOfCores,
-            nicIds, rxFilterMethod
+            nicIds, rxFilterMethodStr
         );
     }
 
@@ -541,11 +587,19 @@ public class ServerManager
                 } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
                     VlanId vlanId = VlanId.vlanId(tagValue);
                     tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
+                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
+                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(tagValue));
+                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
+                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
                 } else {
                     throw new ProtocolException(
-                        "[" + label() + "] Unsupprted Rx filter method for traffic class " +
+                        "[" + label() + "] Unsupported Rx filter method for traffic class " +
                         tcId + " of service chain " + scId + "."
                     );
+                }
+
+                if (!tagValue.isEmpty()) {
+                    log.info("[{}] \t Tag: {}", label(), tagValue);
                 }
             }
         }
@@ -817,7 +871,7 @@ public class ServerManager
             int            numberOfCores,
             int            maxNumberOfCores,
             Set<String>    nicIds,
-            String         rxFilterMethod) {
+            String         rxFilterMethodStr) {
         // Devices that run this service chain
         Set<DeviceId> devices = Sets.<DeviceId>newConcurrentHashSet();
         devices.add(deviceId);
@@ -842,9 +896,9 @@ public class ServerManager
         rtInfo.setDeviceConfigurationOfCore(deviceId, AVAILABLE_CPU_CORE, configuration);
 
         // Set the Rx filter method of this device
-        if (rxFilterMethod != null) {
+        if (rxFilterMethodStr != null) {
             for (String nic : nicIds) {
-                rtInfo.setRxFilterMethodOfDeviceOfNic(deviceId, nic, RxFilter.getByName(rxFilterMethod));
+                rtInfo.setRxFilterMethodOfDeviceOfNic(deviceId, nic, RxFilter.getByName(rxFilterMethodStr));
             }
         }
 
@@ -852,7 +906,7 @@ public class ServerManager
     }
 
     /**
-     * Returns a device  object with specific identity.
+     * Returns a device object with specific identity.
      *
      * @param deviceId the ID of the desired device
      * @return device object or null

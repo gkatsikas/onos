@@ -55,9 +55,9 @@ import org.onosproject.net.topology.TopologyVertex;
 import org.osgi.service.component.ComponentContext;
 
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
-import org.onosproject.drivers.server.devices.NicDevice;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicDevice;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 // Apache libraries
 import org.apache.commons.lang.ArrayUtils;
@@ -321,8 +321,9 @@ public final class DeploymentManager
                 // Build the binary tree of this service chain and compress it
                 dpTree.buildAndCompressBinaryTree();
 
-                // Check whether there is a possibilty to offload (parts of) the service chain
-                boolean canBeOffloaded = this.canDoHwOffloading();
+                // Check the possibilty to offload (parts of) the service chain into the network
+                boolean networkOffloadable = this.canDoNetworkOffloading(sc);
+                // Can this be done without involving a server?
                 boolean isTotallyOffloadable = dpTree.isTotallyOffloadable();
 
                 /**
@@ -333,7 +334,7 @@ public final class DeploymentManager
                  * the service chain can be completely offloaded, we should not involve any server.
                  * try to offload parts of the service chains that are ready to be deployed.
                  */
-                if (canBeOffloaded && isTotallyOffloadable) {
+                if (networkOffloadable && isTotallyOffloadable) {
                     try {
                         if (!this.networkPlacer(sc, dpTree, null)) {
                             correctDeployment = false;
@@ -347,6 +348,9 @@ public final class DeploymentManager
                     }
                 }
 
+                // Now let's see if the server-level deployment supports offloading
+                boolean isOffloadable = sc.isHardwareBased();
+
                 /**
                  * *********************************************************************************
                  * ****************************  B. Partial Offloading  ****************************
@@ -359,7 +363,7 @@ public final class DeploymentManager
                  */
                 RestServerSBDevice server = null;
                 try {
-                    server = this.serverPlacer(sc, iface, dpTree, canBeOffloaded);
+                    server = this.serverPlacer(sc, iface, dpTree, isOffloadable);
                 } catch (DeploymentException depEx) {
                     correctDeployment = false;
                     break;
@@ -372,13 +376,16 @@ public final class DeploymentManager
                     );
                 }
 
+                // Now let's see if the deployment requires both network and server
+               boolean serverAndNetworkCooperation = sc.isNetworkWide();
+
                 /**
                  * *** B2. Hardware Part
                  * Use the tags above to mark the traffic classes of this service chain.
                  * Each traffic class consists of a set of SDN rules installed to one or
                  * more switches along the path between ingress and the target Metron server.
                  */
-                if (canBeOffloaded) {
+                if (serverAndNetworkCooperation) {
                     try {
                         if (!this.networkPlacer(sc, dpTree, server)) {
                             /**
@@ -561,28 +568,13 @@ public final class DeploymentManager
                 }
             }
 
-            // Perform the service chain offloading
-            Map<URI, RxFilterValue> tcTags = null;
-            Map<URI, Float> tcCompDelays = new ConcurrentHashMap<URI, Float>();
-            try {
-                tcTags = dpTree.generateHardwareConfiguration(
-                    scId, this.appId, coreSwitchId, coreSwitchEgrPort, true, tcCompDelays
-                );
-            } catch (DeploymentException depEx) {
-                log.error("[{}] {}", label(), depEx.toString());
-                return false;
-            }
-            checkNotNull(
-                tcTags,
-                "Failed to generate hardware configuration for service chain " + scId
+            /**
+             * Generate the hardware configuration of this service chain.
+             * Tagging flag is true to indicate partial offloading with tagging.
+             */
+            Map<URI, RxFilterValue> tcTags = this.createRules(
+                scId, dpTree, coreSwitchId, -1, -1, coreSwitchEgrPort, true, false
             );
-            checkNotNull(
-                tcCompDelays,
-                "Failed to generate measure hardware configuration for service chain " + scId
-            );
-
-            // Report the time it took to do so
-            this.reportRuleComputationDelays(scId, tcCompDelays);
 
             // Get the set of OpenFlow rules that comprise the hardware configuration
             Set<FlowRule> offloadingRules = dpTree.hardwareConfigurationToSet();
@@ -624,15 +616,18 @@ public final class DeploymentManager
      * @param sc     the service chain to be offloaded
      * @param iface  the input interface of the configuration
      * @param dpTree the dataplane configuration of this service chain
-     * @param canBeOffloaded a hardware offloader will be involved right
-     *        after we place the service chain to the appropriate server
+     * @param isOffloadable a hardware offloader will be involved right
+     *        after we place the service chain to the appropriate server.
+     *        This offloader can either be a NIC or a programmable switch
      * @return RestServerSBDevice the selected server
      * @throws DeploymentException if network placement fails
      */
     private RestServerSBDevice serverPlacer(
-            ServiceChainInterface sc, String iface,
+            ServiceChainInterface sc,
+            String iface,
             NfvDataplaneTreeInterface dpTree,
-            boolean canBeOffloaded) throws DeploymentException {
+            boolean isOffloadable)
+            throws DeploymentException {
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be placed in a server");
         checkNotNull(dpTree, "[" + label() + "] NULL dataplane configuration cannot be placed in a server");
 
@@ -646,7 +641,7 @@ public final class DeploymentManager
         boolean autoscale = this.enableAutoscale;
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
-        log.info("[{}] Instantiating stateful Metron traffic classes", label());
+        log.info("[{}] Instantiating server-level Metron traffic classes", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
 
         // Obtain the ID of the service chain
@@ -655,10 +650,8 @@ public final class DeploymentManager
         // Get the configuration
         String confType = dpTree.type().toString();
         checkNotNull(confType, "[" + label() + "] Service chain configuration type is NULL");
-        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(canBeOffloaded);
+        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(isOffloadable);
         checkNotNull(serviceChainConf, "[" + label() + "] Service chain configuration is NULL");
-
-        log.info("[{}] Software Deployment for service chain {}", label(), scId);
 
         /**
          * This is the number of cores required for this service chain.
@@ -670,7 +663,7 @@ public final class DeploymentManager
         int numberOfCores = serviceChainConf.size();
         if (numberOfCores <= 0) {
             throw new DeploymentException(
-                "[" + label() + "] Software configuration for service chain " +
+                "[" + label() + "] Server-level configuration for service chain " +
                 sc.name() + " is empty; nothing to instantiate"
             );
         }
@@ -689,6 +682,8 @@ public final class DeploymentManager
 
             return null;
         }
+
+        DeviceId deviceId = server.deviceId();
 
         // And the NICs required to run
         Set<String> nics = new ConcurrentSkipListSet<String>();
@@ -712,7 +707,7 @@ public final class DeploymentManager
             // Ask from the topology manager to deploy this traffic class
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.deployTrafficClassOfServiceChain(
-                    server.deviceId(), scId, tcId,
+                    deviceId, scId, tcId, sc.scope(),
                     confType, conf, cpus, maxCpus,
                     nics, autoscale
                 );
@@ -730,7 +725,27 @@ public final class DeploymentManager
             serviceChainRuntimeInfo.add(tcRuntimeInfo);
 
             // Update the monitoring service
-            monitoringService.addActiveCoresToDevice(server.deviceId(), cpus);
+            monitoringService.addActiveCoresToDevice(deviceId, cpus);
+        }
+
+        // Requires rule installation into the server's NIC
+        if (sc.isServerLevel() && sc.isHardwareBased()) {
+            TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
+            long serverIngPort        = ingressPoint.portIds().get(0).toLong();
+
+            TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
+            long serverEgrPort       = egressPoint.portIds().get(0).toLong();
+
+            // Generate the hardware configuration of this service chain.
+            Map<URI, RxFilterValue> tcTags = this.createRules(
+                scId, dpTree, deviceId, serverIngPort, maxCpus, serverEgrPort, false, false
+            );
+
+            // Get the set of OpenFlow rules that comprise the hardware configuration
+            Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
+
+            // Push them to the switch
+            this.installRules(scId, rules, false);
         }
 
         // Push this information to the distributed store
@@ -788,32 +803,9 @@ public final class DeploymentManager
          * Generate the hardware configuration of this service chain.
          * Tagging flag is false to indicate total offloading.
          */
-        Map<URI, RxFilterValue> tcTags = null;
-        Map<URI, Float> tcCompDelays = new ConcurrentHashMap<URI, Float>();
-        try {
-            tcTags = dpTree.generateHardwareConfiguration(
-                scId, this.appId, switchId, egressPort, false, tcCompDelays
-            );
-        } catch (DeploymentException depEx) {
-            log.error("[{}] {}", label(), depEx.toString());
-            return false;
-        }
-        checkNotNull(
-            tcTags,
-            "Failed to generate hardware configuration for service chain " + scId
+        Map<URI, RxFilterValue> tcTags = this.createRules(
+            scId, dpTree, switchId, -1, -1, egressPort, false, true
         );
-        checkNotNull(
-            tcCompDelays,
-            "Failed to generate measure hardware configuration for service chain " + scId
-        );
-
-        // Build runtime information objects for each traffic class
-        this.buildRuntimeInfoForHwBasedTrafficClass(
-            scId, tcCompDelays.keySet(), switchId
-        );
-
-        // Report the time it took to do so
-        this.reportRuleComputationDelays(scId, tcCompDelays);
 
         // Get the set of OpenFlow rules that comprise the hardware configuration
         Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
@@ -876,8 +868,8 @@ public final class DeploymentManager
 
     @Override
     public boolean installRules(ServiceChainId scId, Set<FlowRule> rules, boolean update) {
-        if (rules == null) {
-            log.warn("[{}] \t Cannot install rules, empty set is given", label());
+        if ((rules == null) || (rules.isEmpty())) {
+            log.warn("[{}] \t Cannot install rules, NULL or empty set is given", label());
             return false;
         }
 
@@ -937,6 +929,62 @@ public final class DeploymentManager
         return true;
     }
 
+    /**
+     * Creates a set a service chain's hardware configuration for a given device.
+     *
+     * @param scId the target service chain
+     * @param dpTree the data plane tree of the service chain
+     * @param deviceId the device where hardware configuration will be applied
+     * @param ingressPort the ingress port where input traffic appears
+     * @param queuesNumber the number of input queues to spread the traffic across
+     * @param egressPort the egress port where matched traffic will be redirected
+     * @param tagging boolean indicator for tagging
+     * @param withRuntimeBuild boolean indicator for building traffic classes' run-time info
+     * @return a map of traffic class IDs to their Rx filters
+     */
+    private Map<URI, RxFilterValue> createRules(
+            ServiceChainId            scId,
+            NfvDataplaneTreeInterface dpTree,
+            DeviceId                  deviceId,
+            long                      ingressPort,
+            long                      queuesNumber,
+            long                      egressPort,
+            boolean                   tagging,
+            boolean                   withRuntimeBuild) {
+        // Maps traffic classes to tag values
+        Map<URI, RxFilterValue> tcTags = null;
+        // Measures the delay to computate the rules
+        Map<URI, Float> tcCompDelays = new ConcurrentHashMap<URI, Float>();
+        try {
+            tcTags = dpTree.generateHardwareConfiguration(
+                scId, this.appId, deviceId, ingressPort, queuesNumber, egressPort, tagging, tcCompDelays
+            );
+        } catch (DeploymentException depEx) {
+            log.error("[{}] {}", label(), depEx.toString());
+            return null;
+        }
+        checkNotNull(
+            tcTags,
+            "Failed to generate hardware configuration for service chain " + scId
+        );
+        checkNotNull(
+            tcCompDelays,
+            "Failed to measure hardware configuration for service chain " + scId
+        );
+
+        // Report the time it took to do so
+        this.reportRuleComputationDelays(scId, tcCompDelays);
+
+        // Build runtime information objects for each traffic class
+        if (withRuntimeBuild) {
+            this.buildRuntimeInfoForHwBasedTrafficClass(
+                scId, tcCompDelays.keySet(), deviceId
+            );
+        }
+
+        return tcTags;
+    }
+
     @Override
     public boolean updateRules(ServiceChainId scId, Set<FlowRule> rules) {
         return this.installRules(scId, rules, true);
@@ -961,7 +1009,7 @@ public final class DeploymentManager
     }
 
     @Override
-    public boolean hasHwOffloading() {
+    public boolean hwOffloadingEnabled() {
         return this.enableHwOffloading;
     }
 
@@ -1300,14 +1348,13 @@ public final class DeploymentManager
 
         // Verify that there is no memory error
         checkNotNull(
-            rxFilter, "[" + label() + "] NULL Rx mechanism for traffic class " +
-            tcId + " of service chain " + scId
+            rxFilter,
+            "[" + label() + "] NULL Rx mechanism for traffic class " + tcId + " of service chain " + scId
         );
 
         checkArgument(
-            (rxFilterValues != null) && !rxFilterValues.isEmpty(),
-            "[" + label() + "] NULL Rx filter values for traffic class " +
-            tcId + " of service chain " + scId
+            (rxFilterValues != null),
+            "[" + label() + "] NULL Rx filter values for traffic class " + tcId + " of service chain " + scId
         );
 
         // Provide relevant information for this group of traffic classes to the Tag Manager
@@ -1552,10 +1599,19 @@ public final class DeploymentManager
     /**
      * Removes any rules installed by a service chain.
      *
-     * @param scId the Id of the service chain
+     * @param scId the ID of the service chain
      */
     private void removeRulesOfServiceChain(ServiceChainId scId) {
         Map<String, NfvDataplaneTreeInterface> dpTrees = serviceChainService.runnableServiceChains(scId);
+
+        if ((dpTrees == null) || (dpTrees.values() == null)) {
+            log.warn(
+                "[{}] Service chain with ID {} is not runnable; no rules for removal",
+                label(),
+                scId
+            );
+            return;
+        }
 
         for (NfvDataplaneTreeInterface dpTree : dpTrees.values()) {
             // Get the set of OpenFlow rules that comprise the hardware configuration
@@ -1605,10 +1661,28 @@ public final class DeploymentManager
      * Returns whether there are network elements present to
      * perform the HW offloading.
      *
+     * @param sc the service chain that requires hardware offloading
      * @return boolean status of the HW offloading process
      */
-    private boolean canDoHwOffloading() {
-        return this.hasHwOffloading() && topologyService.hasSwitches();
+    private boolean canDoNetworkOffloading(ServiceChainInterface sc) {
+        // Server-level deployment implies offloading into local NICs
+        if (sc.isServerLevel()) {
+            return false;
+        }
+
+        checkArgument(
+            this.hwOffloadingEnabled(),
+            "Network-wide service chain deployment requires to enable Metron's hardware offloading. " +
+            "Set configuration property 'enableHwOffloading = true'"
+        );
+
+        checkArgument(
+            topologyService.hasSwitches(),
+            "Network-wide service chain deployment requires the presence of programmable switches. " +
+            "If no programmable switches exist, use scope='server-hardware' or scope='server-software'"
+        );
+
+        return true;
     }
 
     /**

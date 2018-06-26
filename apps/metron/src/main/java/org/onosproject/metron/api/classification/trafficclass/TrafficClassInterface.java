@@ -26,8 +26,8 @@ import org.onosproject.metron.api.exceptions.DeploymentException;
 import org.onosproject.metron.api.processing.ProcessingBlockClass;
 import org.onosproject.metron.api.processing.ProcessingLayer;
 
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.DeviceId;
@@ -549,6 +549,12 @@ public interface TrafficClassInterface {
      *        demands this rule
      * @param deviceId the device where the rule
      *        will be installed
+     * @param tcId the traffic class ID where the rule
+     *        belongs to
+     * @param inputPort the input port where input
+     *        packet arrived
+     * @param queueIndex the NIC queue where input
+     *        packet will be sent
      * @param outputPort the port of the device where
      *        the rule will be sent out
      * @param rxFilter the Rx filter mechanism
@@ -566,6 +572,9 @@ public interface TrafficClassInterface {
     Set<FlowRule> toOpenFlowRules(
         ApplicationId applicationId,
         DeviceId      deviceId,
+        URI           tcId,
+        long          inputPort,
+        long          queueIndex,
         long          outputPort,
         RxFilter      rxFilter,
         RxFilterValue rxFilterValue,

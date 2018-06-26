@@ -34,8 +34,8 @@ import org.onosproject.metron.impl.classification.trafficclass.TrafficClass;
 import org.onosproject.metron.impl.processing.Blocks;
 
 import org.onosproject.core.ApplicationId;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.Path;
@@ -405,7 +405,11 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     @Override
     public synchronized Map<Integer, String> softwareConfiguration(boolean withHwOffloading) {
         if (this.softwareConfiguration.size() == 0) {
-            this.generateSoftwareConfiguration(withHwOffloading);
+            try {
+                this.generateSoftwareConfiguration(withHwOffloading);
+            } catch (DeploymentException dEx) {
+                return null;
+            }
         }
 
         return this.softwareConfiguration;
@@ -478,7 +482,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     }
 
     @Override
-    public void generateSoftwareConfiguration(boolean withHwOffloading) {
+    public void generateSoftwareConfiguration(boolean withHwOffloading)
+            throws DeploymentException {
         // The software configuration is already computed
         if (this.softwareConfiguration.size() > 0) {
             return;
@@ -539,10 +544,16 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             String filterName = "filter" + tcCount;
 
             // B. Read part
-            String readOps = this.generateReadOperations(
-                tcSet, filterName, action, withHwOffloading
-            );
-            tcConf += readOps;
+            String readOps = "";
+
+            try {
+                readOps = this.generateReadOperations(
+                    tcSet, filterName, action, withHwOffloading
+                );
+                tcConf += readOps;
+            } catch (DeploymentException dEx) {
+                throw dEx;
+            }
 
             // C. Stateful Write part
             tcConf += tc.writeOperationsAsString();
@@ -572,8 +583,13 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
     @Override
     public Map<URI, RxFilterValue> generateHardwareConfiguration(
-            ServiceChainId scId, ApplicationId appId,
-            DeviceId deviceId, long outputPort, boolean tagging,
+            ServiceChainId  scId,
+            ApplicationId   appId,
+            DeviceId        deviceId,
+            long            inputPort,
+            long            queuesNumber,
+            long            outputPort,
+            boolean         tagging,
             Map<URI, Float> tcCompDelay)
             throws DeploymentException {
         // The hardware configuration is already computed
@@ -609,7 +625,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             if (tagging) {
                 rxFilter = this.tagService().getTaggingMechanismOfTrafficClassGroup(tcGroupId);
                 rxFilterValue = this.tagService().getFirstUsedTagOfTrafficClassGroup(tcGroupId);
-                log.info("[{}] \t Traffic class {} -> Tag {}", label(), tcGroupId, rxFilterValue);
+                log.info("[{}] \t Traffic class {} --> Tag {}", label(), tcGroupId, rxFilterValue);
                 tagMap.put(tcGroupId, rxFilterValue);
             }
 
@@ -624,8 +640,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             Set<FlowRule> rules = null;
 
             try {
-                rules = convertTrafficClassSetToRules(
-                    tcSet, appId, deviceId, outputPort, rxFilter, rxFilterValue, tagging
+                rules = convertTrafficClassSetToOpenFlowRules(
+                    tcSet, tcGroupId, appId, deviceId,
+                    inputPort, queuesNumber, outputPort,
+                    rxFilter, rxFilterValue, tagging
                 );
             } catch (DeploymentException depEx) {
                 throw depEx;
@@ -693,10 +711,14 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      * Translates a set of TC objects into hardware rules.
      *
      * @param tcSet the set of traffic classes to be translated
+     * @param tcGroupId the traffic class ID of this group
      * @param appId the application ID that demands
      *        this hardware configuration
      * @param deviceId the device where the hardware
      *        configuration will be installed
+     * @param inputPort the input port where packet arrived
+     * @param queuesNumber the number of input queues to spread
+     *        the traffic across
      * @param outputPort the port of the device where the
      *        hardware configuration will be sent out
      * @param rxFilter runtime information about the Rx tagging
@@ -708,10 +730,13 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      * @return set of rules for this traffic class
      * @throws DeploymentException if the translation to rules fails
      */
-    public static Set<FlowRule> convertTrafficClassSetToRules(
+    public static Set<FlowRule> convertTrafficClassSetToOpenFlowRules(
             Set<TrafficClassInterface> tcSet,
+            URI                        tcGroupId,
             ApplicationId              appId,
             DeviceId                   deviceId,
+            long                       inputPort,
+            long                       queuesNumber,
             long                       outputPort,
             RxFilter                   rxFilter,
             RxFilterValue              rxFilterValue,
@@ -719,12 +744,18 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         // Store the rules of this group of traffic classes
         Set<FlowRule> rules = Sets.<FlowRule>newConcurrentHashSet();
 
+        long queueIndex = 0;
         for (TrafficClassInterface tc : tcSet) {
+            // Round-robin across the available queues or negative
+            queueIndex = (queuesNumber > 0) ? (queueIndex++ % queuesNumber) : -1;
+
             // Compute the SDN rules of this traffic class
             try {
                 rules.addAll(
                     tc.toOpenFlowRules(
-                        appId, deviceId, outputPort, rxFilter, rxFilterValue, tagging
+                        appId, deviceId, tcGroupId,
+                        inputPort, queueIndex, outputPort,
+                        rxFilter, rxFilterValue, tagging
                     )
                 );
             } catch (DeploymentException depEx) {
@@ -793,83 +824,46 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      * @param action the action taken by this classifier (i.e., allow or drop)
      * @param withHwOffloading flag that indicates potential hardware classification
      *        before the software classification
+     * @throws DeploymentException if cannot decide which operations to offload
      */
     private String generateReadOperations(
-            Set<TrafficClassInterface> tcSet, String filterName, String action,
-            boolean withHwOffloading) {
-        String tcConf = "";
-
-        // Check if any traffic class in this set has software operations
-        boolean hasSoftwareRules = false;
-        for (TrafficClassInterface trafCl : tcSet) {
-             if (trafCl.hasSoftwareRules()) {
-                hasSoftwareRules = true;
-                break;
-             }
-        }
-
+            Set<TrafficClassInterface> tcSet,
+            String filterName,
+            String action,
+            boolean withHwOffloading) throws DeploymentException {
         // All read operations will be executed in software
-        boolean allReadOperations = !withHwOffloading;
-        // Only the software-based read operations will be present
-        boolean onlySoftReadOperations = withHwOffloading && hasSoftwareRules;
+        boolean allReadOperationsInSoft = !withHwOffloading;
 
-        // The entire classifier is implemented in software
-        if (allReadOperations) {
-            tcConf += filterName + " :: IPFilter(";
+        // Indicates the presence of at least one rule
+        boolean atLeastOne = false;
 
-            boolean atLeastOne = false;
+        String tcConf = filterName + " :: IPFilter(";
 
-            // Get all the traffic classes of this group
-            for (TrafficClassInterface trafCl : tcSet) {
-                // Get the read operation of this traffic class
-                String readOps = trafCl.readOperationsAsString();
+        // Get all the traffic classes of this group
+        for (TrafficClassInterface trafCl : tcSet) {
+            // Get the read operation of this traffic class
+            String readOps = allReadOperationsInSoft ?
+                trafCl.readOperationsAsString() : trafCl.softReadOperationsAsString();
 
-                // Proceed if you have non-empty reads
-                if (readOps.isEmpty()) {
-                    continue;
-                }
-
-                atLeastOne = true;
-                tcConf += action + " " + readOps + ", ";
+            // Proceed if you have non-empty reads
+            if (readOps.isEmpty()) {
+                continue;
             }
 
-            // Wildcard traffic class if no traffic class exists
-            if (!atLeastOne) {
-                tcConf += "allow any";
-            } else {
-                // Remove the trailing ', '
-                tcConf = tcConf.substring(0, tcConf.length() - 2);
-            }
-
-            // Drop whatever does not match above
-            tcConf += ", deny all) -> ";
-        // The part of the classifier that cannot be offloaded is in software
-        } else if (onlySoftReadOperations) {
-            tcConf += filterName + " :: IPFilter(";
-
-            boolean atLeastOne = false;
-
-            for (TrafficClassInterface trafCl : tcSet) {
-                // Get the software read operation of this traffic class
-                String readOps = trafCl.softReadOperationsAsString();
-
-                // Proceed if you have non-empty reads
-                if (readOps.isEmpty()) {
-                    continue;
-                }
-
-                atLeastOne = true;
-                tcConf += action + " " + readOps + ", ";
-            }
-
-            // Removes trailing  ', '
-            if (atLeastOne) {
-                tcConf = tcConf.substring(0, tcConf.length() - 2);
-            }
-
-            // Drop whatever does not match above
-            tcConf += ", deny all) -> ";
+            atLeastOne = true;
+            tcConf += action + " " + readOps + ", ";
         }
+
+        // Remove the trailing ', '
+        if (atLeastOne) {
+            tcConf = tcConf.substring(0, tcConf.length() - 2);
+        // No rules found, match everything
+        } else {
+            tcConf += "allow any";
+        }
+
+        // Drop whatever does not match above
+        tcConf += ", deny all) -> ";
 
         return tcConf;
     }

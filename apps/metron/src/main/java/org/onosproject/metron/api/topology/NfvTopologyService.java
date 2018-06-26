@@ -18,6 +18,7 @@ package org.onosproject.metron.api.topology;
 
 import org.onosproject.metron.api.server.TrafficClassRuntimeInfo;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
+import org.onosproject.metron.api.servicechain.ServiceChainScope;
 
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
 
@@ -237,6 +238,7 @@ public interface NfvTopologyService {
      * @param deviceId the server where the deployment takes place
      * @param scId the ID of the service chain
      * @param tcId the ID of the service chain's traffic class
+     * @param scScope the scope of the service chain
      * @param configurationType the type of the target packet processing element
      *        Can be Click-based (click) or a blackbox NF (standalone)
      * @param configuration the packet processing instructions as a string
@@ -248,15 +250,16 @@ public interface NfvTopologyService {
      *         of this traffic class
      */
     TrafficClassRuntimeInfo deployTrafficClassOfServiceChain(
-        DeviceId       deviceId,
-        ServiceChainId scId,
-        URI            tcId,
-        String         configurationType,
-        String         configuration,
-        int            numberOfCores,
-        int            maxNumberOfCores,
-        Set<String>    nicIds,
-        boolean        autoscale
+        DeviceId          deviceId,
+        ServiceChainId    scId,
+        URI               tcId,
+        ServiceChainScope scScope,
+        String            configurationType,
+        String            configuration,
+        int               numberOfCores,
+        int               maxNumberOfCores,
+        Set<String>       nicIds,
+        boolean           autoscale
     );
 
     /**
@@ -369,7 +372,7 @@ public interface NfvTopologyService {
      * @param numberOfCores the number of CPU cores to be used for this traffic class
      * @param maxNumberOfCores estimation of the maximum the number of CPUs you might need
      * @param nicIds the IDs of the NICs that participate in the processing
-     * @param rxFilterMethod tagging method supported by the NIC of this service chain
+     * @param rxFilterMethodStr tagging method supported by the NIC of this service chain
      * @return TrafficClassRuntimeInfo a description of the runtime information
      *         of this service chain
      */
@@ -383,7 +386,7 @@ public interface NfvTopologyService {
             int            numberOfCores,
             int            maxNumberOfCores,
             Set<String>    nicIds,
-            String         rxFilterMethod
+            String         rxFilterMethodStr
     );
 
 }

@@ -39,8 +39,8 @@ import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.instructions.Instructions;
-import org.onosproject.drivers.server.devices.MacRxFilterValue;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.MacRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import org.onlab.packet.MacAddress;
 

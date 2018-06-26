@@ -230,8 +230,7 @@ public class ServiceChain implements ServiceChainInterface {
     }
 
     @Override
-    public ServiceChainGraphInterface
-            serviceChainGraph() {
+    public ServiceChainGraphInterface serviceChainGraph() {
         return this.serviceChainGraph;
     }
 

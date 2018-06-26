@@ -18,8 +18,8 @@ package org.onosproject.metron.api.server;
 
 import org.onosproject.metron.api.servicechain.ServiceChainId;
 
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import org.onosproject.net.DeviceId;
 
@@ -131,9 +131,9 @@ public interface TrafficClassRuntimeInfo {
      * device for this traffic class.
      *
      * @param deviceId the NFV device to be configured
-     * @param nics     the set of NIC IDs to be allocated
+     * @param nicIds   the set of NIC IDs to be allocated
      */
-    void setNicsOfDevice(DeviceId deviceId, Set<String> nics);
+    void setNicsOfDevice(DeviceId deviceId, Set<String> nicIds);
 
     /**
      * Adds a new NIC ID on a device for this traffic class.

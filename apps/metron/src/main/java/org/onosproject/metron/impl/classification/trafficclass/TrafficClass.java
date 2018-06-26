@@ -57,11 +57,13 @@ import org.onlab.packet.MplsLabel;
 import org.onlab.packet.VlanId;
 
 import org.onosproject.core.ApplicationId;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.MacRxFilterValue;
-import org.onosproject.drivers.server.devices.MplsRxFilterValue;
-import org.onosproject.drivers.server.devices.VlanRxFilterValue;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicFlowRule;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.MacRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.MplsRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.VlanRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.DefaultDpdkNicFlowRule;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.flow.FlowRule;
@@ -1156,6 +1158,9 @@ public class TrafficClass implements TrafficClassInterface {
     public Set<FlowRule> toOpenFlowRules(
             ApplicationId applicationId,
             DeviceId      deviceId,
+            URI           tcId,
+            long          inputPort,
+            long          queueIndex,
             long          outputPort,
             RxFilter      rxFilter,
             RxFilterValue rxFilterValue,
@@ -1179,9 +1184,9 @@ public class TrafficClass implements TrafficClassInterface {
         // Update the application and device ID members of this traffic class
         this.applicationId = applicationId;
         this.deviceId = deviceId;
-
         int priority = DEFAULT_PRIORITY;
         ClickFlowRuleAction action = this.isDiscarded() ? DROP : ALLOW;
+        boolean isServerDevice = this.deviceId.toString().contains("rest:");
 
         // For each datapath component of this traffic class
         for (String tc : this.binaryTree.datapathTrafficClasses()) {
@@ -1204,10 +1209,10 @@ public class TrafficClass implements TrafficClassInterface {
             // Go through the list and translate each item into an OpenFlow rule
             for (Set<TextualPacketFilter> pfs : targetPacketFilters) {
                 FlowRule rule = this.packetFiltersToOpenFlowRule(
-                    applicationId, deviceId,
-                    pfs, outputPort, priority,
-                    rxFilter, rxFilterValue,
-                    action
+                    applicationId, deviceId, tcId, pfs,
+                    inputPort, queueIndex, outputPort,
+                    priority, rxFilter, rxFilterValue,
+                    action, isServerDevice
                 );
                 rules.add(rule);
             }
@@ -1337,32 +1342,42 @@ public class TrafficClass implements TrafficClassInterface {
      *        this traffic class
      * @param deviceId the device where this traffic class will
      *        be installed
+     * @param tcId the traffic class ID where the rule
+     *        belongs to
      * @param packetFilters set of packet filters that comprise
      *        a traffic class
+     * @param inputPort the input port where packet arrived
+     * @param queueIndex the NIC queue where input packet will be sent
      * @param outputPort the output port to be chosen for this
      *        traffic class (if action is ALLOW)
      * @param priority the priority of this traffic class
      * @param rxFilter the type of tagging supported by this device
      * @param rxFilterValue the actual tag to be used
      * @param action the action of this traffic class (ALLOW or DROP)
+     * @param isServerDevice indicates whether the target device is a server
      * @return a FlowRule object that encodes the traffic class in hardware
      */
     private FlowRule packetFiltersToOpenFlowRule(
             ApplicationId            applicationId,
             DeviceId                 deviceId,
+            URI                      tcId,
             Set<TextualPacketFilter> packetFilters,
+            long                     inputPort,
+            long                     queueIndex,
             long                     outputPort,
             int                      priority,
             RxFilter                 rxFilter,
             RxFilterValue            rxFilterValue,
-            ClickFlowRuleAction      action) {
-        // Rule builder
-        FlowRule.Builder rule = new DefaultFlowRule.Builder();
+            ClickFlowRuleAction      action,
+            boolean                  isServerDevice) {
 
-        rule.forDevice(deviceId);
-        rule.fromApp(applicationId);
-        rule.withPriority(priority);
-        rule.makePermanent();
+        // Rule builder
+        FlowRule.Builder ruleBuilder = new DefaultFlowRule.Builder();
+
+        ruleBuilder.forDevice(deviceId);
+        ruleBuilder.fromApp(applicationId);
+        ruleBuilder.withPriority(priority);
+        ruleBuilder.makePermanent();
 
         /**
          * MATCH
@@ -1374,7 +1389,7 @@ public class TrafficClass implements TrafficClassInterface {
         for (TextualPacketFilter pf : packetFilters) {
             pf.updateTrafficSelector(selector, packetFilters);
         }
-        rule.withSelector(selector.build());
+        ruleBuilder.withSelector(selector.build());
 
         /**
          * ACTION
@@ -1395,7 +1410,7 @@ public class TrafficClass implements TrafficClassInterface {
                     );
                 }
 
-                // Use the first filter of the set as a tag
+                // Use a desired header field as a tag
                 if (rxFilter == RxFilter.VLAN) {
                     VlanId tag = ((VlanRxFilterValue) rxFilterValue).value();
                     log.debug("VLAN tagging using {}", tag);
@@ -1418,13 +1433,38 @@ public class TrafficClass implements TrafficClassInterface {
                 treatment.decNwTtl();
             }
 
-            treatment.add(
-                Instructions.createOutput(PortNumber.portNumber(outputPort))
-            );
-        }
-        rule.withTreatment(treatment.build());
+            // This rule contains input dispatching information
+            if ((inputPort >= 0) && (queueIndex >= 0)) {
+                treatment.add(
+                    Instructions.setQueue(queueIndex, PortNumber.portNumber(inputPort))
+                );
+            }
 
-        return rule.build();
+            // This rule contains output information
+            if (outputPort >= 0) {
+                treatment.add(
+                    Instructions.createOutput(PortNumber.portNumber(outputPort))
+                );
+            }
+        }
+        ruleBuilder.withTreatment(treatment.build());
+
+        FlowRule rule = ruleBuilder.build();
+
+        // A server device's NIC rule requires a few more things
+        if (isServerDevice) {
+            NicFlowRule.Builder serverRuleBuilder = new DefaultDpdkNicFlowRule.Builder();
+
+            serverRuleBuilder.fromFlowRule(rule);
+            serverRuleBuilder.withTrafficClassId(tcId.toString());
+            // TODO: Pass the interface name as announced by the agent (e.g., fd0)
+            serverRuleBuilder.withInterfaceName(this.inputInterface());
+            serverRuleBuilder.assignedToCpuCore(queueIndex);
+
+            return serverRuleBuilder.build();
+        }
+
+        return rule;
     }
 
     /**
