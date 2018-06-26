@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "fw-8rules-hw-napt",
+                        "name"       : "metron-net-mac-fw-8rules-hw-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
