@@ -26,7 +26,7 @@ import org.onosproject.net.DeviceId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Path;
 import org.onosproject.net.flow.FlowRule;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import java.net.URI;
 import java.util.Set;
@@ -301,8 +301,10 @@ public interface NfvDataplaneTreeInterface {
      * @param withHwOffloading if true the generated software
      *        configuration contains only part of the entire
      *        service chain
+     * @throws DeploymentException if the generation fails
      */
-    void generateSoftwareConfiguration(boolean withHwOffloading);
+    void generateSoftwareConfiguration(boolean withHwOffloading)
+        throws DeploymentException;
 
     /**
      * Generates the configuration of each traffic class
@@ -314,6 +316,10 @@ public interface NfvDataplaneTreeInterface {
      *        this hardware configuration
      * @param deviceId the device where the hardware
      *        configuration will be installed
+     * @param inputPort the input port where hardware
+     *        configuration is applied
+     * @param queuesNumber the number of input queues to
+     *        spread the traffic across
      * @param outputPort the port of the device where the
      *        hardware configuration will be sent out
      * @param tagging indicates that tagging needs to be associated
@@ -327,6 +333,8 @@ public interface NfvDataplaneTreeInterface {
         ServiceChainId  scId,
         ApplicationId   appId,
         DeviceId        deviceId,
+        long            inputPort,
+        long            queuesNumber,
         long            outputPort,
         boolean         tagging,
         Map<URI, Float> tcCompDelay

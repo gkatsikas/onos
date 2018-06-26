@@ -19,8 +19,8 @@ package org.onosproject.metron.api.dataplane;
 import org.onosproject.metron.api.classification.trafficclass.TrafficClassInterface;
 import org.onosproject.metron.api.structures.Pair;
 
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import java.net.URI;
 import java.util.Set;

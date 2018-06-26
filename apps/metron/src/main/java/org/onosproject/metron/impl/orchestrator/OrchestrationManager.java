@@ -45,8 +45,8 @@ import org.onosproject.net.flow.FlowRule;
 import org.onosproject.store.service.WallClockTimestamp;
 
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 import org.onosproject.drivers.server.stats.CpuStatistics;
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
 
@@ -326,7 +326,7 @@ public final class OrchestrationManager
 
                         // Check for potential load imbalance
                         this.checkForLoadImbalance(
-                            scId,
+                            sc,
                             tcId,
                             deviceId,
                             stats,
@@ -351,7 +351,7 @@ public final class OrchestrationManager
      * Given the statistics obtained for a traffic class, check whether
      * this traffic class exhibits overload and act accordingly.
      *
-     * @param scId the ID of the overloaded service chain
+     * @param sc the overloaded service chain
      * @param tcId the ID of the overloaded traffic class
      * @param deviceId the ID of the overloaded device
      * @param stats monitoring statistics for a given traffic class
@@ -360,7 +360,7 @@ public final class OrchestrationManager
      * @param isRebalanced indicates that this traffic class is just rebalanced
      */
     private void checkForLoadImbalance(
-            ServiceChainId         scId,
+            ServiceChainInterface  sc,
             URI                    tcId,
             DeviceId               deviceId,
             MonitoringStatistics   stats,
@@ -373,6 +373,8 @@ public final class OrchestrationManager
             isRebalanced.set(false);
             return;
         }
+
+        ServiceChainId scId = sc.id();
 
         // Fetch the dataplane tree of this service chain
         NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(
@@ -411,13 +413,13 @@ public final class OrchestrationManager
             monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, load);
 
             // We let the agent handle imbalances
-            if (this.autoScale) {
+            if (this.autoScale || sc.isSoftwareBased()) {
                 continue;
             }
 
             // An overload has been detected for more than one iterations
             if (load >= CPU_OVERLOAD_LIMIT) {
-                // Do the trick
+                // Scale out
                 this.deflateLoad(
                     scId,
                     tcId,
@@ -433,7 +435,7 @@ public final class OrchestrationManager
             // We are at a low load level for the first time
             } else if ((load <= CPU_UNDERLOAD_LIMIT) &&
                        (previousLoad.get() >= CPU_UNDERLOAD_LIMIT)) {
-                // Do the trick
+                // Scale in
                 this.inflateLoad(
                     scId,
                     tcId,
@@ -508,13 +510,14 @@ public final class OrchestrationManager
         RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
         // Get useful information about the switch that will host the new rules
-        DeviceId swId = tree.pathEstablisher().offloaderSwitchId();
-        long   swPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+        DeviceId  swId = tree.pathEstablisher().offloaderSwitchId();
+        long swOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
         // Compute the new rules
-        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToRules(
-            changedTcs, deployerService.applicationId(), swId,
-            (int) swPort, filterMechanism, changedTag, true
+        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
+            changedTcs, tcId, deployerService.applicationId(), swId,
+            (long) -1, (long) -1, swOutPort,
+            filterMechanism, changedTag, true
         );
 
         // STOP
@@ -593,13 +596,14 @@ public final class OrchestrationManager
         RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
         // Get useful information about the switch that will host the new rules
-        DeviceId swId = tree.pathEstablisher().offloaderSwitchId();
-        long   swPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+        DeviceId  swId = tree.pathEstablisher().offloaderSwitchId();
+        long swOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
         // Compute the new rules
-        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToRules(
-            changedTcs, deployerService.applicationId(), swId,
-            (int) swPort, filterMechanism, changedTag, true
+        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
+            changedTcs, tcId, deployerService.applicationId(), swId,
+            (long) -1, (long) -1, swOutPort,
+            filterMechanism, changedTag, true
         );
 
         // STOP

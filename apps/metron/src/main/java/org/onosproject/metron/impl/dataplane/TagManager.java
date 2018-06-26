@@ -27,11 +27,11 @@ import org.onosproject.metron.impl.classification.trafficclass.TrafficClass;
 // ONOS libraries
 import org.onosproject.core.CoreService;
 import org.onosproject.core.ApplicationId;
-import org.onosproject.drivers.server.devices.NicRxFilter.RxFilter;
-import org.onosproject.drivers.server.devices.MacRxFilterValue;
-import org.onosproject.drivers.server.devices.MplsRxFilterValue;
-import org.onosproject.drivers.server.devices.VlanRxFilterValue;
-import org.onosproject.drivers.server.devices.RxFilterValue;
+import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.MacRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.MplsRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.VlanRxFilterValue;
+import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 // Apache libraries
 import org.apache.felix.scr.annotations.Service;
@@ -326,6 +326,11 @@ public final class TagManager implements TagService {
         Set<RxFilterValue>         rxFilterValues) {
         // Inform the tag manager about the the tagging mechanism of this group of traffic classes
         this.setTaggingMechanismOfTrafficClassGroup(tcGroupId, rxFilter);
+
+        // RSS mode does not require dynamic load balancing
+        if (rxFilter == RxFilter.RSS) {
+            return;
+        }
 
         // Inform the tag manager about the tags that can be used by this group of traffic classes
         this.setAvailableTagsOfTrafficClassGroup(tcGroupId, rxFilterValues);

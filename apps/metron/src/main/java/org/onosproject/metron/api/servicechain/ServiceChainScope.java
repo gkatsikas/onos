@@ -78,7 +78,7 @@ public enum ServiceChainScope {
      * @return boolean validity status
      */
     public static boolean isValid(ServiceChainScope scScope) {
-        return MAP.get(scScope.toString().toUpperCase()) != null;
+        return MAP.get(scScope.toString().toLowerCase()) != null;
     }
 
     /**
@@ -88,7 +88,7 @@ public enum ServiceChainScope {
      * @return boolean validity status
      */
     public static boolean isValid(String scScopeStr) {
-        return MAP.get(scScopeStr.toUpperCase()) != null;
+        return MAP.get(scScopeStr.toLowerCase()) != null;
     }
 
     /**
