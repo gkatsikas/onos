@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "fw-10rules-hw-snort",
+                        "name"       : "metron-srv-flowdir-fw-1rules-hw-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
@@ -49,7 +49,7 @@
                                         "block": "IPClassifier",
                                         "instance": "nf1_ipCl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/8rules-hw-conf.json"
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/1rules-hw-conf.json"
                                     },
                                     {
                                         "block": "EtherEncap",

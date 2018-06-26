@@ -4,11 +4,11 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "snort",
+                        "name"       : "metron-srv-rss-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
-                        "scope"      : "server-rules",
+                        "scope"      : "server-rss",
                         "components" : [
                             {
                                 "name"  : "nf1",

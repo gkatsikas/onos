@@ -1,10 +1,10 @@
-{
+
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "fw-4000rules-hw",
+                        "name"       : "metron-net-mac-fw-10rules-hw",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
@@ -43,7 +43,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/4000rules.json"
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/10rules.json"
                                     },
                                     {
                                         "block": "Discard",
