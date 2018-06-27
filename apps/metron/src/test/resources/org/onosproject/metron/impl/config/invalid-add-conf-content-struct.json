@@ -8,6 +8,7 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 5,
+                        "scope"      : "network-mac",
                         "components" : {
                             "name"       : "nf1",
                             "type"       : "click",
