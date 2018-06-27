@@ -114,17 +114,12 @@ public class ServerManager
      */
     private static final String PARAM_TITLE                = "servicechains";
 
-    private static final String PARAM_ID                   = "id";
-    private static final String PARAM_CPUS                 = "cpus";
     private static final String PARAM_MAX_CPUS             = "maxCpus";
     private static final String PARAM_AUTOSCALE            = "autoscale";
-    private static final String PARAM_NICS                 = "nics";
     private static final String PARAM_CONFIG_TYPE          = "configType";
     private static final String PARAM_CONFIG               = "config";
     private static final String PARAM_STATUS               = "status";
 
-    private static final String NIC_PARAM_RX_FILTER        = "rxFilter";
-    private static final String NIC_PARAM_RX_METHOD        = "method";
     private static final String NIC_PARAM_RX_METHOD_VALUES = "values";
 
     /**
@@ -345,13 +340,13 @@ public class ServerManager
         ObjectNode chainObjNode = mapper.createObjectNode();
 
         // Add the service chain's traffic class ID
-        chainObjNode.put(PARAM_ID, tcId.toString());
+        chainObjNode.put(BasicServerDriver.PARAM_ID, tcId.toString());
 
         // Add the Rx filter method
         ObjectNode rxFilterMethodNode = mapper.createObjectNode().put(
-            NIC_PARAM_RX_METHOD, rxFilterMethodStr
+            BasicServerDriver.NIC_PARAM_RX_METHOD, rxFilterMethodStr
         );
-        chainObjNode.put(NIC_PARAM_RX_FILTER, rxFilterMethodNode);
+        chainObjNode.put(BasicServerDriver.NIC_PARAM_RX_FILTER, rxFilterMethodNode);
 
         // Add the service chain's configuration type
         chainObjNode.put(PARAM_CONFIG_TYPE, configurationType);
@@ -360,7 +355,7 @@ public class ServerManager
         chainObjNode.put(PARAM_CONFIG, configuration);
 
         // Add the number of CPUs to be used for this service chain
-        chainObjNode.put(PARAM_CPUS, Integer.toString(numberOfCores));
+        chainObjNode.put(BasicServerDriver.PARAM_CPUS, Integer.toString(numberOfCores));
 
         // Add an estimation of the maximum the number of CPUs you might need
         chainObjNode.put(PARAM_MAX_CPUS, Integer.toString(maxNumberOfCores));
@@ -369,7 +364,7 @@ public class ServerManager
         chainObjNode.put(PARAM_AUTOSCALE, new Boolean(autoscale));
 
         // Add the list of NICs
-        ArrayNode nicArrayNode = chainObjNode.putArray(PARAM_NICS);
+        ArrayNode nicArrayNode = chainObjNode.putArray(BasicServerDriver.PARAM_NICS);
         for (String nic : nicIds) {
             nicArrayNode.add(nic);
         }
@@ -448,7 +443,7 @@ public class ServerManager
 
         // Add the new number of CPUs. Negative means that it has not changed.
         if (numberOfCores > 0) {
-            sendObjNode.put(PARAM_CPUS, Integer.toString(numberOfCores));
+            sendObjNode.put(BasicServerDriver.PARAM_CPUS, Integer.toString(numberOfCores));
         }
 
         // Add a new estimation of the maximum the number of CPUs. Negative means that it has not changed.
@@ -536,7 +531,7 @@ public class ServerManager
         checkNotNull(jsonMap, "[" + label() + "] Received NULL runtime information object");
 
         // Get the ID of the service chain
-        String id = BasicServerDriver.get(jsonNode, PARAM_ID);
+        String id = BasicServerDriver.get(jsonNode, BasicServerDriver.PARAM_ID);
 
         // And verify that this is the traffic class we want to monitor
         if (!id.equals(tcId.toString())) {
@@ -546,8 +541,8 @@ public class ServerManager
             );
         }
 
-        JsonNode    tagNode = objNode.path(NIC_PARAM_RX_FILTER);
-        String    tagMethod = BasicServerDriver.get(tagNode, NIC_PARAM_RX_METHOD);
+        JsonNode    tagNode = objNode.path(BasicServerDriver.NIC_PARAM_RX_FILTER);
+        String    tagMethod = BasicServerDriver.get(tagNode, BasicServerDriver.NIC_PARAM_RX_METHOD);
         JsonNode tagValNode = tagNode.path(NIC_PARAM_RX_METHOD_VALUES);
         String          nic = tcInfo.nicsOfDevice(deviceId).iterator().next();
 
@@ -577,38 +572,15 @@ public class ServerManager
                 );
             }
 
-            for (String tagValue : rxFilterValuesStr) {
-                if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
-                    MacAddress mac = MacAddress.valueOf(tagValue);
-                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MacRxFilterValue(mac));
-                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_MPLS)) {
-                    MplsLabel mplsLabel = MplsLabel.mplsLabel(tagValue);
-                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MplsRxFilterValue(mplsLabel));
-                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
-                    VlanId vlanId = VlanId.vlanId(tagValue);
-                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
-                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
-                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(tagValue));
-                } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
-                    tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
-                } else {
-                    throw new ProtocolException(
-                        "[" + label() + "] Unsupported Rx filter method for traffic class " +
-                        tcId + " of service chain " + scId + "."
-                    );
-                }
-
-                if (!tagValue.isEmpty()) {
-                    log.info("[{}] \t Tag: {}", label(), tagValue);
-                }
-            }
+            // Add the tags for this NIC
+            addTag(deviceId, scId, tcId, tcInfo, nicId, tagMethod, rxFilterValuesStr);
         }
 
         String    configType = BasicServerDriver.get(jsonNode, PARAM_CONFIG_TYPE);
         String    config     = BasicServerDriver.get(jsonNode, PARAM_CONFIG);
-        JsonNode cpuNode     = objNode.path(PARAM_CPUS);
+        JsonNode cpuNode     = objNode.path(BasicServerDriver.PARAM_CPUS);
         boolean   status     = objNode.path(PARAM_STATUS).asInt() == 1 ? true : false;
-        JsonNode nicNode     = objNode.path(PARAM_NICS);
+        JsonNode nicNode     = objNode.path(BasicServerDriver.PARAM_NICS);
 
         // The service chain is expected to be active
         if (!status) {
@@ -681,7 +653,6 @@ public class ServerManager
                 " of service chain " + scId + " do not agree with what the device reported."
             );
         }
-
         return tcInfo;
     }
 
@@ -903,6 +874,46 @@ public class ServerManager
         }
 
         return rtInfo;
+    }
+
+    /**
+     * Adds tags to a service chain's traffic class information.
+     *
+     * @param deviceId the device ID where the tags are applied
+     * @param scId the service chain's ID
+     * @param tcId the service chain's traffic class ID
+     * @param tcInfo the service chain's traffic class information
+     * @param nicId the NIC ID where the tags are applied
+     * @param tagMethod the Rx filter methodo of this service chain
+     * @param rxFilterValuesStr a list of Rx filter values to add
+     */
+    private void addTag(
+            DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
+            String nicId, String tagMethod, List<String> rxFilterValuesStr) {
+        for (String tagValue : rxFilterValuesStr) {
+            if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
+                MacAddress mac = MacAddress.valueOf(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MacRxFilterValue(mac));
+            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_MPLS)) {
+                MplsLabel mplsLabel = MplsLabel.mplsLabel(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MplsRxFilterValue(mplsLabel));
+            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
+                VlanId vlanId = VlanId.vlanId(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
+            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(tagValue));
+            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
+            } else {
+                throw new ProtocolException(
+                    "[" + label() + "] Unsupported Rx filter method for traffic class " +
+                    tcId + " of service chain " + scId + "."
+                );
+            }
+            if (!tagValue.isEmpty()) {
+                log.info("[{}] \t Tag: {}", label(), tagValue);
+            }
+        }
     }
 
     /**
