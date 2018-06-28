@@ -731,9 +731,17 @@ public final class DeploymentManager
         // Requires rule installation into the server's NIC
         if (sc.isServerLevel() && sc.isHardwareBased()) {
             TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
+            checkNotNull(
+                ingressPoint,
+                "Cannot generate NIC flow rules without ingress point information"
+            );
             long serverIngPort        = ingressPoint.portIds().get(0).toLong();
 
             TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
+            checkNotNull(
+                egressPoint,
+                "Cannot generate NIC flow rules without ingress point information"
+            );
             long serverEgrPort       = egressPoint.portIds().get(0).toLong();
 
             // Generate the hardware configuration of this service chain.
