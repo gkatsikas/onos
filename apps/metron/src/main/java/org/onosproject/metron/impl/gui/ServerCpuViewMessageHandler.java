@@ -123,7 +123,6 @@ public class ServerCpuViewMessageHandler extends UiMessageHandler {
             } else {
                 for (Device device : ds.getAvailableDevices()) {
                     DeviceId deviceId  = device.id();
-                    String deviceIdStr = deviceId.toString();
 
                     Map<Integer, LruCache<Float>> devCpuLoad = monitoringService.cpuLoadOfDevice(deviceId);
                     // This device does not report CPU statistics
