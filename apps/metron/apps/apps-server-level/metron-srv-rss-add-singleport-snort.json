@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-srv-rss-snort",
+                        "name"       : "metron-srv-rss-singleport-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
@@ -30,7 +30,7 @@
                                     {
                                         "block": "ToSnortDevice",
                                         "instance": "nf1_td1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno1",
                                         "configFile": ""
                                     }
                                 ],
@@ -65,7 +65,7 @@
                                         "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 2
+                                                "portId": 1
                                             }
                                         ]
                                     }
@@ -85,7 +85,7 @@
                                 {
                                     "src" : {
                                         "entity"      : "nf1",
-                                        "interface"   : "eno2"
+                                        "interface"   : "eno1"
                                     },
                                     "dst" : {
                                         "entity"      : "destination",

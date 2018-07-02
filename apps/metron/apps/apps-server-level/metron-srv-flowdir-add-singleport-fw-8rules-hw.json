@@ -4,11 +4,11 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-net-mac-fw-1000rules-hw",
+                        "name"       : "metron-srv-flowdir-singleport-fw-8rules-hw",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 5,
-                        "scope"      : "network-mac",
+                        "cpuCores"   : 1,
+                        "scope"      : "server-rules",
                         "components" : [
                             {
                                 "name"  : "nf1",
@@ -40,21 +40,15 @@
                                         "configFile": ""
                                     },
                                     {
-                                        "block": "IPFilter",
-                                        "instance": "nf1_ipFl1",
+                                        "block": "IPClassifier",
+                                        "instance": "nf1_ipCl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/1000rules.json"
-                                    },
-                                    {
-                                        "block": "Discard",
-                                        "instance": "nf1_disc1",
-                                        "configArgs": "",
-                                        "configFile": ""
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/8rules-hw-conf.json"
                                     },
                                     {
                                         "block": "EtherEncap",
                                         "instance": "nf1_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 00:00:c0:ae:67:ef, DST 00:00:c0:4f:71:ef",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:ca, DST 50:6b:4b:43:8a:da",
                                         "configFile": ""
                                     },
                                     {
@@ -66,7 +60,7 @@
                                     {
                                         "block": "ToDevice",
                                         "instance": "nf1_td1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno1",
                                         "configFile": ""
                                     }
                                 ],
@@ -97,27 +91,17 @@
                                             "port": 0
                                         },
                                         "dst": {
-                                            "instance": "nf1_ipFl1",
+                                            "instance": "nf1_ipCl1",
                                             "port": 0
                                         }
                                     },
                                     {
                                         "src": {
-                                            "instance": "nf1_ipFl1",
-                                            "port": 0
+                                            "instance": "nf1_ipCl1",
+                                            "port": -1
                                         },
                                         "dst": {
                                             "instance": "nf1_ethEncap1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf1_ipFl1",
-                                            "port": 1
-                                        },
-                                        "dst": {
-                                            "instance": "nf1_disc1",
                                             "port": 0
                                         }
                                     },
@@ -148,20 +132,20 @@
                             "network": {
                                 "ingressPoints": [
                                     {
-                                        "deviceId": "of:000000223d4b0182",
+                                        "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 3
+                                                "portId": 1
                                             }
                                         ]
                                     }
                                 ],
                                 "egressPoints": [
                                     {
-                                        "deviceId": "of:000000223d4b0182",
+                                        "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 3
+                                                "portId": 1
                                             }
                                         ]
                                     }
@@ -181,7 +165,7 @@
                                 {
                                     "src" : {
                                         "entity"      : "nf1",
-                                        "interface"   : "eno2"
+                                        "interface"   : "eno1"
                                     },
                                     "dst" : {
                                         "entity"      : "destination",
