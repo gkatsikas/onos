@@ -1,0 +1,250 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "add" : {
+                "servicechains" : [
+                    {
+                        "name"       : "metron-srv-flowdir-singleport-napt",
+                        "type"       : "generic",
+                        "networkId"  : 1,
+                        "cpuCores"   : 1,
+                        "scope"      : "server-rules",
+                        "components" : [
+                            {
+                                "name"  : "nf1",
+                                "type"  : "click",
+                                "class" : "napt",
+                                "id"    : "kth-napt-nf1"
+                            }
+                        ],
+                        "processors": [
+                            {
+                                "name"  : "nf1",
+                                "blocks": [
+                                    {
+                                        "block": "FromDevice",
+                                        "instance": "nf1_fd1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Strip",
+                                        "instance": "nf1_strip1",
+                                        "configArgs": "LENGTH 14",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "MarkIPHeader",
+                                        "instance": "nf1_mark1",
+                                        "configArgs": "OFFSET 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "IPRewriter",
+                                        "instance": "nf1_rw1_1",
+                                        "configArgs": "pattern 10.0.0.4 1000-65535 - - 0 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "IPRewriter",
+                                        "instance": "nf1_rw1_2",
+                                        "configArgs": "pattern - - 19.18.0.2 - 0 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "IPRewriter",
+                                        "instance": "nf1_rw1_3",
+                                        "configArgs": "pattern 23.67.45.6 30-56 2.8.3.5 80 0 0",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "DecIPTTL",
+                                        "instance": "nf1_decTtl1",
+                                        "configArgs": "",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "EtherEncap",
+                                        "instance": "nf1_ethEncap1",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:ca, DST 50:6b:4b:43:8a:da",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "Queue",
+                                        "instance": "nf1_q1",
+                                        "configArgs": "CAPACITY 1024",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "ToDevice",
+                                        "instance": "nf1_td1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    }
+                                ],
+                                "graph" : [
+                                    {
+                                        "src": {
+                                            "instance": "nf1_fd1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_strip1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_mark1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_rw1_1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_mark1",
+                                            "port": 1
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_rw1_2",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_mark1",
+                                            "port": 2
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_rw1_3",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_rw1_1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_decTtl1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_rw1_2",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_decTtl1",
+                                            "port": 1
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_rw1_3",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_decTtl1",
+                                            "port": 2
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_decTtl1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_ethEncap1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        }
+                                    },
+                                    {
+                                        "src": {
+                                            "instance": "nf1_q1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_td1",
+                                            "port": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "topology": {
+                            "network": {
+                                "ingressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.166:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 1
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "egressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.166:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 1
+                                            }
+                                        ]
+                                    }
+                                ]
+                            },
+                            "server": [
+                                {
+                                    "src" : {
+                                        "entity"      : "source",
+                                        "interface"   : "-"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    }
+                                },
+                                {
+                                    "src" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "destination",
+                                        "interface"   : "-"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}
