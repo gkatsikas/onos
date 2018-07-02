@@ -107,9 +107,9 @@ public class EtherEncap extends ModifierBlock {
     }
 
     /**
-     * Returns the Ethernet type of the packet in host order.
+     * Returns the Ethernet type of the packet as a hexadecimal string.
      *
-     * @return Ethernet type of the packet in host order
+     * @return Ethernet type of the packet as hexadecimal string
      */
     public String etherTypeHexString() {
         return Integer.toHexString((int) this.etherType);
