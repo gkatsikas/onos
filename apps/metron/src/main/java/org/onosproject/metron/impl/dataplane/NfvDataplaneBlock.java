@@ -325,6 +325,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
                    (this.blockClass == ProcessingBlockClass.CHECK_UDP_HEADER) ||
                    (this.blockClass == ProcessingBlockClass.COUNTER) ||
                    (this.blockClass == ProcessingBlockClass.ETHER_ENCAP) ||
+                   (this.blockClass == ProcessingBlockClass.ETHER_REWRITE) ||
                    (this.blockClass == ProcessingBlockClass.ETHER_MIRROR) ||
                    (this.blockClass == ProcessingBlockClass.DROP_BROADCASTS) ||
                    (this.blockClass == ProcessingBlockClass.FROM_BLACKBOX_DEVICE) ||

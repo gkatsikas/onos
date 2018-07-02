@@ -25,6 +25,7 @@ import org.onosproject.metron.impl.processing.blocks.DecIpTtl;
 import org.onosproject.metron.impl.processing.blocks.Discard;
 import org.onosproject.metron.impl.processing.blocks.EtherEncap;
 import org.onosproject.metron.impl.processing.blocks.EtherMirror;
+import org.onosproject.metron.impl.processing.blocks.EtherRewrite;
 import org.onosproject.metron.impl.processing.blocks.FromBlackboxDevice;
 import org.onosproject.metron.impl.processing.blocks.FromDevice;
 import org.onosproject.metron.impl.processing.blocks.FromDpdkDevice;
@@ -92,6 +93,8 @@ public final class ProcessingBlockLauncher {
             return new EtherEncap(instanceId, instanceConf, instanceConfFile);
         } else if (blockClass == ProcessingBlockClass.ETHER_MIRROR) {
             return new EtherMirror(instanceId, instanceConf, instanceConfFile);
+        } else if (blockClass == ProcessingBlockClass.ETHER_REWRITE) {
+            return new EtherRewrite(instanceId, instanceConf, instanceConfFile);
         } else if (blockClass == ProcessingBlockClass.FROM_BLACKBOX_DEVICE) {
             return new FromBlackboxDevice(instanceId, instanceConf, instanceConfFile);
         } else if (blockClass == ProcessingBlockClass.FROM_DEVICE) {

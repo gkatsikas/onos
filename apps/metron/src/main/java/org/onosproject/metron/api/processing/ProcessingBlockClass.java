@@ -39,6 +39,7 @@ public enum ProcessingBlockClass {
     DROP_BROADCASTS("DropBroadcasts"),
     ETHER_ENCAP("EtherEncap"),
     ETHER_MIRROR("EtherMirror"),
+    ETHER_REWRITE("EtherRewrite"),
     FIX_IP_SRC("FixIPSrc"),
     FROM_BLACKBOX_DEVICE("FromBlackboxDevice"),
     FROM_DEVICE("FromDevice"),
