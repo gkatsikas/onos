@@ -107,6 +107,15 @@ public class EtherEncap extends ModifierBlock {
     }
 
     /**
+     * Returns the Ethernet type of the packet in host order.
+     *
+     * @return Ethernet type of the packet in host order
+     */
+    public String etherTypeHexString() {
+        return Integer.toHexString((int) this.etherType);
+    }
+
+    /**
      * Sets the Ethernet type of the packet in host order.
      *
      * @param etherType Ethernet type of the packet in host order
