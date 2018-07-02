@@ -43,6 +43,7 @@ import org.onosproject.metron.impl.classification.ClassificationTree;
 import org.onosproject.metron.impl.processing.blocks.CheckIpHeader;
 import org.onosproject.metron.impl.processing.blocks.Device;
 import org.onosproject.metron.impl.processing.blocks.EtherEncap;
+import org.onosproject.metron.impl.processing.blocks.EtherRewrite;
 import org.onosproject.metron.impl.processing.blocks.FromBlackboxDevice;
 import org.onosproject.metron.impl.processing.blocks.FromSnortDevice;
 import org.onosproject.metron.impl.processing.blocks.MarkIpHeader;
@@ -247,6 +248,9 @@ public class TrafficClass implements TrafficClassInterface {
             );
         }
 
+        this.type           = other.type();
+        this.layer          = other.processingLayer();
+
         this.packetFilter   = new PacketFilter();
         this.packetFilter.addPacketFilter(other.packetFilter());
 
@@ -340,6 +344,7 @@ public class TrafficClass implements TrafficClassInterface {
 
             if (!this.packetFilter.containsKey(newHeaderField)) {
                 this.packetFilter.put(newHeaderField, new Filter(newFilter));
+
                 // Update the traffic class type by combining both types
                 this.type = TrafficClassType.updateType(this.type, newType);
                 // Update also the processing layer in a similar fashion
@@ -599,9 +604,7 @@ public class TrafficClass implements TrafficClassInterface {
 
     @Override
     public boolean isEmpty() {
-        /**
-         * A traffic class with packet filters is not empty.
-         */
+        // A traffic class with packet filters is not empty
         for (Map.Entry<HeaderField, Filter> entry : this.packetFilter().entrySet()) {
             HeaderField headerField = entry.getKey();
             Filter filter = entry.getValue();
@@ -612,9 +615,7 @@ public class TrafficClass implements TrafficClassInterface {
             }
         }
 
-        /**
-         * A traffic class with conditions is not empty.
-         */
+        // A traffic class with conditions is not empty
         for (Map.Entry<HeaderField, List<Condition>> entry : this.conditionMap().entrySet()) {
             for (Condition condition : entry.getValue()) {
                 // At least one non-empty condition
@@ -624,9 +625,7 @@ public class TrafficClass implements TrafficClassInterface {
             }
         }
 
-        /**
-         * No filters and conditions, but some blackbox configuration instead!
-         */
+        // No filters and conditions, but some blackbox configuration instead
         if (this.hasBlackboxConfiguration()) {
             // Mark this
             this.solelyOwnedByBlackbox = true;
@@ -737,7 +736,7 @@ public class TrafficClass implements TrafficClassInterface {
 
         // The output part starts from the Ethernet layer
         if (!this.ethernetEncapConfiguration.isEmpty()) {
-            outputConf += "StoreEtherAddress(" + this.ethernetEncapConfiguration() + ", dst) -> ";
+            outputConf += this.ethernetEncapConfiguration() + " -> ";
         }
 
         // Potential Blackbox NF integration: Click pipeline meets with a blackbox NF
@@ -796,22 +795,21 @@ public class TrafficClass implements TrafficClassInterface {
             if (markIpHdrBlock.offset() == MarkIpHeader.IP_OFFSET) {
                 this.setProcessingLayer(ProcessingLayer.NETWORK);
             }
-        // EtherEncap will give us useful information to output this traffic class
         } else if (blockClass == ProcessingBlockClass.ETHER_ENCAP) {
-            // Interface configuration from EtherEncap
             EtherEncap etherEncapBlock = (EtherEncap) block.processor();
-            this.ethernetEncapConfiguration = etherEncapBlock.dstMacStr();
-        // StoreEtherAddress will give us useful information to output this traffic class
+            // this.ethernetEncapConfiguration = "EtherEncap(ETHERTYPE " + etherEncapBlock.etherTypeHexString() +
+            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherEncapBlock.srcMacStr() +
+                                                         ", DST " + etherEncapBlock.dstMacStr() + ")";
         } else if (blockClass == ProcessingBlockClass.STORE_ETHER_ADDRESS) {
-            // Interface configuration from StoreEtherAddress
             StoreEtherAddress storeEtherAddrBlock = (StoreEtherAddress) block.processor();
-            // We care about elements that set the destination
-            if (storeEtherAddrBlock.offset().equals(StoreEtherAddress.DST_OFFSET)) {
-                this.ethernetEncapConfiguration = storeEtherAddrBlock.macStr();
-            }
-        // TODO: Add support for EtherMirror
+            this.ethernetEncapConfiguration = "StoreEtherAddress(" + storeEtherAddrBlock.macStr() + ", " +
+                                                                     storeEtherAddrBlock.offset() + ")";
         } else if (blockClass == ProcessingBlockClass.ETHER_MIRROR) {
-            // this.ethernetEncapConfiguration =
+            this.ethernetEncapConfiguration = "EtherMirror()";
+        } else if (blockClass == ProcessingBlockClass.ETHER_REWRITE) {
+            EtherRewrite etherRwBlock = (EtherRewrite) block.processor();
+            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherRwBlock.srcMacStr() +
+                                                         ", DST " + etherRwBlock.dstMacStr() + ")";
         // Support for Blackbox NFs
         } else if (blockClass == ProcessingBlockClass.TO_BLACKBOX_DEVICE) {
             ToBlackboxDevice toBlackboxBlock = (ToBlackboxDevice) block.processor();
