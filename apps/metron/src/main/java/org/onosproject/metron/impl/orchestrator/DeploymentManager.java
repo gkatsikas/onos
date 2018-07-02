@@ -686,6 +686,11 @@ public final class DeploymentManager
         DeviceId deviceId = server.deviceId();
 
         // And the NICs required to run
+        checkArgument(
+            server.numberOfNics() >= numberOfNics,
+            "Metron agent " + deviceId + " requires " +
+            Integer.toString(numberOfNics) + " NICs for this deployment"
+        );
         Set<String> nics = new ConcurrentSkipListSet<String>();
         for (int i = 0; i < numberOfNics; i++) {
             NicDevice nic = (NicDevice) server.nics().toArray()[i];
