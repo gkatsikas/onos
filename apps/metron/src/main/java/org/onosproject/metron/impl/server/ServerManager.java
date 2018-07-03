@@ -543,6 +543,7 @@ public class ServerManager
 
         JsonNode    tagNode = objNode.path(BasicServerDriver.NIC_PARAM_RX_FILTER);
         String    tagMethod = BasicServerDriver.get(tagNode, BasicServerDriver.NIC_PARAM_RX_METHOD);
+
         JsonNode tagValNode = tagNode.path(NIC_PARAM_RX_METHOD_VALUES);
         String          nic = tcInfo.nicsOfDevice(deviceId).iterator().next();
 
@@ -901,7 +902,7 @@ public class ServerManager
                 VlanId vlanId = VlanId.vlanId(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(tagValue));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(Long.parseLong(tagValue)));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
             } else {

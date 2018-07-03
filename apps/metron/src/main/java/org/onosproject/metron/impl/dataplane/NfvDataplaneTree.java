@@ -74,7 +74,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     /**
      * Verbosity flag.
      */
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
     /**
      * Pointer to the root node of the tree.
@@ -625,7 +625,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             if (tagging) {
                 rxFilter = this.tagService().getTaggingMechanismOfTrafficClassGroup(tcGroupId);
                 rxFilterValue = this.tagService().getFirstUsedTagOfTrafficClassGroup(tcGroupId);
-                log.info("[{}] \t Traffic class {} --> Tag {}", label(), tcGroupId, rxFilterValue);
+                log.info(
+                    "[{}] \t Traffic class {} --> Method {} with Tag {}",
+                    label(), tcGroupId, rxFilter, rxFilterValue
+                );
                 tagMap.put(tcGroupId, rxFilterValue);
             }
 
@@ -749,7 +752,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             // Round-robin across the available queues or negative
             queueIndex = (queuesNumber > 0) ? (queueIndex++ % queuesNumber) : -1;
 
-            // Compute the SDN rules of this traffic class
+            // Compute the rules of this traffic class
             try {
                 rules.addAll(
                     tc.toOpenFlowRules(

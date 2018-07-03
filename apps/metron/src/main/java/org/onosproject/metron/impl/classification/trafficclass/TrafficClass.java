@@ -60,6 +60,7 @@ import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.drivers.server.devices.nic.NicFlowRule;
 import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.FlowRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.MacRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.MplsRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.VlanRxFilterValue;
@@ -1188,7 +1189,6 @@ public class TrafficClass implements TrafficClassInterface {
 
         // For each datapath component of this traffic class
         for (String tc : this.binaryTree.datapathTrafficClasses()) {
-
             // Denotes whether this is a software or hardware-based traffic class
             String target = this.packetFiltersTargetMap.get(tc);
 
@@ -1453,11 +1453,16 @@ public class TrafficClass implements TrafficClassInterface {
         if (isServerDevice) {
             NicFlowRule.Builder serverRuleBuilder = new DefaultDpdkNicFlowRule.Builder();
 
+            long cpuCoreId = queueIndex;
+            if (rxFilter == RxFilter.FLOW) {
+                cpuCoreId = ((FlowRxFilterValue) rxFilterValue).value();
+            }
+
             serverRuleBuilder.fromFlowRule(rule);
             serverRuleBuilder.withTrafficClassId(tcId.toString());
             // TODO: Pass the interface name as announced by the agent (e.g., fd0)
             serverRuleBuilder.withInterfaceName(this.inputInterface());
-            serverRuleBuilder.assignedToCpuCore(queueIndex);
+            serverRuleBuilder.assignedToCpuCore(cpuCoreId);
 
             return serverRuleBuilder.build();
         }
