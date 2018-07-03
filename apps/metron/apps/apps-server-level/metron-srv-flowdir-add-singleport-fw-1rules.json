@@ -7,7 +7,7 @@
                         "name"       : "metron-srv-flowdir-singleport-fw-1rules",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 1,
+                        "cpuCores"   : 3,
                         "scope"      : "server-rules",
                         "components" : [
                             {
