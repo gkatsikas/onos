@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-srv-flowdir-singleport-fw-1rules-hw-snort",
+                        "name"       : "metron-srv-flowdir-singleport-fw-1rules",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
@@ -15,12 +15,6 @@
                                 "type"  : "click",
                                 "class" : "firewall",
                                 "id"    : "kth-firewall-nf1"
-                            },
-                            {
-                                "name"  : "nf2",
-                                "type"  : "standalone",
-                                "class" : "dpi",
-                                "id"    : "snort-nf2"
                             }
                         ],
                         "processors": [
@@ -66,7 +60,7 @@
                                     {
                                         "block": "ToDevice",
                                         "instance": "nf1_td1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno1",
                                         "configFile": ""
                                     }
                                 ],
@@ -132,35 +126,6 @@
                                         }
                                     }
                                 ]
-                            },
-                            {
-                                "name"  : "nf2",
-                                "blocks": [
-                                    {
-                                        "block": "FromSnortDevice",
-                                        "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "ToSnortDevice",
-                                        "instance": "nf2_td1",
-                                        "configArgs": "DEVNAME eno1",
-                                        "configFile": ""
-                                    }
-                                ],
-                                "graph" : [
-                                    {
-                                        "src": {
-                                            "instance": "nf2_fd1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_td1",
-                                            "port": 0
-                                        }
-                                    }
-                                ]
                             }
                         ],
                         "topology": {
@@ -200,16 +165,6 @@
                                 {
                                     "src" : {
                                         "entity"      : "nf1",
-                                        "interface"   : "eno2"
-                                    },
-                                    "dst" : {
-                                        "entity"      : "nf2",
-                                        "interface"   : "eno1"
-                                    }
-                                },
-                                {
-                                    "src" : {
-                                        "entity"      : "nf2",
                                         "interface"   : "eno1"
                                     },
                                     "dst" : {
