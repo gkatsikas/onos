@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-srv-rss-singleport-fw-1rules-hw",
+                        "name"       : "metron-srv-rss-singleport-fw-1rules",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
