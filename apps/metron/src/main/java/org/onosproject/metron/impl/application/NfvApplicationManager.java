@@ -192,7 +192,7 @@ public class NfvApplicationManager
         networkConfigRegistry.unregisterConfigFactory(removeAllConfigFactory);
 
         if (!removeConfiguration()) {
-            throw new RuntimeException(
+            throw new ServiceChainException(
                 "[" + label() + "] Failed to remove application configuration"
             );
         }
@@ -514,7 +514,7 @@ public class NfvApplicationManager
                             try {
                                 chainsToLoad = readAddConfiguration();
                             } catch (IOException ioEx) {
-                                throw new RuntimeException(
+                                throw new InputConfigurationException(
                                     "[" + label() + "] Failed to read add application configuration"
                                 );
                             }
@@ -522,7 +522,7 @@ public class NfvApplicationManager
                             if (chainsToLoad != null) {
                                 // And load it to the core
                                 if (!loadConfiguration(chainsToLoad)) {
-                                    throw new RuntimeException(
+                                    throw new InputConfigurationException(
                                         "[" + label() + "] Failed to load add application configuration"
                                     );
                                 }
@@ -557,7 +557,7 @@ public class NfvApplicationManager
                         try {
                             status = readRemoveConfiguration();
                         } catch (IOException ioEx) {
-                            throw new RuntimeException(
+                            throw new InputConfigurationException(
                                 "[" + label() + "] Failed to read remove application configuration"
                             );
                         }
@@ -590,7 +590,7 @@ public class NfvApplicationManager
                         try {
                             status = readRemoveAllConfiguration();
                         } catch (IOException ioEx) {
-                            throw new RuntimeException(
+                            throw new InputConfigurationException(
                                 "[" + label() + "] Failed to read remove all application configuration"
                             );
                         }

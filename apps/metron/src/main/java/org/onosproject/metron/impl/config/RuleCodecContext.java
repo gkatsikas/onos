@@ -55,11 +55,12 @@ public class RuleCodecContext implements CodecContext {
         return this.services.get(serviceClass);
     }
 
-    protected <T> T decode(String json, Class<T> entityClass) {
+    protected <T> T decode(String json, Class<T> entityClass)
+            throws IOException {
         try {
             return decode(mapper().readTree(json), entityClass);
         } catch (IOException ioEx) {
-            throw new RuntimeException(ioEx.toString());
+            throw ioEx;
         }
     }
 
