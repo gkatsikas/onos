@@ -733,6 +733,16 @@ public final class DeploymentManager
             monitoringService.addActiveCoresToDevice(deviceId, cpus);
         }
 
+        // Push this information to the distributed store
+        serviceChainService.addRuntimeInformationToServiceChain(scId, serviceChainRuntimeInfo);
+
+        // Now the traffic class is deployed; ask the Metron agent to provide deployment information.
+        if (!this.askForRuntimeInfo(scId, iface)) {
+            throw new DeploymentException(
+                "\t Failed to retrieve runtime information for service chain " + scId
+            );
+        }
+
         // Requires rule installation into the server's NIC
         if (sc.isServerLevel() && sc.isHardwareBased()) {
             TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
@@ -742,16 +752,16 @@ public final class DeploymentManager
             );
             long serverIngPort        = ingressPoint.portIds().get(0).toLong();
 
-            TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
+            TrafficPoint egressPoint  = sc.egressPointOfDevice(deviceId);
             checkNotNull(
                 egressPoint,
                 "Cannot generate NIC flow rules without ingress point information"
             );
-            long serverEgrPort       = egressPoint.portIds().get(0).toLong();
+            long serverEgrPort        = egressPoint.portIds().get(0).toLong();
 
             // Generate the hardware configuration of this service chain.
             Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, deviceId, serverIngPort, maxCpus, serverEgrPort, false, false
+                scId, dpTree, deviceId, serverIngPort, cpus, serverEgrPort, true, false
             );
 
             // Get the set of OpenFlow rules that comprise the hardware configuration
@@ -759,16 +769,6 @@ public final class DeploymentManager
 
             // Push them to the switch
             this.installRules(scId, rules, false);
-        }
-
-        // Push this information to the distributed store
-        serviceChainService.addRuntimeInformationToServiceChain(scId, serviceChainRuntimeInfo);
-
-        // Now the traffic class is deployed; ask the Metron agent to provide deployment information.
-        if (!this.askForRuntimeInfo(scId, iface)) {
-            throw new DeploymentException(
-                "\t Failed to retrieve runtime information for service chain " + scId
-            );
         }
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
