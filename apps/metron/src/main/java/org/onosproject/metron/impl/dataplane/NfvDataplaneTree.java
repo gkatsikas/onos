@@ -629,7 +629,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                     "[{}] \t Traffic class {} --> Method {} with Tag {}",
                     label(), tcGroupId, rxFilter, rxFilterValue
                 );
-                tagMap.put(tcGroupId, rxFilterValue);
+
+                if ((rxFilter != null) && (rxFilterValue != null)) {
+                    tagMap.put(tcGroupId, rxFilterValue);
+                }
             }
 
             /**

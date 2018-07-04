@@ -1365,13 +1365,10 @@ public final class DeploymentManager
             "[" + label() + "] NULL Rx mechanism for traffic class " + tcId + " of service chain " + scId
         );
 
-        checkArgument(
-            (rxFilterValues != null),
-            "[" + label() + "] NULL Rx filter values for traffic class " + tcId + " of service chain " + scId
-        );
-
         // Provide relevant information for this group of traffic classes to the Tag Manager
-        taggingService.establishTaggingForTrafficClassGroup(tcId, tcGroup, rxFilter, rxFilterValues);
+        if (rxFilterValues != null) {
+            taggingService.establishTaggingForTrafficClassGroup(tcId, tcGroup, rxFilter, rxFilterValues);
+        }
 
         return;
     }

@@ -78,7 +78,7 @@ public final class TagManager implements TagService {
         new ConcurrentHashMap<Integer, String>() {
             {
                 put(new Integer(LB_OK), "Successful load balancing for group of traffic classes");
-                put(new Integer(LB_INVALID_GROUP), "Invalid ID for group of traffic classes");
+                put(new Integer(LB_INVALID_GROUP), "No tags for group of traffic classes");
                 put(new Integer(LB_NO_GROUP_CAN_BE_SPLIT), "No splittable group of traffic classes");
                 put(new Integer(LB_NO_GROUPS_CAN_BE_MERGED), "No traffic classes subgroups to merge");
                 put(new Integer(LB_NO_AVAILABLE_TAG), "Failed to allocate a new tag for traffic class group");
@@ -531,7 +531,7 @@ public final class TagManager implements TagService {
      * @param message the load balancing status
      */
     private void setLbStatusOfTrafficClassGroup(URI tcGroupId, String message) {
-        this.lbStatus.put(tcGroupId, message);
+        this.lbStatus.put(tcGroupId, message + ": Traffic class ID " + tcGroupId);
     }
 
     /************************************** Internal services. ***********************************/
