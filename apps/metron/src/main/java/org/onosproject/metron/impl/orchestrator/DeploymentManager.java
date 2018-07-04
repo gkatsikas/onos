@@ -631,8 +631,11 @@ public final class DeploymentManager
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be placed in a server");
         checkNotNull(dpTree, "[" + label() + "] NULL dataplane configuration cannot be placed in a server");
 
-        // Start with conservative CPU requirements
-        int cpus = 1;
+        boolean inFlowDirMode = sc.isServerLevel() && sc.isHardwareBased();
+        boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
+
+        // Start with conservative CPU requirements if not in RSS mode
+        int cpus = inRssMode ? sc.cpuCores() : 1;
 
         // This is an upper limit of cores you can use
         int maxCpus = sc.cpuCores();
@@ -744,7 +747,7 @@ public final class DeploymentManager
         }
 
         // Requires rule installation into the server's NIC
-        if (sc.isServerLevel() && sc.isHardwareBased()) {
+        if (inFlowDirMode) {
             TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
             checkNotNull(
                 ingressPoint,

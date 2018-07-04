@@ -72,10 +72,10 @@ import java.net.URI;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
-import java.util.ArrayList;
 import javax.ws.rs.ProcessingException;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -562,10 +562,10 @@ public class ServerManager
             String nicId = entry.getKey();
             JsonNode filterNode = tagValNode.path(nicId);
 
-            // Convert the JSON list into an array of strings
-            List<String> rxFilterValuesStr = null;
+            // Convert the JSON list into a set of strings
+            Set<String> rxFilterValuesStr = null;
             try {
-                rxFilterValuesStr = mapper.readValue(filterNode.traverse(), new TypeReference<ArrayList<String>>() { });
+                rxFilterValuesStr = mapper.readValue(filterNode.traverse(), new TypeReference<HashSet<String>>() { });
             } catch (IOException ioEx) {
                 throw new ProtocolException(
                     "[" + label() + "] Failed to retrieve the list of Rx filter values of traffic class " +
@@ -591,10 +591,10 @@ public class ServerManager
             );
         }
 
-        // Convert the JSON list of CPUs into an array
-        List<Integer> cpuList = null;
+        // Convert the JSON list of CPUs into a set
+        Set<Integer> cpuList = null;
         try {
-            cpuList = mapper.readValue(cpuNode.traverse(), new TypeReference<ArrayList<Integer>>() { });
+            cpuList = mapper.readValue(cpuNode.traverse(), new TypeReference<HashSet<Integer>>() { });
         } catch (IOException ioEx) {
             throw new ProtocolException(
                 "[" + label() + "] Failed to retrieve the list of CPUs of traffic class " +
@@ -632,10 +632,10 @@ public class ServerManager
             tcInfo.setDeviceConfigurationTypeOfCore(deviceId, cpu.intValue(), configType);
         }
 
-        // Convert the JSON list of NICs into an array of strings
-        List<String> nicsStr = null;
+        // Convert the JSON list of NICs into a set of strings
+        Set<String> nicsStr = null;
         try {
-            nicsStr = mapper.readValue(nicNode.traverse(), new TypeReference<ArrayList<String>>() { });
+            nicsStr = mapper.readValue(nicNode.traverse(), new TypeReference<HashSet<String>>() { });
         } catch (IOException ioEx) {
             throw new ProtocolException(
                 "[" + label() + "] Failed to retrieve the list of NICs of traffic class " +
@@ -644,9 +644,8 @@ public class ServerManager
         }
 
         // Get the difference between the stored NICs and the ones retrieved by the device
-        Set<String> difference = Sets.difference(
-            Sets.<String>newConcurrentHashSet(nicsStr), tcInfo.nicsOfDevice(deviceId)
-        );
+        Set<String> difference = Sets.difference(nicsStr, tcInfo.nicsOfDevice(deviceId));
+
         // These two must agree!
         if (difference.size() != 0) {
             throw new ProtocolException(
@@ -886,11 +885,11 @@ public class ServerManager
      * @param tcInfo the service chain's traffic class information
      * @param nicId the NIC ID where the tags are applied
      * @param tagMethod the Rx filter methodo of this service chain
-     * @param rxFilterValuesStr a list of Rx filter values to add
+     * @param rxFilterValuesStr a set of Rx filter values to add
      */
     private void addTag(
             DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
-            String nicId, String tagMethod, List<String> rxFilterValuesStr) {
+            String nicId, String tagMethod, Set<String> rxFilterValuesStr) {
         for (String tagValue : rxFilterValuesStr) {
             if (Strings.isNullOrEmpty(tagValue)) {
                 continue;
@@ -917,7 +916,7 @@ public class ServerManager
                 );
             }
 
-            log.debug("[{}] \t Tag: {}", label(), tagValue);
+            log.info("[{}] \t NIC {} - Tag {}", label(), nicId, tagValue);
         }
     }
 
