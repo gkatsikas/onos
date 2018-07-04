@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-srv-flowdir-dualport-fw-3rules-napt",
+                        "name"       : "metron-srv-flowdir-singleport-fw-3rules-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 3,
@@ -54,7 +54,7 @@
                                     {
                                         "block": "EtherEncap",
                                         "instance": "nf1_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:cb, DST 24:8a:07:55:46:b0",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:ca, DST 50:6b:4b:43:8a:da",
                                         "configFile": ""
                                     },
                                     {
@@ -139,7 +139,7 @@
                                     {
                                         "block": "FromDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1",
+                                        "configArgs": "DEVNAME eno2",
                                         "configFile": ""
                                     },
                                     {
@@ -175,7 +175,7 @@
                                     {
                                         "block": "EtherEncap",
                                         "instance": "nf2_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:cb, DST 24:8a:07:55:46:b0",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:ca, DST 50:6b:4b:43:8a:da",
                                         "configFile": ""
                                     },
                                     {
@@ -187,7 +187,7 @@
                                     {
                                         "block": "ToDevice",
                                         "instance": "nf2_td1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno1",
                                         "configFile": ""
                                     }
                                 ],
@@ -312,7 +312,7 @@
                                         "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 2
+                                                "portId": 1
                                             }
                                         ]
                                     }
@@ -336,13 +336,13 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     }
                                 },
                                 {
                                     "src" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno2"
+                                        "interface"   : "eno1"
                                     },
                                     "dst" : {
                                         "entity"      : "destination",

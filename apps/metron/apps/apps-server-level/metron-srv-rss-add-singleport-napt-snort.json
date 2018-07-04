@@ -7,7 +7,7 @@
                         "name"       : "metron-srv-rss-singleport-napt-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 1,
+                        "cpuCores"   : 8,
                         "scope"      : "server-rss",
                         "components" : [
                             {
@@ -48,7 +48,7 @@
                                     {
                                         "block": "IPRewriter",
                                         "instance": "nf1_rw1_1",
-                                        "configArgs": "pattern 10.0.0.4 1000-65535 192.168.23.5 - 0 0",
+                                        "configArgs": "pattern 10.0.0.4 1000-65535 - - 0 0",
                                         "configFile": ""
                                     },
                                     {
@@ -207,7 +207,7 @@
                                     {
                                         "block": "FromSnortDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
+                                        "configArgs": "DEVNAME eno2, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
                                         "configFile": ""
                                     },
                                     {
@@ -272,7 +272,7 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     }
                                 },
                                 {

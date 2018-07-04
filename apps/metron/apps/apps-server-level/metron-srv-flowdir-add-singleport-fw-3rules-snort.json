@@ -139,7 +139,7 @@
                                     {
                                         "block": "FromSnortDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
+                                        "configArgs": "DEVNAME eno2, EXEC '/usr/local/bin/snort', ARGS '--daq dpdkring --daq-mode inline --daq-var dpdk_args=\" -l 7 --proc-type secondary \" --daq-var dpdk_pool=$POOL -i dpdk0:dpdk1 -c snortconfig/snort.conf', FROM_RING dpdk0_2_snort, TO_RING snort_2_dpdk1, TO_REVERSE_RING snort_2_dpdk0",
                                         "configFile": ""
                                     },
                                     {
@@ -204,7 +204,7 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     }
                                 },
                                 {

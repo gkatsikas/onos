@@ -7,7 +7,7 @@
                         "name"       : "metron-srv-rss-singleport-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 1,
+                        "cpuCores"   : 8,
                         "scope"      : "server-rss",
                         "components" : [
                             {
