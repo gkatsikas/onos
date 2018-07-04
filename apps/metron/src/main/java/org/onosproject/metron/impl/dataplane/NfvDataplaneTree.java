@@ -1408,8 +1408,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
             // Get the input information of this traffic class
             String inputInterface     = tc.findInputInterface();
-            String nfOfInputInterface = tc.networkFunctionOfInIface();
-            String input = nfOfInputInterface + "-" + inputInterface;
+            // String nfOfInputInterface = tc.networkFunctionOfInIface();
+            String input = inputInterface;
 
             // Add it in the map if not already there
             if (!inputNicsUsage.containsKey(input)) {
@@ -1418,8 +1418,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
             // Get the ouput information of this traffic class
             String outputInterface     = tc.findOutputInterface();
-            String nfOfOutputInterface = tc.networkFunctionOfOutIface();
-            String output = nfOfOutputInterface + "-" + outputInterface;
+            // String nfOfOutputInterface = tc.networkFunctionOfOutIface();
+            String output = outputInterface;
 
             // If it is identical to the input, fetch it from there
             if (output.equals(input)) {
