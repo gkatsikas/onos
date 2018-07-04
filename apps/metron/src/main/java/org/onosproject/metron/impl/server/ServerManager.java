@@ -892,6 +892,10 @@ public class ServerManager
             DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
             String nicId, String tagMethod, List<String> rxFilterValuesStr) {
         for (String tagValue : rxFilterValuesStr) {
+            if (Strings.isNullOrEmpty(tagValue)) {
+                continue;
+            }
+
             if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
                 MacAddress mac = MacAddress.valueOf(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MacRxFilterValue(mac));
@@ -902,7 +906,8 @@ public class ServerManager
                 VlanId vlanId = VlanId.vlanId(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(Long.parseLong(tagValue)));
+                long coreId = Long.parseLong(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
             } else {
@@ -911,9 +916,8 @@ public class ServerManager
                     tcId + " of service chain " + scId + "."
                 );
             }
-            if (!tagValue.isEmpty()) {
-                log.info("[{}] \t Tag: {}", label(), tagValue);
-            }
+
+            log.debug("[{}] \t Tag: {}", label(), tagValue);
         }
     }
 
