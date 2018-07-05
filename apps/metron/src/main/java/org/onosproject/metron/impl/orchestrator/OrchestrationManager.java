@@ -509,14 +509,17 @@ public final class OrchestrationManager
         Set<TrafficClassInterface> changedTcs = changes.getValue();
         RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
-        // Get useful information about the switch that will host the new rules
-        DeviceId  swId = tree.pathEstablisher().offloaderSwitchId();
-        long swOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+        checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
+
+        // Get useful information about the device that will host the new rules
+        DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
+        long offloaderInPort = tree.pathEstablisher().serverInressPort();
+        long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
         // Compute the new rules
         Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
-            changedTcs, tcId, deployerService.applicationId(), swId,
-            (long) -1, (long) -1, swOutPort,
+            changedTcs, tcId, deployerService.applicationId(), offloaderId,
+            offloaderInPort, (long) cpuCoresToAllocate, offloaderOutPort,
             filterMechanism, changedTag, true
         );
 
@@ -595,14 +598,17 @@ public final class OrchestrationManager
         Set<TrafficClassInterface> changedTcs = changes.getValue();
         RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
-        // Get useful information about the switch that will host the new rules
-        DeviceId  swId = tree.pathEstablisher().offloaderSwitchId();
-        long swOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+        checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
+
+        // Get useful information about the device that will host the new rules
+        DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
+        long offloaderInPort = tree.pathEstablisher().serverInressPort();
+        long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
         // Compute the new rules
         Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
-            changedTcs, tcId, deployerService.applicationId(), swId,
-            (long) -1, (long) -1, swOutPort,
+            changedTcs, tcId, deployerService.applicationId(), offloaderId,
+            offloaderInPort, cpuCoresToAllocate, offloaderOutPort,
             filterMechanism, changedTag, true
         );
 
@@ -748,21 +754,42 @@ public final class OrchestrationManager
      * @param tcId the ID of the traffic class to update
      * @param newRules the set of rules to be updated
      */
-    private void updateRulesOfTrafficClass(NfvDataplaneTreeInterface dpTree, URI tcId, Set<FlowRule> newRules) {
-        Set<FlowRule> oldRules = dpTree.hardwareConfigurationOfTrafficClass(tcId);
+    private void updateRulesOfTrafficClass(
+            NfvDataplaneTreeInterface dpTree, URI tcId, Set<FlowRule> newRules) {
+        // Fetch the current rules associated with this traffic class
+        Set<FlowRule> currentRules = dpTree.hardwareConfigurationOfTrafficClass(tcId);
 
-        Iterator<FlowRule> ruleIterator = oldRules.iterator();
+        Iterator<FlowRule> ruleIterator = currentRules.iterator();
         while (ruleIterator.hasNext()) {
             FlowRule rule = ruleIterator.next();
 
-            if (newRules.contains(rule)) {
+            // Found the guilty
+            if (findRule(newRules, rule)) {
                 ruleIterator.remove();
             }
         }
-        oldRules.addAll(newRules);
+
+        // Now you can safely merge current with new rules
+        currentRules.addAll(newRules);
 
         // Push to memory
-        dpTree.setHardwareConfigurationOfTrafficClass(tcId, oldRules);
+        dpTree.setHardwareConfigurationOfTrafficClass(tcId, currentRules);
+    }
+
+    /**
+     * Looks up for a particular rule in a rule set.
+     *
+     * @param rules the set of rules to look up
+     * @param ruleToFind the rule to find
+     * @return boolean look up status
+     */
+    private boolean findRule(Set<FlowRule> rules, FlowRule ruleToFind) {
+        for (FlowRule r : rules) {
+            if (r.id().equals(ruleToFind.id())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

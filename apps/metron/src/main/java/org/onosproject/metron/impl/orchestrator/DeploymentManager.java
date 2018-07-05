@@ -753,25 +753,34 @@ public final class DeploymentManager
                 ingressPoint,
                 "Cannot generate NIC flow rules without ingress point information"
             );
-            long serverIngPort        = ingressPoint.portIds().get(0).toLong();
+            PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
+            long serverIngPort = serverIngPortNum.toLong();
 
             TrafficPoint egressPoint  = sc.egressPointOfDevice(deviceId);
             checkNotNull(
                 egressPoint,
                 "Cannot generate NIC flow rules without ingress point information"
             );
-            long serverEgrPort        = egressPoint.portIds().get(0).toLong();
+            PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
+            long serverEgrPort = serverEgrPortNum.toLong();
 
             // Generate the hardware configuration of this service chain.
             Map<URI, RxFilterValue> tcTags = this.createRules(
                 scId, dpTree, deviceId, serverIngPort, cpus, serverEgrPort, true, false
             );
 
-            // Get the set of OpenFlow rules that comprise the hardware configuration
+            // Get the set of rules that comprise the hardware configuration
             Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
 
-            // Push them to the switch
+            // Push them to the server
             this.installRules(scId, rules, false);
+
+            // Build the path of this service chain
+            PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
+                new ConnectPoint(deviceId, serverIngPortNum),
+                new ConnectPoint(deviceId, serverEgrPortNum),
+                serverIngPort, serverEgrPort, true
+            );
         }
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);

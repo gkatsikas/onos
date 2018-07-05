@@ -35,6 +35,7 @@ import org.onosproject.metron.impl.processing.Blocks;
 
 import org.onosproject.core.ApplicationId;
 import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
+import org.onosproject.drivers.server.devices.nic.FlowRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
@@ -752,8 +753,13 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
         long queueIndex = 0;
         for (TrafficClassInterface tc : tcSet) {
-            // Round-robin across the available queues or negative
-            queueIndex = (queuesNumber > 0) ? (queueIndex++ % queuesNumber) : -1;
+            // A tag is directly provided
+            if (rxFilter == RxFilter.FLOW) {
+                queueIndex = ((FlowRxFilterValue) rxFilterValue).value();
+            // Round-robin across the available queues
+            } else {
+                queueIndex = (queuesNumber > 0) ? (queueIndex++ % queuesNumber) : -1;
+            }
 
             // Compute the rules of this traffic class
             try {

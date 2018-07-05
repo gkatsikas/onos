@@ -414,14 +414,15 @@ public class ServerManager
         log.info("[{}] \t\t traffic class {} of", label(), tcId);
         log.info("[{}] \t\t service chain {} on", label(), scId);
         log.info("[{}] \t\t server {}", label(), deviceId);
-        log.info("[{}] \t\t with configuration type {}", label(), configurationType);
-        log.info("[{}] \t\t with configuration {}",
-            label(), configuration == null ? "SAME" : configuration
+        log.info("[{}] \t\t with {} configuration type",
+            label(), configurationType == null ? "the same" : configurationType);
+        log.info("[{}] \t\t with {} configuration",
+            label(), configuration == null ? "the same" : configuration
         );
         log.info("[{}] \t\t using {} CPU cores",
             label(), numberOfCores < 0 ? "the same" : numberOfCores
         );
-        log.info("[{}] \t\t with  {} maximum CPU cores",
+        log.info("[{}] \t\t with {} maximum CPU cores",
             label(), maxNumberOfCores < 0 ? "the same" : maxNumberOfCores
         );
         log.info("[{}] \t ================================================================", label());
