@@ -1462,6 +1462,7 @@ public class TrafficClass implements TrafficClassInterface {
             serverRuleBuilder.withTrafficClassId(tcId.toString());
             // TODO: Pass the interface name as announced by the agent (e.g., fd0)
             serverRuleBuilder.withInterfaceName(this.inputInterface());
+            serverRuleBuilder.withInterfaceNumber(inputPort);
             serverRuleBuilder.assignedToCpuCore(cpuCoreId);
 
             return serverRuleBuilder.build();

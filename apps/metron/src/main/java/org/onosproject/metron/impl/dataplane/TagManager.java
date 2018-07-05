@@ -369,14 +369,14 @@ public final class TagManager implements TagService {
 
             // It is important to find a splittable group that has more than one traffic classes
             if (tcGroupSize < MIN_GROUP_SIZE_TO_DEFLATE) {
-                log.info("[{}] Not enough traffic classes to perform deflation", this.label());
+                log.info("[{}] \t Not enough traffic classes to perform deflation", this.label());
                 continue;
             }
 
             tag = entry.getKey();
             tcGroup = entry.getValue();
 
-            log.info("[{}] Deflating group {} with {} TCs", this.label(), tcGroupId, tcGroupSize);
+            log.info("[{}] \t Deflating group {} with {} TCs", this.label(), tcGroupId, tcGroupSize);
 
             break;
         }
@@ -411,6 +411,7 @@ public final class TagManager implements TagService {
             // Create a copy since this one is going to be deleted
             TrafficClassInterface newT = new TrafficClass(t);
             newT.setId(t.id());
+            newT.buildBinaryTree();
 
             // Add the copy to the new group
             newTcGroup.add(newT);
@@ -438,8 +439,8 @@ public final class TagManager implements TagService {
         // Map this new group of traffic classes to the new tag
         this.mapTagToTrafficClassSubgroup(tcGroupId, newTcGroup, newTag);
 
-        log.info("[{}] 1st group with {} TCs and tag: {}", this.label(), tcGroupSize,    tag);
-        log.info("[{}] 2nd group with {} TCs and tag: {}", this.label(), newTcGroupSize, newTag);
+        log.info("[{}] \t 1st group with {} TCs and tag: {}", this.label(), tcGroupSize,    tag);
+        log.info("[{}] \t 2nd group with {} TCs and tag: {}", this.label(), newTcGroupSize, newTag);
 
         // Successful load balancing
         this.setLbStatusOfTrafficClassGroup(
@@ -484,11 +485,11 @@ public final class TagManager implements TagService {
         Set<TrafficClassInterface> secSmallestTcEntries = groupTagMap.get(secSmallestTag);
 
         log.info(
-            "[{}] 1st smallest group with {} TCs and tag {}",
+            "[{}] \t 1st smallest group with {} TCs and tag {}",
             this.label(), smallestTcEntries.size(), smallestTag
         );
         log.info(
-            "[{}] 2nd smallest group with {} TCs and tag {}",
+            "[{}] \t 2nd smallest group with {} TCs and tag {}",
             this.label(), secSmallestTcEntries.size(), secSmallestTag
         );
 
@@ -501,7 +502,7 @@ public final class TagManager implements TagService {
         this.removeTagOfTrafficClassSubgroup(tcGroupId, smallestTag);
 
         log.info(
-            "[{}] Both groups are merged into a group with {} TCs and tag {}",
+            "[{}] \t Both groups are merged into a group with {} TCs and tag {}",
             this.label(), secSmallestTcEntries.size(), secSmallestTag
         );
 
