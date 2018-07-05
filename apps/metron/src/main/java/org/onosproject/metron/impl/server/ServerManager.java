@@ -75,7 +75,6 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.List;
 import javax.ws.rs.ProcessingException;
 
 import static org.slf4j.LoggerFactory.getLogger;
