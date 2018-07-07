@@ -640,8 +640,8 @@ public final class DeploymentManager
         // This is an upper limit of cores you can use
         int maxCpus = sc.cpuCores();
 
-        // Is autoscale enabled?
-        boolean autoscale = this.enableAutoscale;
+        // Autoscale can only be enabled for non-RSS modes
+        boolean autoscale = inRssMode ? false : this.enableAutoscale;
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] Instantiating server-level Metron traffic classes", label());
