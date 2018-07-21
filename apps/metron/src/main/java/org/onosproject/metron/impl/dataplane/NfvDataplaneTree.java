@@ -44,7 +44,6 @@ import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.Path;
 import org.onosproject.net.flow.FlowRule;
-import org.onosproject.net.provider.ProviderId;
 import org.onlab.osgi.DefaultServiceDirectory;
 import org.onlab.osgi.ServiceDirectory;
 

@@ -818,12 +818,10 @@ public class TrafficClass implements TrafficClassInterface {
         if (block == null) {
             throw new SynthesisException("Cannot add a NULL dataplane block to traffic class");
         }
-
         int noneFiltersNo = 0;
 
         // Add this block in the list
         this.blockPath.add(block);
-
         ProcessingBlockClass blockClass = block.blockClass();
 
         // Post-routing operations are kept in a map
@@ -852,13 +850,12 @@ public class TrafficClass implements TrafficClassInterface {
             if (unstripBlock.length() == Unstrip.IP_LENGTH) {
                 this.setProcessingLayer(ProcessingLayer.LINK);
             }
-        // CheckIPHeader will likely change the processing layer
+        // Check/MarkIPHeader will likely change the processing layer
         } else if (blockClass == ProcessingBlockClass.CHECK_IP_HEADER) {
             CheckIpHeader checkIpHdrBlock = (CheckIpHeader) block.processor();
             if (checkIpHdrBlock.offset() == CheckIpHeader.IP_OFFSET) {
                 this.setProcessingLayer(ProcessingLayer.NETWORK);
             }
-        // MarkIPHeader will likely change the processing layer
         } else if (blockClass == ProcessingBlockClass.MARK_IP_HEADER) {
             MarkIpHeader markIpHdrBlock = (MarkIpHeader) block.processor();
             if (markIpHdrBlock.offset() == MarkIpHeader.IP_OFFSET) {
@@ -905,11 +902,9 @@ public class TrafficClass implements TrafficClassInterface {
             log.error("\t\tNo output class found for {} at port {}", block.name(), outputPort);
             return false;
         }
-
         log.debug("\t\tBlock {} with output class: {}", block.blockClass(), outClass.toString());
 
         PacketFilter pf = outClass.packetFilter();
-
         if (pf == null) {
             log.error("\t\tNo packet filters found for {} at port {}", block.name(), outputPort);
             return false;
@@ -918,10 +913,9 @@ public class TrafficClass implements TrafficClassInterface {
         for (Map.Entry<HeaderField, Filter> entry : pf.entrySet()) {
             HeaderField headerField = entry.getKey();
             Filter filter = entry.getValue();
+            FieldOperation fieldOp = this.operation.fieldOperation(headerField);
 
             log.debug("\t\t\tFilter to add: {}", filter.toString());
-
-            FieldOperation fieldOp = this.operation.fieldOperation(headerField);
 
             if (fieldOp != null) {
                 if ((fieldOp.operationType() == OperationType.WRITE_STATELESS) ||

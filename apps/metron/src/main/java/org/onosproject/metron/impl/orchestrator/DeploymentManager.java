@@ -724,8 +724,10 @@ public final class DeploymentManager
         );
         checkArgument(
             userRequestedNics >= neededNics,
-            "User defined ingress/egress point indicate the need for " + Integer.toString(userRequestedNics) + " NICs, " +
-            "but the required number of NICs according to the Click elements is " + Integer.toString(neededNics)
+            "User defined ingress/egress point indicate the need for " +
+            Integer.toString(userRequestedNics) + " NICs, " +
+            "but the required number of NICs according to the Click elements is " +
+            Integer.toString(neededNics)
         );
 
         Set<String> nics = new ConcurrentSkipListSet<String>();
