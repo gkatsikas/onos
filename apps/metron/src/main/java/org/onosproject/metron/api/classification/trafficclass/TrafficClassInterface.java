@@ -141,6 +141,13 @@ public interface TrafficClassInterface {
     String inputInterface();
 
     /**
+     * Sets the input interface of this traffic class.
+     *
+     * @param inputInterface input interface of this traffic class
+     */
+    void setInputInterface(String inputInterface);
+
+    /**
      * Returns the name of the network function that holds
      * the input interface of this traffic class.
      *
@@ -155,6 +162,13 @@ public interface TrafficClassInterface {
      * @return output interface of this traffic class
      */
     String outputInterface();
+
+    /**
+     * Sets the output interface of this traffic class.
+     *
+     * @param outputInterface output interface of this traffic class
+     */
+    void setOutputInterface(String outputInterface);
 
     /**
      * Returns the configuration of this
@@ -220,6 +234,22 @@ public interface TrafficClassInterface {
      * @return boolean has blackbox configuration not not
      */
     boolean hasBlackboxConfiguration();
+
+    /**
+     * Returns the monitor configuration of this
+     * traffic class. Indicates the existence of
+     * (Average)Counter Click elements.
+     *
+     * @return string monitor configuration of this traffic class
+     */
+    String monitorConfiguration();
+
+    /**
+     * Returns whether this traffic class goes through any monitoring element.
+     *
+     * @return boolean has monitor configuration not not
+     */
+    boolean hasMonitorConfiguration();
 
     /**
      * Returns whether this traffic class requires its
@@ -311,6 +341,20 @@ public interface TrafficClassInterface {
      * @param blackboxOps blackbox operations as a string
      */
     void setBlackboxOperationsAsString(String blackboxOps);
+
+    /**
+     * Returns the monitor operations of this traffic class.
+     *
+     * @return monitor operations as a string
+     */
+    String monitorOperationsAsString();
+
+    /**
+     * Sets the monitor operations of this traffic class.
+     *
+     * @param monitorOps monitor operations as a string
+     */
+    void setMonitorOperationsAsString(String monitorOps);
 
     /**
      * Returns the output operations of this traffic class.
@@ -425,7 +469,7 @@ public interface TrafficClassInterface {
      *
      * @param port the device where traffic enters
      */
-    void computeInputOperations(short port);
+    void computeInputOperations(long port);
 
     /**
      * Populates the read operations of this
@@ -449,12 +493,18 @@ public interface TrafficClassInterface {
     void computeBlackboxOperations();
 
     /**
+     * Populates the monitor operations of this
+     * traffic class into a string.
+     */
+    void computeMonitorOperations();
+
+    /**
      * Populates the output operations of this
      * traffic class into a string.
      *
      * @param port the device where traffic exits
      */
-    void computeOutputOperations(short port);
+    void computeOutputOperations(long port);
 
     /**
      * Intersects a new condition (filter + operation)

@@ -157,12 +157,12 @@ public final class TrafficPoint {
 
         if (obj instanceof TrafficPoint) {
             TrafficPoint that = (TrafficPoint) obj;
-            if (Objects.equals(this.tpType,   that.tpType) &&
-                Objects.equals(this.deviceId, that.deviceId) &&
+            if (Objects.equals(this.deviceId, that.deviceId) &&
                 Objects.equals(this.portIds,  that.portIds)) {
                 return true;
             }
         }
+
         return false;
     }
 

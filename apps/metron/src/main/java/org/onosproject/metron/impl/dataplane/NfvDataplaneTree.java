@@ -34,6 +34,9 @@ import org.onosproject.metron.impl.classification.trafficclass.TrafficClass;
 import org.onosproject.metron.impl.processing.Blocks;
 
 import org.onosproject.core.ApplicationId;
+
+import org.onosproject.drivers.server.BasicServerDriver;
+import org.onosproject.drivers.server.devices.RestServerSBDevice;
 import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
 import org.onosproject.drivers.server.devices.nic.FlowRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
@@ -150,13 +153,6 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      * A convenient way to acquire services.
      */
     private ServiceDirectory directory;
-
-    /**
-     * Provider ID used for building paths.
-     */
-    private static final ProviderId PATH_PROVIDER_ID = new ProviderId(
-        "metron", "org.onosproject.metron"
-    );
 
     public NfvDataplaneTree(NfvDataplaneBlock block, String inputInterfaceName, String label) {
         checkNotNull(
@@ -389,11 +385,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
     @Override
     public boolean isPartiallyOffloadable() {
-        if (this.isTotallyOffloadable()) {
-            return true;
-        }
-
-        // At least one traffic class is partially  offloadbale
+        // At least one traffic class is partially offloadbale
         for (TrafficClassInterface tc : this.trafficClasses.values()) {
             if (tc.isPartiallyOffloadable()) {
                 return true;
@@ -404,10 +396,11 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     }
 
     @Override
-    public synchronized Map<Integer, String> softwareConfiguration(boolean withHwOffloading) {
+    public synchronized Map<Integer, String> softwareConfiguration(
+            RestServerSBDevice server, boolean withHwOffloading) {
         if (this.softwareConfiguration.size() == 0) {
             try {
-                this.generateSoftwareConfiguration(withHwOffloading);
+                this.generateSoftwareConfiguration(server, withHwOffloading);
             } catch (DeploymentException dEx) {
                 return null;
             }
@@ -473,7 +466,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             tc.buildBinaryTree();
         }
 
-        // Compress the traffic classes of the entire service chain
+        /**
+         * Compress the traffic classes of the entire service chain.
+         * TODO: Reduce the comnplexity of this task.
+         */
         this.compressTrafficClasses();
 
         // Go through the compressed set of traffic classes and generate their filters
@@ -483,7 +479,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     }
 
     @Override
-    public void generateSoftwareConfiguration(boolean withHwOffloading)
+    public void generateSoftwareConfiguration(
+            RestServerSBDevice server, boolean withHwOffloading)
             throws DeploymentException {
         // The software configuration is already computed
         if (this.softwareConfiguration.size() > 0) {
@@ -495,7 +492,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
          * considering that it will be realized in software.
          * Hence we set doHwOffloading = false
          */
-        this.composeTrafficClassesConfiguration(false);
+        this.composeTrafficClassesConfiguration(server, false);
 
         /**
          * To optimize the CPU utilization of the target NFV server,
@@ -527,8 +524,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
              */
             if (tc.isSolelyOwnedByBlackbox()) {
                 tcConf += tc.blackboxOperationsAsString();
-                this.setSoftwareConfigurationOnCore(tcCount, tcConf);
-                tcCount++;
+                this.setSoftwareConfigurationOnCore(tcCount++, tcConf);
                 continue;
             }
 
@@ -571,9 +567,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             }
 
             // Assign traffic class configuration to CPU core
-            this.setSoftwareConfigurationOnCore(tcCount, tcConf);
-
-            tcCount++;
+            this.setSoftwareConfigurationOnCore(tcCount++, tcConf);
         }
 
         // Print the software configuration
@@ -610,7 +604,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
          * considering that it can be offloaded in hardware.
          * Hence we set doHwOffloading = true
          */
-        this.composeTrafficClassesConfiguration(true);
+        this.composeTrafficClassesConfiguration(null, true);
 
         this.groupTrafficClasses();
 
@@ -700,9 +694,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             }
 
             // Assign traffic class to CPU core
-            this.setSoftwareConfigurationOnCore(tcCount, tcConf);
-
-            tcCount++;
+            this.setSoftwareConfigurationOnCore(tcCount++, tcConf);
         }
 
         // Print the hardware and software (if any) configuration
@@ -753,6 +745,15 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
         long queueIndex = 0;
         for (TrafficClassInterface tc : tcSet) {
+
+            if (tc.inputInterface().isEmpty()) {
+                tc.setInputInterface(BasicServerDriver.findNicInterfaceWithPort(deviceId, inputPort));
+            }
+
+            if (tc.outputInterface().isEmpty()) {
+                tc.setOutputInterface(BasicServerDriver.findNicInterfaceWithPort(deviceId, outputPort));
+            }
+
             // A tag is directly provided
             if (rxFilter == RxFilter.FLOW) {
                 queueIndex = ((FlowRxFilterValue) rxFilterValue).value();
@@ -1339,7 +1340,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                 log.debug("[{}] \t with traffic class {}", label(), inTc.readOperationsAsString());
 
                 // Check whether their write operations match
-                // TODO CHECK <===========================
+                // TODO: Verify <===========================
                 String outWriteOps = outTc.writeOperationsAsString();
                 String inWriteOps  = inTc.writeOperationsAsString();
                 if (inWriteOps.equals(outWriteOps)) {
@@ -1395,16 +1396,19 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      *
      * @param doHwOffloading flag that forces/bypasses HW offloading
      */
-    private void composeTrafficClassesConfiguration(boolean doHwOffloading) {
+    private void composeTrafficClassesConfiguration(
+            RestServerSBDevice server, boolean doHwOffloading) {
+        checkNotNull(
+            this.pathEstablisher, "Cannot compose software configuration without a path establisher");
+
         /**
          * Each traffic class has two ends.
          * These ends can be identical or different.
          * This means that each traffic class has a
          * maximum of 2 NICs (one per end).
          */
-        Map<String, Short> inputNicsUsage  = new ConcurrentHashMap<String, Short>();
-        Map<String, Short> outputNicsUsage = new ConcurrentHashMap<String, Short>();
-        short currentNic  = 0;
+        Map<String, Long> inputNicsUsage  = new ConcurrentHashMap<String, Long>();
+        Map<String, Long> outputNicsUsage = new ConcurrentHashMap<String, Long>();
 
         for (TrafficClassInterface tc : this.trafficClasses.values()) {
             if (tc.isTotallyOffloadable() && doHwOffloading) {
@@ -1413,35 +1417,43 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             }
 
             // Get the input information of this traffic class
-            String inputInterface     = tc.findInputInterface();
-            // String nfOfInputInterface = tc.networkFunctionOfInIface();
-            String input = inputInterface;
+            String inputInterface = tc.findInputInterface();
+            long inputPort = this.pathEstablisher.serverInressPort();
 
             // Add it in the map if not already there
-            if (!inputNicsUsage.containsKey(input)) {
-                inputNicsUsage.put(input, currentNic++);
+            if (!inputNicsUsage.containsKey(inputInterface)) {
+                inputNicsUsage.put(inputInterface, inputPort);
             }
 
             // Get the ouput information of this traffic class
-            String outputInterface     = tc.findOutputInterface();
-            // String nfOfOutputInterface = tc.networkFunctionOfOutIface();
-            String output = outputInterface;
+            String outputInterface = tc.findOutputInterface();
+            long outputPort = this.pathEstablisher.serverEgressPort();
+
+            // Input JSON might have virtual interface names to abstract data plan information
+            // from users, but here we need the real ones.
+            if (server != null) {
+                String realInputInterface = server.portNameFromNumber(inputPort);
+                tc.setInputInterface(realInputInterface);
+
+                String realOutputInterface = server.portNameFromNumber(outputPort);
+                tc.setOutputInterface(realOutputInterface);
+            }
 
             // If it is identical to the input, fetch it from there
-            if (output.equals(input)) {
-                outputNicsUsage.put(output, inputNicsUsage.get(output));
+            if (outputInterface.equals(inputInterface)) {
+                outputNicsUsage.put(outputInterface, inputNicsUsage.get(outputInterface));
             // Create a new entry if not already there
             } else {
-                if (!outputNicsUsage.containsKey(output)) {
-                    outputNicsUsage.put(output, currentNic++);
+                if (!outputNicsUsage.containsKey(outputInterface)) {
+                    outputNicsUsage.put(outputInterface, outputPort);
                 }
             }
 
             // Compute the input configuration
-            tc.computeInputOperations(inputNicsUsage.get(input).shortValue());
+            tc.computeInputOperations(inputNicsUsage.get(inputInterface).longValue());
 
             // Compute the output configuration
-            tc.computeOutputOperations(outputNicsUsage.get(output).shortValue());
+            tc.computeOutputOperations(outputNicsUsage.get(outputInterface).longValue());
         }
 
         this.numberOfNics.set(inputNicsUsage.size());
@@ -1463,22 +1475,22 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      * @return idle configuration as a string
      */
     private String configureIdleInterfaces(
-            Map<String, Short> inputNicsUsage, Map<String, Short> outputNicsUsage) {
+            Map<String, Long> inputNicsUsage, Map<String, Long> outputNicsUsage) {
         String output = "";
 
-        for (Map.Entry<String, Short> outEntry : outputNicsUsage.entrySet()) {
-            short outInterface = outEntry.getValue().shortValue();
+        for (Map.Entry<String, Long> outEntry : outputNicsUsage.entrySet()) {
+            long outInterface = outEntry.getValue().longValue();
 
             // If it does not appear as an input, then it is a candidate
             if (!inputNicsUsage.containsValue(outInterface)) {
                 // Increase the number of NICs used by this service chain
                 this.numberOfNics.incrementAndGet();
 
-                Iterator<Map.Entry<String, Short>> inIterator =
+                Iterator<Map.Entry<String, Long>> inIterator =
                     inputNicsUsage.entrySet().iterator();
 
                 while (inIterator.hasNext()) {
-                    short inInterface = inIterator.next().getValue().shortValue();
+                    long inInterface = inIterator.next().getValue().longValue();
 
                     // This interface does not appear as an output, we can pair them
                     if (!outputNicsUsage.containsValue(inInterface)) {

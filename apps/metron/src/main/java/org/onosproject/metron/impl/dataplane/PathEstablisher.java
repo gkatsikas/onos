@@ -122,8 +122,8 @@ public final class PathEstablisher implements PathEstablisherInterface {
             boolean withServer) {
         checkNotNull(fwdPath, "Forward path is NULL");
         checkNotNull(bwdPath, "Backward path is NULL");
-        checkArgument(ingressPort > 0, "Attempted to set negative ingress port");
-        checkArgument(egressPort > 0, "Attempted to set negative egress port");
+        checkArgument(ingressPort >= 0, "Attempted to set negative ingress port");
+        checkArgument(egressPort >= 0, "Attempted to set negative egress port");
 
         init();
 
@@ -149,8 +149,8 @@ public final class PathEstablisher implements PathEstablisherInterface {
             boolean withServer) {
         checkNotNull(point1, "Start connection point is NULL");
         checkNotNull(point2, "End connection point is NULL");
-        checkArgument(ingressPort > 0, "Attempted to set negative ingress port");
-        checkArgument(egressPort  > 0, "Attempted to set negative egress port");
+        checkArgument(ingressPort >= 0, "Attempted to set negative ingress port");
+        checkArgument(egressPort  >= 0, "Attempted to set negative egress port");
 
         init();
 
@@ -539,9 +539,9 @@ public final class PathEstablisher implements PathEstablisherInterface {
         if ((coreSwitchEgressPort < 0) || (leafSwitchEgressPort < 0)) {
             throw new DeploymentException(
                 "Failed to establish a valid path for a service chain. " +
-                "The path invloves core switch " + coreSwitchId + " " +
+                "The path invloves core device " + coreSwitchId + " " +
                 "with egress port " + coreSwitchEgressPort + "and " +
-                "leaf switch " + leafSwitchId + " with egress port " +
+                "leaf device " + leafSwitchId + " with egress port " +
                 leafSwitchEgressPort
             );
         }
@@ -551,12 +551,12 @@ public final class PathEstablisher implements PathEstablisherInterface {
         if ((coreSwitchId == null) && (leafSwitchId == null)) {
             log.info("[{}] No switches in the path", label);
         } else if (coreSwitchId.equals(leafSwitchId)) {
-            msg = String.format("[%s] \t Path: Ingress switch [IN %d]%s",
+            msg = String.format("[%s] \t Path: Ingress device [IN %d]%s",
                 label, coreSwitchIngressPort, coreSwitchId
             );
         } else {
             msg = String.format(
-                "[%s] \t Path: Ingress switch [IN %d]%s[OUT %d] -> Leaf switch %s[OUT %d]",
+                "[%s] \t Path: Ingress device [IN %d]%s[OUT %d] -> Leaf device %s[OUT %d]",
                 label,
                 coreSwitchIngressPort, coreSwitchId, coreSwitchMetronPort,
                 leafSwitchId, leafSwitchEgressPort
@@ -564,7 +564,7 @@ public final class PathEstablisher implements PathEstablisherInterface {
         }
 
         if (!withServer) {
-            msg += String.format(" -> Egress switch %s[OUT %d]", coreSwitchId, coreSwitchEgressPort);
+            msg += String.format(" -> Egress device %s[OUT %d]", coreSwitchId, coreSwitchEgressPort);
             log.info("{}", msg);
             return;
         }
@@ -583,13 +583,20 @@ public final class PathEstablisher implements PathEstablisherInterface {
         }
 
         if (!msg.isEmpty()) {
-            msg += " -> ";
+            if (serverId.equals(coreSwitchId)) {
+                msg += " -> " + String.format(
+                    "Egress device %s[OUT %d]",
+                    coreSwitchId, coreSwitchEgressPort
+                );
+            } else {
+                msg += " -> " + String.format(
+                    "Server [IN %d]%s[OUT %d] -> Egress device %s[OUT %d]",
+                    serverIngressPort, serverId, serverEgressPort,
+                    coreSwitchId, coreSwitchEgressPort
+                );
+            }
         }
-        msg += String.format(
-            "Server [IN %d]%s[OUT %d] -> Egress Switch %s[OUT %d]",
-            serverIngressPort, serverId, serverEgressPort,
-            coreSwitchId, coreSwitchEgressPort
-        );
+
         log.info("{}", msg);
     }
 

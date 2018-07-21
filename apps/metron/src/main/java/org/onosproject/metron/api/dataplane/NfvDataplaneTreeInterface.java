@@ -26,6 +26,7 @@ import org.onosproject.net.DeviceId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Path;
 import org.onosproject.net.flow.FlowRule;
+import org.onosproject.drivers.server.devices.RestServerSBDevice;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import java.net.URI;
@@ -226,12 +227,15 @@ public interface NfvDataplaneTreeInterface {
      * Returns a map of the software configuration
      * of this traffic class per CPU core.
      *
+     * @param server device to get configuration from
      * @param withHwOffloading if true the generated software
      *        configuration contains only part of the entire
      *        service chain
      * @return software configuration map of this traffic class
      */
-    Map<Integer, String> softwareConfiguration(boolean withHwOffloading);
+    Map<Integer, String> softwareConfiguration(
+        RestServerSBDevice server, boolean withHwOffloading
+    );
 
     /**
      * Returns the software configuration of this traffic class
@@ -298,13 +302,15 @@ public interface NfvDataplaneTreeInterface {
      * as if it has to be executed entirely or partially
      * in software.
      *
+     * @param server device to configure
      * @param withHwOffloading if true the generated software
      *        configuration contains only part of the entire
      *        service chain
      * @throws DeploymentException if the generation fails
      */
-    void generateSoftwareConfiguration(boolean withHwOffloading)
-        throws DeploymentException;
+    void generateSoftwareConfiguration(
+        RestServerSBDevice server, boolean withHwOffloading
+    ) throws DeploymentException;
 
     /**
      * Generates the configuration of each traffic class

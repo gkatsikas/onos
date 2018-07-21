@@ -99,6 +99,13 @@ public interface ServiceChainInterface {
     void setCpuCores(int cpuCores);
 
     /**
+     * Returns the number of NICs required for this service chain.
+     *
+     * @return service chain's number of NICs
+     */
+    int nics();
+
+    /**
      * Returns the state of this service chain.
      *
      * @return service chain's state
