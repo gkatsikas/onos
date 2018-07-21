@@ -135,7 +135,7 @@
                                         "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 1
+                                                "portId": 0
                                             }
                                         ]
                                     }
@@ -145,7 +145,7 @@
                                         "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 1
+                                                "portId": 0
                                             }
                                         ]
                                     }
