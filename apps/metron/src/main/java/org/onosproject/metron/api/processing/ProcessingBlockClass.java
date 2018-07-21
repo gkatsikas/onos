@@ -27,12 +27,14 @@ public enum ProcessingBlockClass {
     ARP_QUERIER("ARPQuerier"),
     ARP_RESPONDER("ARPResponder"),
     AVERAGE_COUNTER("AverageCounter"),
+    AVERAGE_COUNTER_MP("AverageCounterMP"),
     CHECK_ICMP_HEADER("CheckICMPHeader"),
     CHECK_IP_HEADER("CheckIPHeader"),
     CHECK_TCP_HEADER("CheckTCPHeader"),
     CHECK_UDP_HEADER("CheckUDPHeader"),
     CLASSIFIER("Classifier"),
     COUNTER("Counter"),
+    COUNTER_MP("CounterMP"),
     DEC_IP_TTL("DecIPTTL"),
     DIRECT_IP_LOOKUP("DirectIPLookup"),
     DISCARD("Discard"),
@@ -82,8 +84,8 @@ public enum ProcessingBlockClass {
     TO_SNORT_DEVICE("ToSnortDevice"),
     UDP_REWRITER("UDPRewriter"),
     UNSTRIP("Unstrip"),
-    VLANENCAP("VLANEncap"),
-    VLANDECAP("VLANDecap");
+    VLAN_ENCAP("VLANEncap"),
+    VLAN_DECAP("VLANDecap");
 
     private String processingBlockClass;
 

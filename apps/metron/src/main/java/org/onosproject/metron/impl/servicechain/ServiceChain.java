@@ -220,6 +220,21 @@ public class ServiceChain implements ServiceChainInterface {
     }
 
     @Override
+    public int nics() {
+        int nics = this.ingressPoints.size();
+
+        for (TrafficPoint ep : this.egressPoints) {
+            for (TrafficPoint ip : this.ingressPoints) {
+                if (!ip.equals(ep)) {
+                    nics++;
+                }
+            }
+        }
+
+        return nics;
+    }
+
+    @Override
     public ServiceChainState state() {
         return this.state;
     }

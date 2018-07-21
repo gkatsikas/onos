@@ -77,6 +77,8 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.instructions.Instructions;
 
 import org.slf4j.Logger;
+
+import com.google.common.base.Strings;
 import com.google.common.collect.Sets;
 
 import java.net.URI;
@@ -91,6 +93,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onosproject.metron.api.net.ClickFlowRuleAction.ALLOW;
 import static org.onosproject.metron.api.net.ClickFlowRuleAction.DROP;
@@ -147,6 +150,7 @@ public class TrafficClass implements TrafficClassInterface {
     private boolean calculateChecksum;          // Indicates that this traffic class modifies
     private String  ethernetEncapConfiguration; // The configuration of the Ethernet encapsulator
     private String  blackboxConfiguration;      // The configuration of an integrated Blackbox NF
+    private String  monitorConfiguration;       // The configuration of a(n) (Average)Counter
 
     /**
      * Flags that indicat the state of this traffic class.
@@ -163,6 +167,7 @@ public class TrafficClass implements TrafficClassInterface {
     private String  readOperationsAsString      = ""; //          Read operations as a string
     private String  writeOperationsAsString     = ""; //         Write operations as a string
     private String  blackboxOperationsAsString  = ""; //      Blackbox operations as a string
+    private String  monitorOperationsAsString   = ""; //       Monitor operations as a string
     private String  outputOperationsAsString    = ""; //        Output operations as a string
 
     private ApplicationId applicationId = null;
@@ -215,6 +220,7 @@ public class TrafficClass implements TrafficClassInterface {
         this.calculateChecksum          = false;
         this.ethernetEncapConfiguration = "";
         this.blackboxConfiguration      = "";
+        this.monitorConfiguration       = "";
 
         this.hasSoftwareRules           = false;
         this.totallyOffloadable         = true;
@@ -272,6 +278,7 @@ public class TrafficClass implements TrafficClassInterface {
         this.calculateChecksum          = other.calculateChecksum();
         this.ethernetEncapConfiguration = other.ethernetEncapConfiguration();
         this.blackboxConfiguration      = other.blackboxConfiguration();
+        this.monitorConfiguration       = other.monitorConfiguration();
 
         this.hasSoftwareRules           = other.hasSoftwareRules();
         this.totallyOffloadable         = other.isTotallyOffloadable();
@@ -291,6 +298,9 @@ public class TrafficClass implements TrafficClassInterface {
         }
         if (!other.blackboxOperationsAsString().isEmpty()) {
             this.blackboxOperationsAsString = other.blackboxOperationsAsString();
+        }
+        if (!other.monitorOperationsAsString().isEmpty()) {
+            this.monitorOperationsAsString = other.monitorOperationsAsString();
         }
         if (!other.outputOperationsAsString().isEmpty()) {
             this.outputOperationsAsString = other.outputOperationsAsString();
@@ -406,6 +416,14 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
+    public void setInputInterface(String inputInterface) {
+        checkArgument(
+            !Strings.isNullOrEmpty(inputInterface),
+            "Invalid input interface name for traffic class " + id());
+        this.inputInterface = inputInterface;
+    }
+
+    @Override
     public String networkFunctionOfInIface() {
         return this.networkFunctionOfInIface;
     }
@@ -413,6 +431,14 @@ public class TrafficClass implements TrafficClassInterface {
     @Override
     public String outputInterface() {
         return this.outputInterface;
+    }
+
+    @Override
+    public void setOutputInterface(String outputInterface) {
+        checkArgument(
+            !Strings.isNullOrEmpty(outputInterface),
+            "Invalid output interface name for traffic class " + id());
+        this.outputInterface = outputInterface;
     }
 
     @Override
@@ -453,6 +479,16 @@ public class TrafficClass implements TrafficClassInterface {
     @Override
     public boolean hasBlackboxConfiguration() {
         return !this.blackboxConfiguration.isEmpty();
+    }
+
+    @Override
+    public String monitorConfiguration() {
+        return this.monitorConfiguration;
+    }
+
+    @Override
+    public boolean hasMonitorConfiguration() {
+        return !this.monitorConfiguration.isEmpty();
     }
 
     @Override
@@ -547,6 +583,17 @@ public class TrafficClass implements TrafficClassInterface {
     @Override
     public void setBlackboxOperationsAsString(String blackboxOps) {
         this.blackboxOperationsAsString = blackboxOps;
+    }
+
+    @Override
+    public String monitorOperationsAsString() {
+        this.computeMonitorOperations();
+        return this.monitorOperationsAsString;
+    }
+
+    @Override
+    public void setMonitorOperationsAsString(String monitorOps) {
+        this.monitorOperationsAsString = monitorOps;
     }
 
     @Override
@@ -675,7 +722,7 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
-    public void computeInputOperations(short port) {
+    public void computeInputOperations(long port) {
         // Begin the journey from a device (input configuration)
         String inputConf = "input[" + port + "] -> ";
 
@@ -714,7 +761,7 @@ public class TrafficClass implements TrafficClassInterface {
         this.blackboxOperationsAsString = "";
 
         // No configuration available
-        if (this.blackboxConfiguration.isEmpty()) {
+        if (!this.hasBlackboxConfiguration()) {
             return;
         }
 
@@ -732,13 +779,28 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
-    public void computeOutputOperations(short port) {
+    public void computeMonitorOperations() {
+        this.monitorOperationsAsString = "";
+
+        // No configuration available
+        if (!this.hasMonitorConfiguration()) {
+            return;
+        }
+
+        this.monitorOperationsAsString += this.monitorConfiguration + " -> ";
+    }
+
+    @Override
+    public void computeOutputOperations(long port) {
         String outputConf = "";
 
         // The output part starts from the Ethernet layer
         if (!this.ethernetEncapConfiguration.isEmpty()) {
             outputConf += this.ethernetEncapConfiguration() + " -> ";
         }
+
+        // Potential Monitoring elements in the path
+        outputConf += this.monitorOperationsAsString();
 
         // Potential Blackbox NF integration: Click pipeline meets with a blackbox NF
         outputConf += this.blackboxOperationsAsString();
@@ -772,6 +834,12 @@ public class TrafficClass implements TrafficClassInterface {
             (blockClass == ProcessingBlockClass.IP_OUTPUT_COMBO)  ||
             (blockClass == ProcessingBlockClass.IP_FRAGMENTER)) {
             this.addPostRoutingOperation(blockClass);
+        // Counters
+        } else if ((blockClass == ProcessingBlockClass.AVERAGE_COUNTER)    ||
+                   (blockClass == ProcessingBlockClass.AVERAGE_COUNTER_MP) ||
+                   (blockClass == ProcessingBlockClass.COUNTER)            ||
+                   (blockClass == ProcessingBlockClass.COUNTER_MP)) {
+            this.monitorConfiguration = blockClass.toString();
         // Strip will likely change the processing layer
         } else if (blockClass == ProcessingBlockClass.STRIP) {
             Strip stripBlock = (Strip) block.processor();
@@ -796,9 +864,9 @@ public class TrafficClass implements TrafficClassInterface {
             if (markIpHdrBlock.offset() == MarkIpHeader.IP_OFFSET) {
                 this.setProcessingLayer(ProcessingLayer.NETWORK);
             }
+        // Ethernet configuration
         } else if (blockClass == ProcessingBlockClass.ETHER_ENCAP) {
             EtherEncap etherEncapBlock = (EtherEncap) block.processor();
-            // this.ethernetEncapConfiguration = "EtherEncap(ETHERTYPE " + etherEncapBlock.etherTypeHexString() +
             this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherEncapBlock.srcMacStr() +
                                                          ", DST " + etherEncapBlock.dstMacStr() + ")";
         } else if (blockClass == ProcessingBlockClass.STORE_ETHER_ADDRESS) {
@@ -1048,7 +1116,7 @@ public class TrafficClass implements TrafficClassInterface {
 
         // For each datapath component of this traffic class
         for (String tc : this.binaryTree.datapathTrafficClasses()) {
-            log.info("\t Traffic class filters: {}", tc);
+            log.debug("\t Traffic class filters: {}", tc);
 
             // Get the packet filters
             Set<TextualPacketFilter> packetFilters = this.binaryTree.getPacketFiltersOf(tc);
@@ -1133,7 +1201,7 @@ public class TrafficClass implements TrafficClassInterface {
             }
         }
 
-        // printPacketFilters();
+        printPacketFilters();
 
         return;
     }
@@ -1431,14 +1499,14 @@ public class TrafficClass implements TrafficClassInterface {
                 treatment.decNwTtl();
             }
 
-            // This rule contains input dispatching information
+            // This rule contains a traffic dispatching action
             if ((inputPort >= 0) && (queueIndex >= 0)) {
                 treatment.add(
                     Instructions.setQueue(queueIndex, PortNumber.portNumber(inputPort))
                 );
             }
 
-            // This rule contains output information
+            // This rule contains output action
             if (outputPort >= 0) {
                 treatment.add(
                     Instructions.createOutput(PortNumber.portNumber(outputPort))
@@ -1451,6 +1519,11 @@ public class TrafficClass implements TrafficClassInterface {
 
         // A server device's NIC rule requires a few more things
         if (isServerDevice) {
+            checkArgument(
+                inputPort >= 0,
+                "Traffic class " + id() + " is associated with invalid NIC port "
+                + Long.toString(inputPort));
+
             NicFlowRule.Builder serverRuleBuilder = new DefaultDpdkNicFlowRule.Builder();
 
             long cpuCoreId = queueIndex;
@@ -1458,10 +1531,14 @@ public class TrafficClass implements TrafficClassInterface {
                 cpuCoreId = ((FlowRxFilterValue) rxFilterValue).value();
             }
 
+            String nicName = this.inputInterface();
+            checkArgument(
+                !nicName.isEmpty(),
+                "Associate traffic class " + id() + " with a valid NIC name");
+
             serverRuleBuilder.fromFlowRule(rule);
             serverRuleBuilder.withTrafficClassId(tcId.toString());
-            // TODO: Pass the interface name as announced by the agent (e.g., fd0)
-            serverRuleBuilder.withInterfaceName(this.inputInterface());
+            serverRuleBuilder.withInterfaceName(nicName);
             serverRuleBuilder.withInterfaceNumber(inputPort);
             serverRuleBuilder.assignedToCpuCore(cpuCoreId);
 
@@ -1521,7 +1598,7 @@ public class TrafficClass implements TrafficClassInterface {
                 targetPacketFilters = this.hwPacketFiltersMap.get(tc);
             }
 
-            log.info("Traffic class '{}' is {}", tc, isHwCompliant ? "HW-based" : "SW-based");
+            log.info("{} Traffic Class: {}", isHwCompliant ? "HW-based" : "SW-based", tc);
         }
     }
 

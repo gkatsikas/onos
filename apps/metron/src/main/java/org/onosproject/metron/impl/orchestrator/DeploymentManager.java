@@ -634,12 +634,13 @@ public final class DeploymentManager
         boolean inFlowDirMode = sc.isServerLevel() && sc.isHardwareBased();
         boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
 
+        // User-provided CPU information from the JSON
         // Start with conservative CPU requirements if not in RSS mode
-        int cpus = inRssMode ? sc.cpuCores() : 1;
-
+        int userRequestedCpus = inRssMode ? sc.cpuCores() : 1;
         // This is an upper limit of cores you can use
-        int maxCpus = sc.cpuCores();
-
+        int userRequestedMaxCpus = sc.cpuCores();
+        // The required number of NICs
+        int userRequestedNics = sc.nics();
         // Autoscale can only be enabled for non-RSS modes
         boolean autoscale = inRssMode ? false : this.enableAutoscale;
 
@@ -650,54 +651,87 @@ public final class DeploymentManager
         // Obtain the ID of the service chain
         ServiceChainId scId = sc.id();
 
-        // Get the configuration
-        String confType = dpTree.type().toString();
-        checkNotNull(confType, "[" + label() + "] Service chain configuration type is NULL");
-        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(isOffloadable);
-        checkNotNull(serviceChainConf, "[" + label() + "] Service chain configuration is NULL");
-
-        /**
-         * This is the number of cores required for this service chain.
-         * This number implies that we can allocate one CPU/traffic class.
-         * Such an allocation will guarantee high throughput but it can
-         * quickly exhaust all the cores of a machine, if a service chain
-         * consists of a fairly large number of traffic classes.
-         */
-        int numberOfCores = serviceChainConf.size();
-        if (numberOfCores <= 0) {
-            throw new DeploymentException(
-                "[" + label() + "] Server-level configuration for service chain " +
-                sc.name() + " is empty; nothing to instantiate"
-            );
-        }
-
-        // This is the number of NICs required for this service chain.
-        int numberOfNics = dpTree.numberOfNics();
-
         // Pick a server with enough resources
-        RestServerSBDevice server = this.getLeastOverloadedServer(numberOfCores, numberOfNics);
+        RestServerSBDevice server = this.getLeastOverloadedServer(userRequestedMaxCpus, userRequestedNics);
         if (server == null) {
             log.error(
                 "[{}] \t Service chain with ID {} cannot be deployed. " +
-                "Either no servers are available or all the servers are busy.",
-                label(), scId
+                "Either no servers are available or none of the available servers " +
+                "complies with the processing requirements (i.e., {} NICs and up to {} CPU cores) " +
+                "of this service chain.",
+                label(), scId, Integer.toString(userRequestedNics), Integer.toString(userRequestedMaxCpus)
             );
 
             return null;
         }
 
         DeviceId deviceId = server.deviceId();
+        int serverNics = server.numberOfNics();
 
-        // And the NICs required to run
+        // Requires rule installation in the server's NIC
+        TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
+        checkNotNull(ingressPoint, "Cannot generate NIC flow rules without ingress point information");
+        PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
+        long serverIngPort = serverIngPortNum.toLong();
+
+        TrafficPoint egressPoint  = sc.egressPointOfDevice(deviceId);
+        checkNotNull(egressPoint, "Cannot generate NIC flow rules without ingress point information");
+        PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
+        long serverEgrPort = serverEgrPortNum.toLong();
+
+
+        // In Flow Direcotr mode there is no network placement, thus path must be built here
+        if (inFlowDirMode) {
+            PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
+                new ConnectPoint(deviceId, serverIngPortNum),
+                new ConnectPoint(deviceId, serverEgrPortNum),
+                serverIngPort, serverEgrPort, true
+            );
+        }
+
+        // Get the configuration
+        String confType = dpTree.type().toString();
+        checkNotNull(confType, "[" + label() + "] Service chain configuration type is NULL");
+        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(server, isOffloadable);
+        checkNotNull(serviceChainConf, "[" + label() + "] Service chain configuration is NULL");
+
+        /**
+         * This is the number of cores required for this service chain.
+         * To avoid quickly exhausting the available CPUs by allocating
+         * one core/traffic class, dpTree.softwareConfiguration performs
+         * traffic class grouping.
+         * If this grouping appears to be performing poorly, then a
+         * traffic class deflation is triggered, splitting the group
+         * into two sub-groups until load gets balanced.
+         */
+        int neededCpus = serviceChainConf.size();
         checkArgument(
-            server.numberOfNics() >= numberOfNics,
-            "Metron agent " + deviceId + " requires " +
-            Integer.toString(numberOfNics) + " NICs for this deployment"
+            neededCpus > 0,
+            "[" + label() + "] No server-level CPU configuration for service chain " +
+                sc.name() + "; nothing to instantiate");
+        checkArgument(
+            neededCpus <= userRequestedMaxCpus,
+            "[" + label() + "] Service chain " + sc.name() + " requires " + neededCpus +
+            "CPU cores, but user has requested only " + userRequestedMaxCpus + " CPU cores");
+
+        // This is the number of NICs required for this service chain
+        int neededNics = dpTree.numberOfNics();
+        checkArgument(
+            serverNics >= neededNics,
+            "Metron agent " + deviceId + " has " +
+            Integer.toString(serverNics) + " NICs, but " +
+            Integer.toString(neededNics) + " are required for this deployment"
         );
+        checkArgument(
+            userRequestedNics >= neededNics,
+            "User defined ingress/egress point indicate the need for " + Integer.toString(userRequestedNics) + " NICs, " +
+            "but the required number of NICs according to the Click elements is " + Integer.toString(neededNics)
+        );
+
         Set<String> nics = new ConcurrentSkipListSet<String>();
-        for (int i = 0; i < numberOfNics; i++) {
+        for (int i = 0; i < neededNics; i++) {
             NicDevice nic = (NicDevice) server.nics().toArray()[i];
-            nics.add(nic.id());
+            nics.add(nic.name());
         }
 
         // Runtime information per traffic class
@@ -716,7 +750,7 @@ public final class DeploymentManager
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.deployTrafficClassOfServiceChain(
                     deviceId, scId, tcId, sc.scope(),
-                    confType, conf, cpus, maxCpus,
+                    confType, conf, userRequestedCpus, userRequestedMaxCpus,
                     nics, autoscale
                 );
 
@@ -733,40 +767,24 @@ public final class DeploymentManager
             serviceChainRuntimeInfo.add(tcRuntimeInfo);
 
             // Update the monitoring service
-            monitoringService.addActiveCoresToDevice(deviceId, cpus);
+            monitoringService.addActiveCoresToDevice(deviceId, userRequestedCpus);
         }
 
         // Push this information to the distributed store
         serviceChainService.addRuntimeInformationToServiceChain(scId, serviceChainRuntimeInfo);
 
-        // Now the traffic class is deployed; ask the Metron agent to provide deployment information.
+        // Now the traffic class is deployed; ask Metron agent to provide deployment information
         if (!this.askForRuntimeInfo(scId, iface)) {
             throw new DeploymentException(
                 "\t Failed to retrieve runtime information for service chain " + scId
             );
         }
 
-        // Requires rule installation into the server's NIC
+        // Perform rule installation in the server's NIC
         if (inFlowDirMode) {
-            TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
-            checkNotNull(
-                ingressPoint,
-                "Cannot generate NIC flow rules without ingress point information"
-            );
-            PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
-            long serverIngPort = serverIngPortNum.toLong();
-
-            TrafficPoint egressPoint  = sc.egressPointOfDevice(deviceId);
-            checkNotNull(
-                egressPoint,
-                "Cannot generate NIC flow rules without ingress point information"
-            );
-            PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
-            long serverEgrPort = serverEgrPortNum.toLong();
-
-            // Generate the hardware configuration of this service chain.
+            // Generate the hardware configuration for this service chain
             Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, deviceId, serverIngPort, cpus, serverEgrPort, true, false
+                scId, dpTree, deviceId, serverIngPort, userRequestedCpus, serverEgrPort, true, false
             );
 
             // Get the set of rules that comprise the hardware configuration
@@ -774,13 +792,6 @@ public final class DeploymentManager
 
             // Push them to the server
             this.installRules(scId, rules, false);
-
-            // Build the path of this service chain
-            PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
-                new ConnectPoint(deviceId, serverIngPortNum),
-                new ConnectPoint(deviceId, serverEgrPortNum),
-                serverIngPort, serverEgrPort, true
-            );
         }
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);

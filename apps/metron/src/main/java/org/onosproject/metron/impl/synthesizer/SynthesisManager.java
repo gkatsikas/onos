@@ -776,6 +776,7 @@ public final class SynthesisManager
                  "using current value of {}", this.enableSynthesizer
             );
         } else {
+            checkArgument(enableSynthesizerGiven, "Synthesizer cannot be currently disabled!");
             this.enableSynthesizer = enableSynthesizerGiven;
             log.info(
                 "Configured! Synthesizer state is {}",

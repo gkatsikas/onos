@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-present Open Networking Foundation
+ * Copyright 2018-present Open Networking Foundation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,15 @@ package org.onosproject.metron.impl.processing.blocks;
 
 import org.onosproject.metron.api.processing.ProcessingBlockClass;
 
-import org.onosproject.metron.impl.processing.ModifierBlock;
+import org.onosproject.metron.impl.processing.TransparentBlock;
 import org.onosproject.metron.impl.processing.ProcessingBlock;
 
 /**
- * Modifier block that swaps Ethernet source and destination.
+ * Transparent block that measures packet count and rate.
  */
-public class EtherMirror extends ModifierBlock {
+public class Counter extends TransparentBlock {
 
-    public EtherMirror(
+    public Counter(
             String id,
             String conf,
             String confFile) {
@@ -35,7 +35,7 @@ public class EtherMirror extends ModifierBlock {
 
     @Override
     public ProcessingBlockClass processingBlockClass() {
-        return ProcessingBlockClass.ETHER_MIRROR;
+        return ProcessingBlockClass.COUNTER;
     }
 
     @Override
@@ -45,7 +45,7 @@ public class EtherMirror extends ModifierBlock {
 
     @Override
     protected ProcessingBlock spawn(String id) {
-        return new EtherMirror(
+        return new Counter(
             id,
             this.configuration(),
             this.configurationFile()

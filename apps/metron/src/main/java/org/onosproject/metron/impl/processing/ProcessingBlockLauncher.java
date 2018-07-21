@@ -19,7 +19,9 @@ package org.onosproject.metron.impl.processing;
 import org.onosproject.metron.api.processing.ProcessingBlockClass;
 import org.onosproject.metron.api.processing.ProcessingBlockInterface;
 
+import org.onosproject.metron.impl.processing.blocks.AverageCounter;
 import org.onosproject.metron.impl.processing.blocks.CheckIpHeader;
+import org.onosproject.metron.impl.processing.blocks.Counter;
 import org.onosproject.metron.impl.processing.blocks.Classifier;
 import org.onosproject.metron.impl.processing.blocks.DecIpTtl;
 import org.onosproject.metron.impl.processing.blocks.Discard;
@@ -75,7 +77,13 @@ public final class ProcessingBlockLauncher {
             String instanceConf,
             String instanceConfFile) {
 
-        if        (blockClass == ProcessingBlockClass.CHECK_IP_HEADER) {
+        if        ((blockClass == ProcessingBlockClass.AVERAGE_COUNTER) ||
+                   (blockClass == ProcessingBlockClass.AVERAGE_COUNTER_MP)) {
+            return new AverageCounter(instanceId, instanceConf, instanceConfFile);
+        } else if ((blockClass == ProcessingBlockClass.COUNTER) ||
+                   (blockClass == ProcessingBlockClass.COUNTER_MP)) {
+            return new Counter(instanceId, instanceConf, instanceConfFile);
+        } else if (blockClass == ProcessingBlockClass.CHECK_IP_HEADER) {
             return new CheckIpHeader(instanceId, instanceConf, instanceConfFile);
         } else if (blockClass == ProcessingBlockClass.CLASSIFIER) {
             return new Classifier(instanceId, instanceConf, instanceConfFile);

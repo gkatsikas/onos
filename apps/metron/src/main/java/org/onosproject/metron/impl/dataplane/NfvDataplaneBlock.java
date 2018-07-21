@@ -78,7 +78,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
     private String               networkFunctionOfOutIface;
 
     /**
-     * Global counters that allows us to create
+     * Global counter that allows us to create
      * Discard blocks with unique IDs at will.
      */
     private static int newDiscardInstanceIndex = 0;
@@ -319,11 +319,14 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
             this.blockClass = ProcessingBlockClass.DISCARD;
         // All these blocks have a single output port
         } else if ((this.blockClass == ProcessingBlockClass.ARP_QUERIER) ||
+                   (this.blockClass == ProcessingBlockClass.AVERAGE_COUNTER) ||
+                   (this.blockClass == ProcessingBlockClass.AVERAGE_COUNTER_MP) ||
                    (this.blockClass == ProcessingBlockClass.CHECK_ICMP_HEADER) ||
                    (this.blockClass == ProcessingBlockClass.CHECK_IP_HEADER) ||
                    (this.blockClass == ProcessingBlockClass.CHECK_TCP_HEADER) ||
                    (this.blockClass == ProcessingBlockClass.CHECK_UDP_HEADER) ||
                    (this.blockClass == ProcessingBlockClass.COUNTER) ||
+                   (this.blockClass == ProcessingBlockClass.COUNTER_MP) ||
                    (this.blockClass == ProcessingBlockClass.ETHER_ENCAP) ||
                    (this.blockClass == ProcessingBlockClass.ETHER_REWRITE) ||
                    (this.blockClass == ProcessingBlockClass.ETHER_MIRROR) ||
@@ -397,9 +400,9 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
             this.parseTcpRewriter(inputPort);
         } else if (this.blockClass == ProcessingBlockClass.UDP_REWRITER) {
             this.parseUdpRewriter(inputPort);
-        } else if (this.blockClass == ProcessingBlockClass.VLANENCAP) {
+        } else if (this.blockClass == ProcessingBlockClass.VLAN_ENCAP) {
             this.parseVlanEncap();
-        } else if (this.blockClass == ProcessingBlockClass.VLANDECAP) {
+        } else if (this.blockClass == ProcessingBlockClass.VLAN_DECAP) {
             this.parseVlanDecap();
         } else {
             throw new SynthesisException(
@@ -415,6 +418,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
      * This is a low-level (hex-based) L2-L7 classifier.
      */
     private void parseClassifier() {
+        // TODO
         return;
     }
 
@@ -424,6 +428,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
      * However, it does not cover classification beyond L2.
      */
     private void parseSimpleEthernetClassifier() {
+        // TODO
         return;
     }
 
@@ -927,6 +932,8 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
      * Parse the configuration of an IPFragmenter block.
      */
     private void parseIpFragmenter() {
+        // TODO
+        // this.addOutputClass(0);
         return;
     }
 
@@ -935,6 +942,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
      * Works in tandem with IPRewriter to provide round-robin rewriting.
      */
     private void parseRoundRobinIpMapper() {
+        // TODO
         return;
     }
 

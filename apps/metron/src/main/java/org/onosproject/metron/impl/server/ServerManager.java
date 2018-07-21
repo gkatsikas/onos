@@ -271,7 +271,7 @@ public class ServerManager
         // Find the Rx filtering mechanism to be used
         for (String nicStr : nicIds) {
             for (NicDevice nic : device.nics()) {
-                if (nic.id().equals(nicStr)) {
+                if (nic.name().equals(nicStr)) {
                     for (RxFilter rf : nic.rxFilterMechanisms().rxFilters()) {
                         // Pick the first supported Rx filter
                         if (RxFilter.isSupported(rf)) {
@@ -559,8 +559,8 @@ public class ServerManager
         // Each NIC has a list of tags, one per CPU core
         Map<String, String> nicsToTags = mapper.convertValue(tagValNode, Map.class);
         for (Map.Entry<String, String> entry : nicsToTags.entrySet()) {
-            String nicId = entry.getKey();
-            JsonNode filterNode = tagValNode.path(nicId);
+            String nicName = entry.getKey();
+            JsonNode filterNode = tagValNode.path(nicName);
 
             // Convert the JSON list into a set of strings
             Set<String> rxFilterValuesStr = null;
@@ -574,7 +574,7 @@ public class ServerManager
             }
 
             // Add the tags for this NIC
-            addTag(deviceId, scId, tcId, tcInfo, nicId, tagMethod, rxFilterValuesStr);
+            addTag(deviceId, scId, tcId, tcInfo, nicName, tagMethod, rxFilterValuesStr);
         }
 
         String    configType = BasicServerDriver.get(jsonNode, PARAM_CONFIG_TYPE);
@@ -883,13 +883,13 @@ public class ServerManager
      * @param scId the service chain's ID
      * @param tcId the service chain's traffic class ID
      * @param tcInfo the service chain's traffic class information
-     * @param nicId the NIC ID where the tags are applied
+     * @param nicName the NIC where the tags are applied
      * @param tagMethod the Rx filter methodo of this service chain
      * @param rxFilterValuesStr a set of Rx filter values to add
      */
     private void addTag(
             DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
-            String nicId, String tagMethod, Set<String> rxFilterValuesStr) {
+            String nicName, String tagMethod, Set<String> rxFilterValuesStr) {
         for (String tagValue : rxFilterValuesStr) {
             if (Strings.isNullOrEmpty(tagValue)) {
                 continue;
@@ -897,18 +897,18 @@ public class ServerManager
 
             if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
                 MacAddress mac = MacAddress.valueOf(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MacRxFilterValue(mac));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MacRxFilterValue(mac));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_MPLS)) {
                 MplsLabel mplsLabel = MplsLabel.mplsLabel(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new MplsRxFilterValue(mplsLabel));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MplsRxFilterValue(mplsLabel));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
                 VlanId vlanId = VlanId.vlanId(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new VlanRxFilterValue(vlanId));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new VlanRxFilterValue(vlanId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
                 long coreId = Long.parseLong(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new FlowRxFilterValue(coreId));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new FlowRxFilterValue(coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicId, new RssRxFilterValue());
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue());
             } else {
                 throw new ProtocolException(
                     "[" + label() + "] Unsupported Rx filter method for traffic class " +
@@ -916,7 +916,7 @@ public class ServerManager
                 );
             }
 
-            log.info("[{}] \t NIC {} - Tag {}", label(), nicId, tagValue);
+            log.info("[{}] \t NIC {} - Tag {}", label(), nicName, tagValue);
         }
     }
 
