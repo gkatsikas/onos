@@ -105,7 +105,8 @@ public final class OrchestrationManager
     // The CPU thresholds used for load balancing
     private static final float ZERO_CPU_LOAD        = (float) 0.0;
     private static final float CPU_OVERLOAD_LIMIT   = (float) 0.75;
-    private static final float CPU_UNDERLOAD_LIMIT  = (float) 0.15;
+    private static final float CPU_UNDERLOAD_LIMIT  = (float) 0.35;
+    private static final float CPU_MINIMUM_LIMIT    = (float) 0.01;
 
     /**
      * Members:
@@ -375,6 +376,7 @@ public final class OrchestrationManager
         }
 
         ServiceChainId scId = sc.id();
+        boolean withLimitedReconfiguration = sc.isSoftwareBased() ? true : false;
 
         // Fetch the dataplane tree of this service chain
         NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(
@@ -401,19 +403,23 @@ public final class OrchestrationManager
         for (Map.Entry<Integer, Float> entry : loadedCores.entrySet()) {
             // The physical CPU core number that exhibits some load
             int cpu = entry.getKey().intValue();
-            // The amount of load of this CPU core
+            // The amount of load on this CPU core
             float load = entry.getValue().floatValue();
+            float loadScaled = load * 100;
 
-            log.info(
-                "[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
-                label(), tcId, cpu, (load * 100)
-            );
+            // Print load only if there is some
+            if (load >= CPU_MINIMUM_LIMIT) {
+                log.info(
+                    "[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
+                    label(), tcId, cpu, loadScaled
+                );
+            }
 
             // Update with the new one
             monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, load);
 
-            // We let the agent handle imbalances
-            if (this.autoScale || sc.isSoftwareBased()) {
+            // We let the agent handle imbalances by auto scaling
+            if (this.autoScale) {
                 continue;
             }
 
@@ -425,23 +431,27 @@ public final class OrchestrationManager
                     tcId,
                     deviceId,
                     cpu,
-                    maxCpus
+                    maxCpus,
+                    withLimitedReconfiguration
                 );
 
                 previousLoad.set(load);
                 isRebalanced.set(true);
 
                 return;
-            // We are at a low load level for the first time
-            } else if ((load <= CPU_UNDERLOAD_LIMIT) &&
-                       (previousLoad.get() >= CPU_UNDERLOAD_LIMIT)) {
+            // Load has decreased to the desired level for scale in
+            } else if (
+                    ((load <= CPU_UNDERLOAD_LIMIT) && (previousLoad.get() >= CPU_UNDERLOAD_LIMIT)) ||
+                    ((load <= CPU_UNDERLOAD_LIMIT) &&  !isRebalanced.get())
+            ) {
                 // Scale in
                 this.inflateLoad(
                     scId,
                     tcId,
                     deviceId,
                     cpu,
-                    maxCpus
+                    maxCpus,
+                    withLimitedReconfiguration
                 );
 
                 previousLoad.set(load);
@@ -461,16 +471,18 @@ public final class OrchestrationManager
             URI            tcId,
             DeviceId       deviceId,
             int            overLoadedCpu,
-            int            maxCpus) {
+            int            maxCpus,
+            boolean        limitedReconfiguration) {
         log.info("");
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] \t Deflate load on traffic class group {}: Core {}", label(), tcId, overLoadedCpu);
 
-        // We want one additional CPU core
         int initialCores = taggingService.getNumberOfActiveCoresOfTrafficClassGroup(tcId);
+
+        // We want to increase the number of CPU cores by one
         int cpuCoresToAllocate = initialCores + 1;
         if (cpuCoresToAllocate > maxCpus) {
-            log.warn("[{}] \t Not enough cores to further deflate this traffic class group", label());
+            log.warn("[{}] \t Not enough cores to deflate this traffic class group", label());
             log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
             log.info("");
             return;
@@ -495,7 +507,9 @@ public final class OrchestrationManager
             scId, tcId
         );
 
-        // Perform the deflation
+        Set<FlowRule> newRules = null;
+
+        // Compute the deflated traffic classes
         Pair<RxFilterValue, Set<TrafficClassInterface>> changes = taggingService.deflateTrafficClassGroup(tcId);
 
         // Check what is sent back
@@ -504,24 +518,27 @@ public final class OrchestrationManager
             return;
         }
 
-        // The Tag Manager sent us the affected traffic classes along with their new tag
-        RxFilterValue changedTag = changes.getKey();
-        Set<TrafficClassInterface> changedTcs = changes.getValue();
-        RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
+        // Proper way of deflating
+        if (!limitedReconfiguration) {
+            // The Tag Manager sent us the affected traffic classes along with their new tag
+            RxFilterValue changedTag = changes.getKey();
+            Set<TrafficClassInterface> changedTcs = changes.getValue();
+            RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
-        checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
+            checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
 
-        // Get useful information about the device that will host the new rules
-        DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
-        long offloaderInPort = tree.pathEstablisher().serverInressPort();
-        long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+            // Get useful information about the device that will host the new rules
+            DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
+            long  offloaderInPort = tree.pathEstablisher().serverInressPort();
+            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
-        // Compute the new rules
-        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
-            changedTcs, tcId, deployerService.applicationId(), offloaderId,
-            offloaderInPort, (long) cpuCoresToAllocate, offloaderOutPort,
-            filterMechanism, changedTag, true
-        );
+            // Compute the new rules
+            newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
+                changedTcs, tcId, deployerService.applicationId(), offloaderId,
+                offloaderInPort, (long) cpuCoresToAllocate, offloaderOutPort,
+                filterMechanism, changedTag, true
+            );
+        }
 
         // STOP
         WallClockNanoTimestamp endReconf = new WallClockNanoTimestamp();
@@ -537,7 +554,9 @@ public final class OrchestrationManager
         this.doReconfiguration(deviceId, scId, tcId, newRules, cpuCoresToAllocate);
 
         // Update the rules of this traffic class
-        this.updateRulesOfTrafficClass(tree, tcId, newRules);
+        if (!limitedReconfiguration) {
+            this.updateRulesOfTrafficClass(tree, tcId, newRules);
+        }
 
         log.info("[{}] \t Done", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
@@ -550,16 +569,21 @@ public final class OrchestrationManager
             URI            tcId,
             DeviceId       deviceId,
             int            underLoadedCpu,
-            int            maxCpus) {
+            int            maxCpus,
+            boolean        limitedReconfiguration) {
+        int initialCores = taggingService.getNumberOfActiveCoresOfTrafficClassGroup(tcId);
+        if (initialCores == 1) {
+            return;
+        }
+
         log.info("");
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] \t Inflate load on traffic class group {}: Core {}", label(), tcId, underLoadedCpu);
 
-        // We want one less CPU core
-        int initialCores = taggingService.getNumberOfActiveCoresOfTrafficClassGroup(tcId);
+        // We want to decrease the number of CPU cores by one
         int cpuCoresToAllocate = initialCores - 1;
         if (cpuCoresToAllocate <= 0) {
-            log.warn("[{}] \t Only once CPU core is left, cannot inflate this traffic class group", label());
+            log.warn("[{}] \t Only one CPU core is left, cannot inflate this traffic class group", label());
             log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
             log.info("");
             return;
@@ -584,7 +608,9 @@ public final class OrchestrationManager
             scId, tcId
         );
 
-        // Perform the inflation
+        Set<FlowRule> newRules = null;
+
+        // Compute the inflated traffic classes
         Pair<RxFilterValue, Set<TrafficClassInterface>> changes = taggingService.inflateTrafficClassGroup(tcId);
 
         // Check what is sent back
@@ -593,24 +619,27 @@ public final class OrchestrationManager
             return;
         }
 
-        // The Tag Manager sent us the affected traffic classes along with their new tag
-        RxFilterValue changedTag = changes.getKey();
-        Set<TrafficClassInterface> changedTcs = changes.getValue();
-        RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
+        // Proper way of deflating
+        if (!limitedReconfiguration) {
+            // The Tag Manager sent us the affected traffic classes along with their new tag
+            RxFilterValue changedTag = changes.getKey();
+            Set<TrafficClassInterface> changedTcs = changes.getValue();
+            RxFilter filterMechanism = taggingService.getTaggingMechanismOfTrafficClassGroup(tcId);
 
-        checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
+            checkNotNull(tree.pathEstablisher(), "No path established for service chain " + scId);
 
-        // Get useful information about the device that will host the new rules
-        DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
-        long offloaderInPort = tree.pathEstablisher().serverInressPort();
-        long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+            // Get useful information about the device that will host the new rules
+            DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
+            long offloaderInPort = tree.pathEstablisher().serverInressPort();
+            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
 
-        // Compute the new rules
-        Set<FlowRule> newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
-            changedTcs, tcId, deployerService.applicationId(), offloaderId,
-            offloaderInPort, cpuCoresToAllocate, offloaderOutPort,
-            filterMechanism, changedTag, true
-        );
+            // Compute the new rules
+            newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
+                changedTcs, tcId, deployerService.applicationId(), offloaderId,
+                offloaderInPort, cpuCoresToAllocate, offloaderOutPort,
+                filterMechanism, changedTag, true
+            );
+        }
 
         // STOP
         WallClockNanoTimestamp endReconf = new WallClockNanoTimestamp();
@@ -626,7 +655,9 @@ public final class OrchestrationManager
         this.doReconfiguration(deviceId, scId, tcId, newRules, cpuCoresToAllocate);
 
         // Update the rules of this traffic class
-        this.updateRulesOfTrafficClass(tree, tcId, newRules);
+        if (!limitedReconfiguration) {
+            this.updateRulesOfTrafficClass(tree, tcId, newRules);
+        }
 
         log.info("[{}] \t Done", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
@@ -732,8 +763,10 @@ public final class OrchestrationManager
             deviceId, scId, tcId, null, null, cpuCoresToAllocate, -1
         );
 
-        // Push the rules to the switch
-        deployerService.updateRules(scId, newRules);
+        // Push the rules to the device
+        if (newRules != null) {
+            deployerService.updateRules(scId, newRules);
+        }
 
         // STOP
         WallClockNanoTimestamp endEnforc = new WallClockNanoTimestamp();

@@ -327,11 +327,6 @@ public final class TagManager implements TagService {
         // Inform the tag manager about the the tagging mechanism of this group of traffic classes
         this.setTaggingMechanismOfTrafficClassGroup(tcGroupId, rxFilter);
 
-        // RSS mode does not require dynamic load balancing
-        if (rxFilter == RxFilter.RSS) {
-            return;
-        }
-
         // Inform the tag manager about the tags that can be used by this group of traffic classes
         this.setAvailableTagsOfTrafficClassGroup(tcGroupId, rxFilterValues);
 
