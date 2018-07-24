@@ -26,7 +26,7 @@
         <version>1.14.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>onos-app-metron</artifactId>
+    <artifactId>onos-apps-metron</artifactId>
     <packaging>bundle</packaging>
 
     <!-- Link to our USENIX NSDI 2018 paper -->
