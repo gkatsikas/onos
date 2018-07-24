@@ -908,7 +908,8 @@ public class ServerManager
                 long coreId = Long.parseLong(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new FlowRxFilterValue(coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue());
+                int coreId = Integer.parseInt(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue(coreId));
             } else {
                 throw new ProtocolException(
                     "[" + label() + "] Unsupported Rx filter method for traffic class " +

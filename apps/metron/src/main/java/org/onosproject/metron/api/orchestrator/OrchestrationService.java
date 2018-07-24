@@ -78,13 +78,17 @@ public interface OrchestrationService {
      * @param deviceId the ID of the device where the overload occured
      * @param overLoadedCpu the CPU core that exhibits overload
      * @param maxCpus the new maximum number of CPUs you can currently have
+     * @param limitedReconfiguration the device to reconfigure has limited
+              reconfiguration abilities (e.g., RSS mode requires to simply
+              increase the number of queues)
      */
     void deflateLoad(
         ServiceChainId scId,
         URI            tcId,
         DeviceId       deviceId,
         int            overLoadedCpu,
-        int            maxCpus
+        int            maxCpus,
+        boolean        limitedReconfiguration
     );
 
     /**
@@ -96,13 +100,17 @@ public interface OrchestrationService {
      * @param deviceId the ID of the device where the overload occured
      * @param underLoadedCpu the CPU core that exhibits underload
      * @param maxCpus the new maximum number of CPUs you can currently have
+     * @param limitedReconfiguration the device to reconfigure has limited
+              reconfiguration abilities (e.g., RSS mode requires to simply
+              decrease the number of queues)
      */
     void inflateLoad(
         ServiceChainId scId,
         URI            tcId,
         DeviceId       deviceId,
         int            underLoadedCpu,
-        int            maxCpus
+        int            maxCpus,
+        boolean        limitedReconfiguration
     );
 
 }
