@@ -7,7 +7,8 @@
                         "nameeeee"   : "fw-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 5,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 5,
                         "scope"      : "network-mac",
                         "components" : [
                             {

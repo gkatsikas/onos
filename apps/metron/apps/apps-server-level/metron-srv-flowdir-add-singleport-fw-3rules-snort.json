@@ -7,7 +7,8 @@
                         "name"       : "metron-srv-flowdir-singleport-fw-3rules-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 3,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 3,
                         "scope"      : "server-rules",
                         "components" : [
                             {

@@ -99,6 +99,20 @@ public interface ServiceChainInterface {
     void setCpuCores(int cpuCores);
 
     /**
+     * Returns the maximum number of CPU cores for this service chain.
+     *
+     * @return service chain's maximum number of CPU cores
+     */
+    int maxCpuCores();
+
+    /**
+     * Sets the maximum number of CPU cores for this service chain.
+     *
+     * @param cpuCores service chain's maximum number of CPU cores
+     */
+    void setMaxCpuCores(int maxCpuCores);
+
+    /**
      * Returns the number of NICs required for this service chain.
      *
      * @return service chain's number of NICs

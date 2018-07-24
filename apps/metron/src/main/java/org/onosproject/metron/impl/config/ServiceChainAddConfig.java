@@ -83,6 +83,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.onosproject.net.config.Config.FieldPresence.MANDATORY;
+import static org.onosproject.net.config.Config.FieldPresence.OPTIONAL;
 
 /**
  * Configuration for adding new Metron service chains.
@@ -101,12 +102,6 @@ public final class ServiceChainAddConfig
     private static final int ALL_OUTPUT_PORTS = -1;
 
     /**
-     * Default amount of processing resources for a service chain.
-     */
-    private static final int DEFAULT_CPU_CORES = 1;
-
-
-    /**
      * A service chain is defined using this attribute.
      */
     private static final String SC_TITLE      = "servicechains";
@@ -115,14 +110,15 @@ public final class ServiceChainAddConfig
      * Each service chain should have
      * the following main attributes.
      */
-    private static final String SC_NAME       = "name";
-    private static final String SC_TYPE       = "type";
-    private static final String SC_NETWORK_ID = "networkId";
-    private static final String SC_CPU_CORES  = "cpuCores";
-    private static final String SC_SCOPE      = "scope";
-    private static final String SC_COMPONENTS = "components";
-    private static final String SC_PROCESSORS = "processors";
-    private static final String SC_TOPOLOGY   = "topology";
+    private static final String SC_NAME          = "name";
+    private static final String SC_TYPE          = "type";
+    private static final String SC_NETWORK_ID    = "networkId";
+    private static final String SC_CPU_CORES     = "cpuCores";
+    private static final String SC_MAX_CPU_CORES = "maxCpuCores";
+    private static final String SC_SCOPE         = "scope";
+    private static final String SC_COMPONENTS    = "components";
+    private static final String SC_PROCESSORS    = "processors";
+    private static final String SC_TOPOLOGY      = "topology";
 
     /**
      * Each compoonent in a service chain (i.e., network function)
@@ -255,6 +251,7 @@ public final class ServiceChainAddConfig
                 SC_TYPE,
                 SC_NETWORK_ID,
                 SC_CPU_CORES,
+                SC_MAX_CPU_CORES,
                 SC_SCOPE,
                 SC_COMPONENTS,
                 SC_PROCESSORS,
@@ -264,7 +261,8 @@ public final class ServiceChainAddConfig
             result &= isString(scNode, SC_NAME, MANDATORY);
             result &= isString(scNode, SC_TYPE, MANDATORY);
             result &= isNumber(scNode, SC_NETWORK_ID, MANDATORY);
-            result &= isNumber(scNode, SC_CPU_CORES,  MANDATORY);
+            result &= isNumber(scNode, SC_CPU_CORES, OPTIONAL);
+            result &= isNumber(scNode, SC_MAX_CPU_CORES, MANDATORY);
             result &= isString(scNode, SC_SCOPE, MANDATORY);
 
             JsonNode compNode = scNode.path(SC_COMPONENTS);
@@ -482,14 +480,21 @@ public final class ServiceChainAddConfig
             NetworkId scNetId = NetworkId.networkId(scNetIdInt);
 
             int scCores = scNode.path(SC_CPU_CORES).asInt();
+            int scMaxCores = scNode.path(SC_MAX_CPU_CORES).asInt();
+            checkArgument(
+                scMaxCores > 0,
+                "Please specify a positive number of maximum CPU cores " +
+                "to be allocated for this service chain"
+            );
 
-            // If invalid input, use default
+            // If invalid input, use maximum
             if (scCores <= 0) {
-                scCores = DEFAULT_CPU_CORES;
+                scCores = scMaxCores;
             }
             checkArgument(
-                scCores > 0,
-                "Please specify a positive number of CPU cores to be allocated for this service chain"
+                scCores <= scMaxCores,
+                "The number of CPU cores to be allocated for this service chain " +
+                "must not exceed the maximum number of CPU cores"
             );
 
             // Deployed on a single server (server-level) or across the network (network-wide)
@@ -597,7 +602,8 @@ public final class ServiceChainAddConfig
                 scType,
                 scScope,
                 scNetId,
-                scCores
+                scCores,
+                scMaxCores
             );
 
             // Add this service chain to the set to be returned
@@ -933,7 +939,8 @@ public final class ServiceChainAddConfig
      * @param scType the type of the service chain
      * @param scScope the scope of the service chain
      * @param scNetId the network ID of the service chain
-     * @param cpuCores the network of CPU cores of the service chain
+     * @param cpuCores the number of CPU cores for the service chain
+     * @param cpuCores the maximum number of CPU cores for the service chain
      * @return a service chain object
      */
     private ServiceChain.Builder buildServiceChainTopology(
@@ -943,7 +950,8 @@ public final class ServiceChainAddConfig
             String                                scType,
             ServiceChainScope                     scScope,
             NetworkId                             scNetId,
-            int                                   cpuCores) {
+            int                                   cpuCores,
+            int                                   maxCpuCores) {
         Set<ServiceChainVertexInterface> scVertices = Sets.<ServiceChainVertexInterface>newConcurrentHashSet();
         Set<ServiceChainEdgeInterface> scEdges = Sets.<ServiceChainEdgeInterface>newConcurrentHashSet();
 
@@ -1087,6 +1095,7 @@ public final class ServiceChainAddConfig
             .scope(scScope)
             .id("sc:" + scName + ":" + scType + ":" +  scNetId.toString())
             .cpuCores(cpuCores)
+            .maxCpuCores(maxCpuCores)
             .serviceChainGraph(scGraph)
             .ingressPoints(ingressPoints)
             .egressPoints(egressPoints);

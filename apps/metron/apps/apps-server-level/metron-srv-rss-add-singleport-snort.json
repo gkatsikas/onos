@@ -7,7 +7,8 @@
                         "name"       : "metron-srv-rss-singleport-snort",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 8,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 1,
                         "scope"      : "server-rss",
                         "components" : [
                             {

@@ -7,7 +7,8 @@
                         "name"       : "metron-srv-rss-singleport-fw-3rules",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 8,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 8,
                         "scope"      : "server-rss",
                         "components" : [
                             {
