@@ -57,6 +57,8 @@ public class ServiceChain implements ServiceChainInterface {
     private ServiceChainId             id;
     private int                        cpuCores;
     private int                        maxCpuCores;
+    private boolean                    scale;
+    private boolean                    autoScale;
     private ServiceChainState          state;
     private ServiceChainGraphInterface serviceChainGraph;
     private Set<TrafficPoint>          ingressPoints;
@@ -69,6 +71,8 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChainId             id,
             int                        cpuCores,
             int                        maxCpuCores,
+            boolean                    scale,
+            boolean                    autoScale,
             ServiceChainState          state,
             ServiceChainGraphInterface serviceChainGraph,
             Set<TrafficPoint>          ingressPoints,
@@ -124,6 +128,8 @@ public class ServiceChain implements ServiceChainInterface {
         this.id                = id;
         this.cpuCores          = cpuCores;
         this.maxCpuCores       = maxCpuCores;
+        this.scale             = scale;
+        this.autoScale         = autoScale;
         this.state             = state;
         this.serviceChainGraph = serviceChainGraph;
         this.ingressPoints     = ingressPoints;
@@ -147,6 +153,8 @@ public class ServiceChain implements ServiceChainInterface {
             sc.id,
             sc.cpuCores,
             sc.maxCpuCores,
+            sc.scale,
+            sc.autoScale,
             state,
             sc.serviceChainGraph,
             sc.ingressPoints,
@@ -168,9 +176,11 @@ public class ServiceChain implements ServiceChainInterface {
         scOld.setType(scNew.type());
         scOld.setScope(scNew.scope());
         scOld.setId(scNew.id());
-        scOld.setState(scNew.state());
         scOld.setCpuCores(scNew.cpuCores());
-        scOld.setCpuCores(scNew.maxCpuCores());
+        scOld.setMaxCpuCores(scNew.maxCpuCores());
+        scOld.setScale(scNew.scale());
+        scOld.setAutoScale(scNew.autoScale());
+        scOld.setState(scNew.state());
         scOld.setServiceChainGraph(scNew.serviceChainGraph());
         scOld.setIngressPoints(scNew.ingressPoints());
         scOld.setEgressPoints(scNew.egressPoints());
@@ -236,6 +246,26 @@ public class ServiceChain implements ServiceChainInterface {
     @Override
     public void setMaxCpuCores(int maxCpuCores) {
         this.maxCpuCores = maxCpuCores;
+    }
+
+    @Override
+    public boolean scale() {
+        return this.scale;
+    }
+
+    @Override
+    public void setScale(boolean scale) {
+        this.scale = scale;
+    }
+
+    @Override
+    public boolean autoScale() {
+        return this.autoScale;
+    }
+
+    @Override
+    public void setAutoScale(boolean autoScale) {
+        this.autoScale = autoScale;
     }
 
     @Override
@@ -458,6 +488,8 @@ public class ServiceChain implements ServiceChainInterface {
                 .add("id",            id.toString())
                 .add("cpuCores",      String.valueOf(cpuCores()))
                 .add("maxCpuCores",   String.valueOf(maxCpuCores()))
+                .add("scale",         scale() ? "active" : "inactive")
+                .add("autoScale",     autoScale() ? "active" : "inactive")
                 .add("state",         state.name())
                 .add("graph",         serviceChainGraph.toString())
                 .add("ingressPoints", ingressPoints.toString())
@@ -484,6 +516,8 @@ public class ServiceChain implements ServiceChainInterface {
         private ServiceChainId             id;
         private int                        cpuCores;
         private int                        maxCpuCores;
+        private boolean                    scale;
+        private boolean                    autoScale;
         private ServiceChainState          state = INIT;
         private ServiceChainGraphInterface serviceChainGraph = null;
         private Set<TrafficPoint>          ingressPoints = null;
@@ -495,7 +529,8 @@ public class ServiceChain implements ServiceChainInterface {
         public ServiceChain build() {
             return new ServiceChain(
                 name, type, scope, id,
-                cpuCores, maxCpuCores, state,
+                cpuCores, maxCpuCores,
+                scale, autoScale, state,
                 serviceChainGraph, ingressPoints,
                 egressPoints
             );
@@ -564,6 +599,28 @@ public class ServiceChain implements ServiceChainInterface {
          */
         public Builder maxCpuCores(int maxCpuCores) {
             this.maxCpuCores = maxCpuCores;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with scaling ability.
+         *
+         * @param scale the scaling ability
+         * @return service chain builder
+         */
+        public Builder withScalingAbility(boolean scale) {
+            this.scale = scale;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with auto-scaling ability.
+         *
+         * @param autoScale the auto-scaling ability
+         * @return service chain builder
+         */
+        public Builder withAutoScalingAbility(boolean autoScale) {
+            this.autoScale = autoScale;
             return this;
         }
 

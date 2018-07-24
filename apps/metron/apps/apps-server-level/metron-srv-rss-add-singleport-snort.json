@@ -9,6 +9,8 @@
                         "networkId"  : 1,
                         "cpuCores"   : 1,
                         "maxCpuCores": 1,
+                        "scale"      : true,
+                        "autoScale"  : false,
                         "scope"      : "server-rss",
                         "components" : [
                             {

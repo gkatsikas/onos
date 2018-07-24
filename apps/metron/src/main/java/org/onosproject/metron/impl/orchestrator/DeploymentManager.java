@@ -165,10 +165,10 @@ public final class DeploymentManager
      * the controller performs scaling.
      */
     @Property(
-        name = "enableAutoscale", boolValue = false,
+        name = "enableAutoScale", boolValue = false,
         label = "Allow the data plane to undertake scaling in case of load imbalances; default is false"
     )
-    private boolean enableAutoscale = DEF_AUTOSCALE;
+    private boolean enableAutoScale = DEF_AUTOSCALE;
 
     /**
      * A dedicated thread pool to deploy Metron service chains.
@@ -634,16 +634,16 @@ public final class DeploymentManager
         boolean inFlowDirMode = sc.isServerLevel() && sc.isHardwareBased();
         boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
 
-        // User-provided CPU information from the JSON
-        // Start with this number of CPU cores
-        int userRequestedCpus = sc.cpuCores();
+        // Scaling ability for this service chain
+        boolean scale = sc.scale();
+        // Autoscale must be asked by the user and approved by this module
+        boolean autoScale = sc.autoScale() && this.enableAutoScale;
+        // If scaling is disabled, start with the maximum CPU cores
+        int userRequestedCpus = scale ? sc.cpuCores() : sc.maxCpuCores();
         // This is an upper limit of the cores you can use
         int userRequestedMaxCpus = sc.maxCpuCores();
         // The required number of NICs
         int userRequestedNics = sc.nics();
-        // Autoscale can only be enabled for non-RSS modes
-        // boolean autoscale = inRssMode ? false : this.enableAutoscale;
-        boolean autoscale = this.enableAutoscale;
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] Instantiating server-level Metron traffic classes", label());
@@ -754,7 +754,7 @@ public final class DeploymentManager
                 topologyService.deployTrafficClassOfServiceChain(
                     deviceId, scId, tcId, sc.scope(),
                     confType, conf, userRequestedCpus, userRequestedMaxCpus,
-                    nics, autoscale
+                    nics, autoScale
                 );
 
             if (tcRuntimeInfo == null) {
@@ -1044,7 +1044,7 @@ public final class DeploymentManager
 
     @Override
     public boolean hasAutoScale() {
-        return this.enableAutoscale;
+        return this.enableAutoScale;
     }
 
     @Override
@@ -1749,21 +1749,21 @@ public final class DeploymentManager
         }
 
         // Read the new value
-        Boolean newEnableAutoscale =
-                Tools.isPropertyEnabled(properties, "enableAutoscale");
+        Boolean newEnableAutoScale =
+                Tools.isPropertyEnabled(properties, "enableAutoScale");
 
         // Not actually given, fall back to default
-        if (newEnableAutoscale == null) {
+        if (newEnableAutoScale == null) {
             this.enableHwOffloading = DEF_AUTOSCALE;
             log.info(
                 "[{}] Autoscale is not configured; " +
-                 "using current value of {}", label(), this.enableAutoscale
+                 "using current value of {}", label(), this.enableAutoScale
             );
         } else {
-            this.enableAutoscale = newEnableAutoscale;
+            this.enableAutoScale = newEnableAutoScale;
             log.info(
                 "[{}] Configured! Autoscale is {}",
-                label(), this.enableAutoscale ? "enabled" : "disabled"
+                label(), this.enableAutoScale ? "enabled" : "disabled"
             );
         }
     }
