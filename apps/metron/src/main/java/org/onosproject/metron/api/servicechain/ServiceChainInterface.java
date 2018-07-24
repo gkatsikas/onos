@@ -108,7 +108,7 @@ public interface ServiceChainInterface {
     /**
      * Sets the maximum number of CPU cores for this service chain.
      *
-     * @param cpuCores service chain's maximum number of CPU cores
+     * @param maxCpuCores service chain's maximum number of CPU cores
      */
     void setMaxCpuCores(int maxCpuCores);
 
