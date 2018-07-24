@@ -7,7 +7,8 @@
                         "name"       : "metron-net-mac-singleport-fw-8rules-hw-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
-                        "cpuCores"   : 5,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 3,
                         "scope"      : "network-mac",
                         "components" : [
                             {

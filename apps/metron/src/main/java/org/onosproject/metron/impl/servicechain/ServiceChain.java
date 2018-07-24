@@ -56,6 +56,7 @@ public class ServiceChain implements ServiceChainInterface {
     private ServiceChainScope          scope;
     private ServiceChainId             id;
     private int                        cpuCores;
+    private int                        maxCpuCores;
     private ServiceChainState          state;
     private ServiceChainGraphInterface serviceChainGraph;
     private Set<TrafficPoint>          ingressPoints;
@@ -67,6 +68,7 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChainScope          scope,
             ServiceChainId             id,
             int                        cpuCores,
+            int                        maxCpuCores,
             ServiceChainState          state,
             ServiceChainGraphInterface serviceChainGraph,
             Set<TrafficPoint>          ingressPoints,
@@ -91,6 +93,10 @@ public class ServiceChain implements ServiceChainInterface {
         checkArgument(
             cpuCores > 0,
             "The number of CPU cores to be allocated for this service chain must be positive"
+        );
+        checkArgument(
+            maxCpuCores > 0,
+            "The maximum number of CPU cores to be allocated for this service chain must be positive"
         );
         checkNotNull(
             state,
@@ -117,6 +123,7 @@ public class ServiceChain implements ServiceChainInterface {
         this.scope             = scope;
         this.id                = id;
         this.cpuCores          = cpuCores;
+        this.maxCpuCores       = maxCpuCores;
         this.state             = state;
         this.serviceChainGraph = serviceChainGraph;
         this.ingressPoints     = ingressPoints;
@@ -139,6 +146,7 @@ public class ServiceChain implements ServiceChainInterface {
             sc.scope,
             sc.id,
             sc.cpuCores,
+            sc.maxCpuCores,
             state,
             sc.serviceChainGraph,
             sc.ingressPoints,
@@ -162,6 +170,7 @@ public class ServiceChain implements ServiceChainInterface {
         scOld.setId(scNew.id());
         scOld.setState(scNew.state());
         scOld.setCpuCores(scNew.cpuCores());
+        scOld.setCpuCores(scNew.maxCpuCores());
         scOld.setServiceChainGraph(scNew.serviceChainGraph());
         scOld.setIngressPoints(scNew.ingressPoints());
         scOld.setEgressPoints(scNew.egressPoints());
@@ -217,6 +226,16 @@ public class ServiceChain implements ServiceChainInterface {
     @Override
     public void setCpuCores(int cpuCores) {
         this.cpuCores = cpuCores;
+    }
+
+    @Override
+    public int maxCpuCores() {
+        return this.maxCpuCores;
+    }
+
+    @Override
+    public void setMaxCpuCores(int maxCpuCores) {
+        this.maxCpuCores = maxCpuCores;
     }
 
     @Override
@@ -409,6 +428,7 @@ public class ServiceChain implements ServiceChainInterface {
                 Objects.equals(this.scope, that.scope) &&
                 Objects.equals(this.id,   that.id) &&
                 this.cpuCores == that.cpuCores &&
+                this.maxCpuCores == that.maxCpuCores &&
                 Objects.equals(
                     this.serviceChainGraph, that.serviceChainGraph
                 ) &&
@@ -437,6 +457,7 @@ public class ServiceChain implements ServiceChainInterface {
                 .add("scope",         scope.toString())
                 .add("id",            id.toString())
                 .add("cpuCores",      String.valueOf(cpuCores()))
+                .add("maxCpuCores",   String.valueOf(maxCpuCores()))
                 .add("state",         state.name())
                 .add("graph",         serviceChainGraph.toString())
                 .add("ingressPoints", ingressPoints.toString())
@@ -462,6 +483,7 @@ public class ServiceChain implements ServiceChainInterface {
         private ServiceChainScope          scope;
         private ServiceChainId             id;
         private int                        cpuCores;
+        private int                        maxCpuCores;
         private ServiceChainState          state = INIT;
         private ServiceChainGraphInterface serviceChainGraph = null;
         private Set<TrafficPoint>          ingressPoints = null;
@@ -472,7 +494,8 @@ public class ServiceChain implements ServiceChainInterface {
 
         public ServiceChain build() {
             return new ServiceChain(
-                name, type, scope, id, cpuCores, state,
+                name, type, scope, id,
+                cpuCores, maxCpuCores, state,
                 serviceChainGraph, ingressPoints,
                 egressPoints
             );
@@ -530,6 +553,17 @@ public class ServiceChain implements ServiceChainInterface {
          */
         public Builder cpuCores(int cpuCores) {
             this.cpuCores = cpuCores;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with the maximum CPU cores.
+         *
+         * @param maxCpuCores the maximum number of CPU cores
+         * @return service chain builder
+         */
+        public Builder maxCpuCores(int maxCpuCores) {
+            this.maxCpuCores = maxCpuCores;
             return this;
         }
 

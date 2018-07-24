@@ -4,7 +4,7 @@
             "remove" : {
                 "servicechains" : [
                     {
-                        "name"    : "fw-10rules-hw",
+                        "name"     : "fw-10rules-hw",
                         "type"     : "generic",
                         "networkId": 1
                     },

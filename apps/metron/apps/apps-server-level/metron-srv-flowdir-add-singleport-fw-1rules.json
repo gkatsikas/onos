@@ -8,6 +8,7 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
+                        "maxCpuCores": 1,
                         "scope"      : "server-rules",
                         "components" : [
                             {

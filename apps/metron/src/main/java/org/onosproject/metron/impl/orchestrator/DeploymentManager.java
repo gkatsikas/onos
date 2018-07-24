@@ -635,14 +635,15 @@ public final class DeploymentManager
         boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
 
         // User-provided CPU information from the JSON
-        // Start with conservative CPU requirements if not in RSS mode
-        int userRequestedCpus = inRssMode ? sc.cpuCores() : 1;
-        // This is an upper limit of cores you can use
-        int userRequestedMaxCpus = sc.cpuCores();
+        // Start with this number of CPU cores
+        int userRequestedCpus = sc.cpuCores();
+        // This is an upper limit of the cores you can use
+        int userRequestedMaxCpus = sc.maxCpuCores();
         // The required number of NICs
         int userRequestedNics = sc.nics();
         // Autoscale can only be enabled for non-RSS modes
-        boolean autoscale = inRssMode ? false : this.enableAutoscale;
+        // boolean autoscale = inRssMode ? false : this.enableAutoscale;
+        boolean autoscale = this.enableAutoscale;
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] Instantiating server-level Metron traffic classes", label());
@@ -680,8 +681,8 @@ public final class DeploymentManager
         long serverEgrPort = serverEgrPortNum.toLong();
 
 
-        // In Flow Direcotr mode there is no network placement, thus path must be built here
-        if (inFlowDirMode) {
+        // In Flow Director or RSS modes there is no network placement, thus path must be built here
+        if (inFlowDirMode || inRssMode) {
             PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
                 new ConnectPoint(deviceId, serverIngPortNum),
                 new ConnectPoint(deviceId, serverEgrPortNum),
