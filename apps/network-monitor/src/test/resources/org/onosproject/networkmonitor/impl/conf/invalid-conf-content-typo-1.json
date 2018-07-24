@@ -1,0 +1,64 @@
+{
+    "apps": {
+        "org.onosproject.networkmonitor.configuration": {
+            "configuration": {
+                "databases": {
+                    "ip": "127.0.0.1",
+                    "port": 8086,
+                    "username": "root",
+                    "password": "root",
+                    "loadTable": "load",
+                    "predictionTable": "load_prediction"
+                },
+                "prediction": {
+                    "ingressPoints": [
+                        {
+                            "ingressDevice": "of:000000223d4b0182",
+                            "ingressPorts": [
+                                {
+                                    "port": 0
+                                },
+                                {
+                                    "port": 1
+                                },
+                                {
+                                    "port": 2
+                                },
+                                {
+                                    "port": 3
+                                }
+                            ]
+                        },
+                        {
+                            "ingressDevice": "of:0000000000000001",
+                            "ingressPorts": [
+                                {
+                                    "port": 0
+                                },
+                                {
+                                    "port": 1
+                                }
+                            ]
+                        }
+                    ],
+                    "predictionConf": {
+                        "predictionMechanisms": [
+                            {
+                                "predictionMethod": "SMA",
+                                "timeWindowSize": 40,
+                                "dataWindowSize": 30,
+                                "trainingFraction": 0.7
+                            },
+                            {
+                                "predictionMethod": "EWMA",
+                                "timeWindowSize": 40,
+                                "dataWindowSize": 30,
+                                "trainingFraction": 0.7
+                            }
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
