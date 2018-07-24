@@ -9,6 +9,8 @@
                         "networkId"  : 1,
                         "cpuCores"   : 1,
                         "maxCpuCores": 3,
+                        "scale"      : true,
+                        "autoScale"  : false,
                         "scope"      : "network-mac",
                         "components" : {
                             "name"       : "nf1",

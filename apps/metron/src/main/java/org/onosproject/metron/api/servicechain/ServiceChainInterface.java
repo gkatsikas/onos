@@ -113,6 +113,34 @@ public interface ServiceChainInterface {
     void setMaxCpuCores(int maxCpuCores);
 
     /**
+     * Returns whether this service chain can scale or not.
+     *
+     * @return service chain's scaling ability
+     */
+    boolean scale();
+
+    /**
+     * Sets the scaling ability of this service chain.
+     *
+     * @param scale service chain's scaling ability
+     */
+    void setScale(boolean scale);
+
+    /**
+     * Returns whether this service chain can auto-scale or not.
+     *
+     * @return service chain's auto-scaling ability
+     */
+    boolean autoScale();
+
+    /**
+     * Sets the auto-scaling ability of this service chain.
+     *
+     * @param autoScale service chain's auto-scaling ability
+     */
+    void setAutoScale(boolean autoScale);
+
+    /**
      * Returns the number of NICs required for this service chain.
      *
      * @return service chain's number of NICs

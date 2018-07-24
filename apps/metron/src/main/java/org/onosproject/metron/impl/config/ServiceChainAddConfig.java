@@ -115,6 +115,8 @@ public final class ServiceChainAddConfig
     private static final String SC_NETWORK_ID    = "networkId";
     private static final String SC_CPU_CORES     = "cpuCores";
     private static final String SC_MAX_CPU_CORES = "maxCpuCores";
+    private static final String SC_SCALE         = "scale";
+    private static final String SC_AUTO_SCALE    = "autoScale";
     private static final String SC_SCOPE         = "scope";
     private static final String SC_COMPONENTS    = "components";
     private static final String SC_PROCESSORS    = "processors";
@@ -252,6 +254,8 @@ public final class ServiceChainAddConfig
                 SC_NETWORK_ID,
                 SC_CPU_CORES,
                 SC_MAX_CPU_CORES,
+                SC_SCALE,
+                SC_AUTO_SCALE,
                 SC_SCOPE,
                 SC_COMPONENTS,
                 SC_PROCESSORS,
@@ -263,6 +267,8 @@ public final class ServiceChainAddConfig
             result &= isNumber(scNode, SC_NETWORK_ID, MANDATORY);
             result &= isNumber(scNode, SC_CPU_CORES, OPTIONAL);
             result &= isNumber(scNode, SC_MAX_CPU_CORES, MANDATORY);
+            result &= isBoolean(scNode, SC_SCALE, MANDATORY);
+            result &= isBoolean(scNode, SC_AUTO_SCALE, OPTIONAL);
             result &= isString(scNode, SC_SCOPE, MANDATORY);
 
             JsonNode compNode = scNode.path(SC_COMPONENTS);
@@ -497,6 +503,16 @@ public final class ServiceChainAddConfig
                 "must not exceed the maximum number of CPU cores"
             );
 
+            boolean scScale = scNode.path(SC_SCALE).asBoolean();
+            boolean scAutoScale = false;
+            if (scNode.path(SC_AUTO_SCALE).isBoolean()) {
+                scAutoScale = scNode.path(SC_AUTO_SCALE).asBoolean();
+            }
+            if (!scScale && scAutoScale) {
+                log.warn("Scale=false and autoScale=true are contradictive. Auto-setting scale=true!");
+                scScale = true;
+            }
+
             // Deployed on a single server (server-level) or across the network (network-wide)
             ServiceChainScope scScope = Common.<ServiceChainScope>enumFromString(
                 ServiceChainScope.class,
@@ -603,7 +619,9 @@ public final class ServiceChainAddConfig
                 scScope,
                 scNetId,
                 scCores,
-                scMaxCores
+                scMaxCores,
+                scScale,
+                scAutoScale
             );
 
             // Add this service chain to the set to be returned
@@ -939,8 +957,10 @@ public final class ServiceChainAddConfig
      * @param scType the type of the service chain
      * @param scScope the scope of the service chain
      * @param scNetId the network ID of the service chain
-     * @param cpuCores the number of CPU cores for the service chain
-     * @param cpuCores the maximum number of CPU cores for the service chain
+     * @param scCpuCores the number of CPU cores for the service chain
+     * @param scMaxCpuCores the maximum number of CPU cores for the service chain
+     * @param scScale the scaling flag for the service chain
+     * @param scAutoScale the auto scaling flag for the service chain
      * @return a service chain object
      */
     private ServiceChain.Builder buildServiceChainTopology(
@@ -950,8 +970,10 @@ public final class ServiceChainAddConfig
             String                                scType,
             ServiceChainScope                     scScope,
             NetworkId                             scNetId,
-            int                                   cpuCores,
-            int                                   maxCpuCores) {
+            int                                   scCpuCores,
+            int                                   scMaxCpuCores,
+            boolean                               scScale,
+            boolean                               scAutoScale) {
         Set<ServiceChainVertexInterface> scVertices = Sets.<ServiceChainVertexInterface>newConcurrentHashSet();
         Set<ServiceChainEdgeInterface> scEdges = Sets.<ServiceChainEdgeInterface>newConcurrentHashSet();
 
@@ -1094,8 +1116,10 @@ public final class ServiceChainAddConfig
             .type(scType)
             .scope(scScope)
             .id("sc:" + scName + ":" + scType + ":" +  scNetId.toString())
-            .cpuCores(cpuCores)
-            .maxCpuCores(maxCpuCores)
+            .cpuCores(scCpuCores)
+            .maxCpuCores(scMaxCpuCores)
+            .withScalingAbility(scScale)
+            .withAutoScalingAbility(scAutoScale)
             .serviceChainGraph(scGraph)
             .ingressPoints(ingressPoints)
             .egressPoints(egressPoints);
