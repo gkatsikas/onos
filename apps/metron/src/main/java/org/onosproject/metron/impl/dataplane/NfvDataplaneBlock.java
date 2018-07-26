@@ -34,8 +34,10 @@ import org.onosproject.metron.api.processing.ProcessingBlockClass;
 import org.onosproject.metron.api.processing.ProcessingBlockInterface;
 import org.onosproject.metron.api.structures.Pair;
 
+import org.onosproject.metron.impl.config.ClickRuleConfiguration;
 import org.onosproject.metron.impl.processing.blocks.Discard;
 import org.onosproject.metron.impl.processing.blocks.IpRewriter;
+import org.onosproject.metron.impl.processing.blocks.LookupIpRouteMp;
 
 import org.onlab.packet.IpAddress;
 
@@ -452,9 +454,8 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
         int vid = 0;
 
         if (keyword.equals("VLAN_TCI")) {
-            int value  = Integer.parseInt(
-                this.basicConfiguration.substring(pos + 1, this.basicConfiguration.length() - pos - 1)
-            );
+            int value = Integer.parseInt(
+                this.basicConfiguration.substring(pos + 1, this.basicConfiguration.length() - pos - 1));
             pcp = value >> 13;                        // Removes 13 last bits
             dei = (value >> 12) & (0xffffffff << 1);  // Gets 12th bit from smaller endian
             vid = value & (0xffffffff << 12);         // Gets 12 last bits
@@ -689,9 +690,27 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
         Filter parsedPrefixes = new Filter(HeaderField.IP_DST);
         parsedPrefixes.makeNone();
 
+        // We need information from the rule classification tree
+        LookupIpRouteMp lookup = (LookupIpRouteMp) processor;
+        ClickRuleConfiguration ruleCOnf = (ClickRuleConfiguration) lookup.ruleConf();
+
         for (String rule : rules) {
-            OutputClass port = OutputClass.fromLookupRule(rule, parsedPrefixes);
-            this.addOutputClass(port);
+            int outputPort = ruleCOnf.getClassificationTree(rule).outputPort();
+
+            // Rule starts with keyword (e.g., dst net), thus it has IPFilter format
+            if (Common.findFirstOf(rule, "0123456789", 0) > 0) {
+                List<PacketFilter> packetFilters = IpFilterParser.filtersFromIpFilterLine(rule);
+
+                for (PacketFilter pf : packetFilters) {
+                    OutputClass port = new OutputClass(outputPort);
+                    port.setPacketFilter(pf);
+                    this.addOutputClass(port);
+                }
+            // Regular Lookup format
+            } else {
+                OutputClass port = OutputClass.fromLookupRule(rule, parsedPrefixes);
+                this.addOutputClass(port);
+            }
         }
     }
 

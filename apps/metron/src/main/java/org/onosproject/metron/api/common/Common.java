@@ -132,6 +132,30 @@ public class Common {
     }
 
     /**
+     * Returns the index in a string (str) where we met a character that is
+     * in the pattern (pat).
+     * This index occurs at or after the position pos.
+     *
+     * @param str the string we want to search
+     * @param pat the patterns we want to meet
+     * @param pos the index after which we want to search
+     * @return string index
+     */
+    public static int findFirstOf(String str, String pat, int pos) {
+        for (int i = 0; i < str.length(); i++) {
+            if (i < pos) {
+                continue;
+            }
+
+            if (pat.contains(String.valueOf(str.charAt(i)))) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    /**
      * Returns the index in a string (str) where we met a character different from
      * the ones contained in the pattern (pat).
      * This index occurs at or after the position pos.
