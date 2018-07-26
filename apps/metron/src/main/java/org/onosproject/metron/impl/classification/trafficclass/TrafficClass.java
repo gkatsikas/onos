@@ -46,6 +46,7 @@ import org.onosproject.metron.impl.processing.blocks.EtherEncap;
 import org.onosproject.metron.impl.processing.blocks.EtherRewrite;
 import org.onosproject.metron.impl.processing.blocks.FromBlackboxDevice;
 import org.onosproject.metron.impl.processing.blocks.FromSnortDevice;
+import org.onosproject.metron.impl.processing.blocks.IpRewriter;
 import org.onosproject.metron.impl.processing.blocks.MarkIpHeader;
 import org.onosproject.metron.impl.processing.blocks.Strip;
 import org.onosproject.metron.impl.processing.blocks.StoreEtherAddress;
@@ -728,7 +729,7 @@ public class TrafficClass implements TrafficClassInterface {
 
         // Get into to the right processing layer
         if (this.processingLayer() == ProcessingLayer.NETWORK) {
-            inputConf += "MarkIPHeader(OFFSET 14) -> ";
+            inputConf += "MarkIPHeader(OFFSET 14)";
         }
 
         this.inputOperationsAsString = inputConf;
@@ -751,8 +752,15 @@ public class TrafficClass implements TrafficClassInterface {
 
         this.writeOperationsAsString = "";
 
-        if (!ipRw.isEmpty()) {
-            this.writeOperationsAsString += "IPRewriter(" + ipRw + ") -> ";
+        if (ipRw.isEmpty()) {
+            return;
+        }
+
+        boolean withIpMapper = ipRw.contains(ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString());
+        if (withIpMapper) {
+            this.writeOperationsAsString += "lb :: " + ipRw + "; IPRewriter(lb)";
+        } else {
+            this.writeOperationsAsString += "IPRewriter(" + ipRw + ")";
         }
     }
 
@@ -914,14 +922,11 @@ public class TrafficClass implements TrafficClassInterface {
             HeaderField headerField = entry.getKey();
             Filter filter = entry.getValue();
             FieldOperation fieldOp = this.operation.fieldOperation(headerField);
-
             log.debug("\t\t\tFilter to add: {}", filter.toString());
-
             if (fieldOp != null) {
                 if ((fieldOp.operationType() == OperationType.WRITE_STATELESS) ||
                     (fieldOp.operationType() == OperationType.TRANSLATE)) {
                     StatelessOperationValue stlVal = (StatelessOperationValue) fieldOp.operationValue();
-
                     if (fieldOp.operationType() == OperationType.WRITE_STATELESS) {
                         if (!filter.match(stlVal.statelessValue())) {
                             if (this.packetFilter.get(headerField) != null) {
@@ -950,7 +955,6 @@ public class TrafficClass implements TrafficClassInterface {
                            (fieldOp.operationType() == OperationType.WRITE_ROUNDROBIN) ||
                            (fieldOp.operationType() == OperationType.WRITE_RANDOM)) {
                     StatefulOperationValue stfVal = (StatefulOperationValue) fieldOp.operationValue();
-
                     Filter writeCondition = new Filter(headerField, stfVal.statelessValue(), stfVal.statefulValue());
                     if (!filter.contains(writeCondition)) {
                         writeCondition = writeCondition.intersect(filter);
@@ -969,9 +973,7 @@ public class TrafficClass implements TrafficClassInterface {
                     this.totallyOffloadable = false;
                 } else if (fieldOp.operationType() == OperationType.WRITE_LB) {
                     StatefulSetOperationValue stfsVal = (StatefulSetOperationValue) fieldOp.operationValue();
-
                     Filter writeCondition = new Filter(headerField);
-
                     for (Long value : stfsVal.statefulSetValue()) {
                         writeCondition = writeCondition.unite(
                             new Filter(headerField, value.longValue())
@@ -995,8 +997,7 @@ public class TrafficClass implements TrafficClassInterface {
                     this.totallyOffloadable = false;
                 } else {
                     throw new SynthesisException(
-                        "Non-modifying operation requested to add block to a traffic class"
-                    );
+                        "Non-modifying operation requested to add block to a traffic class");
                 }
             } else {
                 if (!this.intersectFilter(filter)) {

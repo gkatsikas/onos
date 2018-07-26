@@ -25,13 +25,17 @@ import org.onosproject.metron.api.classification.trafficclass.operation.Operatio
 import org.onosproject.metron.api.classification.trafficclass.operation.OperationType;
 import org.onosproject.metron.api.classification.trafficclass.operation.StatelessOperationValue;
 import org.onosproject.metron.api.classification.trafficclass.operation.StatefulOperationValue;
+import org.onosproject.metron.api.classification.trafficclass.operation.StatefulSetOperationValue;
 import org.onosproject.metron.api.common.Common;
 import org.onosproject.metron.api.dataplane.NfvDataplaneBlockInterface;
 import org.onosproject.metron.api.structures.Pair;
 
 import org.slf4j.Logger;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Objects;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -47,6 +51,7 @@ public class OutputClass {
     private static final Logger log = getLogger(OutputClass.class);
 
     private static final int MAX_OUTPUT_PORT = 255;
+    private static final int IPMAPPER_PATTERN_LENGTH = 6;
     private static final int IPREWRITER_PATTERN_LENGTH = 7;
 
     private int portNumber;
@@ -287,7 +292,7 @@ public class OutputClass {
 
         OutputClass foutput = new OutputClass(modifiedPortNumber);
 
-        // IP source is not `-`
+        // Source IP address
         if (!pattern[1].equals("-")) {
             long ipSrc = Common.stringIpToInt(pattern[1]);
             if (ipSrc < 0) {
@@ -345,9 +350,7 @@ public class OutputClass {
                 );
 
                 FieldOperation fieldOp = new FieldOperation(
-                    HeaderField.TP_SRC_PORT,
-                    opType,
-                    stfOp
+                    HeaderField.TP_SRC_PORT, opType, stfOp
                 );
 
                 foutput.addFieldOperation(fieldOp);
@@ -417,9 +420,7 @@ public class OutputClass {
                 );
 
                 FieldOperation fieldOp = new FieldOperation(
-                    HeaderField.TP_DST_PORT,
-                    opType,
-                    stfOp
+                    HeaderField.TP_DST_PORT, opType, stfOp
                 );
 
                 foutput.addFieldOperation(fieldOp);
@@ -434,6 +435,57 @@ public class OutputClass {
         log.debug("Created output class: " + foutput.toString());
 
         return new Pair<OutputClass, OutputClass>(foutput, new OutputClass(unmodifiedPortNumber));
+    }
+
+    /**
+     * Creates an output class out of an IPMapper pattern.
+     * Format: SADDR SPORT DADDR DPORT FOUTPUT ROUTPUT
+     *
+     * @param patterns a list of IPMapper patterns to be translated
+     * @return OutputClass an output class
+     */
+    public static OutputClass fromIpMapper(List<String> patterns) {
+        OutputClass foutput = null;
+        Set<Long> statefulSetValues = new HashSet<Long>();
+
+        for (String pattern : patterns) {
+            String[] token = pattern.split("\\s+");
+            checkArgument(
+                token.length == IPMAPPER_PATTERN_LENGTH,
+                "Failed to parse line: " + pattern + ". " +
+                "IPMapper element expects rules in the form: - - DSTIP - FOUTPUT BOUTPUT"
+            );
+
+            int bwdPort = Integer.parseInt(token[5]);
+            int fwdPort = Integer.parseInt(token[4]);
+
+            if (foutput == null) {
+                foutput = new OutputClass(fwdPort);
+            }
+
+            if (!token[0].equals("-") || !token[1].equals("-") || !token[3].equals("-")) {
+                log.warn("Limited support for pattern: " + pattern + ". " +
+                         "RoundRobinIPMapper support is currently limited to destination IP addresses");
+            }
+
+            long ipDst = Common.stringIpToInt(token[2]);
+            statefulSetValues.add(ipDst);
+        }
+
+        checkArgument(!statefulSetValues.isEmpty(), "No IPMapper operations out of patterns: " + patterns);
+        StatefulSetOperationValue stfOp = new StatefulSetOperationValue(statefulSetValues);
+
+        foutput.addFieldOperation(
+            new FieldOperation(
+                HeaderField.IP_DST,
+                OperationType.WRITE_LB,
+                stfOp
+            )
+        );
+
+        log.debug("Created output class: " + foutput.toString());
+
+        return foutput;
     }
 
     @Override

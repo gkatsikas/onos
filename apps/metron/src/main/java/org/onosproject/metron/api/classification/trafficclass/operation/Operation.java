@@ -257,7 +257,7 @@ public class Operation {
     }
 
     /**
-     * Translates a composite operation to an IPRewriter configuration.
+     * Translates a composite operation into an IPRewriter configuration.
      *
      * @return textual IPRewriter configuration
      * @throws IllegalArgumentException if the translation fails
@@ -278,6 +278,10 @@ public class Operation {
                     ipSrcOp.operationValue();
                 IpAddress ip = IpAddress.valueOf((int) stlVal.statelessValue());
                 ipSrc = ip.toString();
+            } else if (ipSrcOp.operationType() == OperationType.WRITE_LB) {
+                StatefulSetOperationValue stfVal = (StatefulSetOperationValue)
+                    ipSrcOp.operationValue();
+                return toIPMapperConfig(stfVal, HeaderField.IP_SRC);
             } else {
                 throw new IllegalArgumentException(
                     "Unexpected write operation on " + ipSrcfield.toString()
@@ -308,16 +312,7 @@ public class Operation {
             } else if (ipDstOp.operationType() == OperationType.WRITE_LB) {
                 StatefulSetOperationValue stfVal = (StatefulSetOperationValue)
                     ipDstOp.operationValue();
-
-                ipDst = "RoundRobinIPMapper(";
-                for (Long lbVal : stfVal.statefulSetValue()) {
-                    IpAddress ip = IpAddress.valueOf(lbVal.intValue());
-                    ipDst += ip.toString() + ", ";
-                }
-
-                // Cut the last space and comma
-                ipDst = ipDst.substring(0, ipDst.length() - 2);
-                ipDst += ")";
+                return toIPMapperConfig(stfVal, HeaderField.IP_DST);
             } else {
                 throw new IllegalArgumentException(
                     "Unexpected write operation on " + ipDstfield.toString()
@@ -334,6 +329,32 @@ public class Operation {
 
         // TODO: Fix this
         return "pattern " + ipSrc + " " + tpSrc + " " + ipDst + " " + tpDst + " 0 0";
+    }
+
+    /**
+     * Translates a composite operation into an IPMapper configuration.
+     *
+     * @param stfSetVal set of stateful operation values
+     * @param targetField header field targetted by this IPMapper
+     * @return textual IPMapper configuration
+     */
+    public String toIPMapperConfig(StatefulSetOperationValue stfSetVal, HeaderField targetField) {
+        String ipMapper = "RoundRobinIPMapper(";
+        for (Long lbVal : stfSetVal.statefulSetValue()) {
+            IpAddress ip = IpAddress.valueOf(lbVal.intValue());
+
+            if (targetField == HeaderField.IP_DST) {
+                ipMapper += "- - " + ip.toString() + " - 0 0, ";
+            } else {
+                ipMapper += ip.toString() + " - - - 0 0, ";
+            }
+        }
+
+        // Cut the last space and comma
+        ipMapper = ipMapper.substring(0, ipMapper.length() - 2);
+        ipMapper += ")";
+
+        return ipMapper;
     }
 
     /**

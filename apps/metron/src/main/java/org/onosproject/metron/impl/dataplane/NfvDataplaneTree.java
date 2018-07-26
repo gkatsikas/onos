@@ -28,6 +28,7 @@ import org.onosproject.metron.api.exceptions.SynthesisException;
 import org.onosproject.metron.api.exceptions.DeploymentException;
 import org.onosproject.metron.api.monitor.WallClockNanoTimestamp;
 import org.onosproject.metron.api.networkfunction.NetworkFunctionType;
+import org.onosproject.metron.api.processing.ProcessingBlockClass;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
 
 import org.onosproject.metron.impl.classification.trafficclass.TrafficClass;
@@ -528,7 +529,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             }
 
             // A. Input part
-            tcConf += tc.inputOperationsAsString();
+            tcConf += this.generateInputOperations(tc, "");
 
             // Decide the fate of this group of traffic classes
             String action = "allow";
@@ -546,13 +547,13 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                 readOps = this.generateReadOperations(
                     tcSet, filterName, action, withHwOffloading
                 );
-                tcConf += readOps;
+                tcConf += readOps + " ";
             } catch (DeploymentException dEx) {
                 throw dEx;
             }
 
             // C. Stateful Write part
-            tcConf += tc.writeOperationsAsString();
+            tcConf += this.generateWriteOperations(tc, filterName);
 
             // D. Post-routing operations
             tcConf += tc.postRoutingPipeline();
@@ -675,10 +676,11 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             String tcConf = "";
 
             // A. Input part
-            tcConf += tc.inputOperationsAsString();
+            String inputInst = "in";
+            tcConf += this.generateInputOperations(tc, inputInst);
 
             // B. Stateful Write part
-            tcConf += tc.writeOperationsAsString();
+            tcConf += this.generateWriteOperations(tc, inputInst);
 
             // C. Post-routing operations
             tcConf += tc.postRoutingPipeline();
@@ -823,6 +825,22 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     }
 
     /************************************** Internal services. ***********************************/
+    /**
+     * Generate the input operations of a traffic class and
+     * associate them with a new pipeline.
+     *
+     * @param tc a traffic class with write operations
+     * @param pipelineInstance an instance of a pipeline to associate these input operations with
+     */
+    private String generateInputOperations(TrafficClassInterface tc, String pipelineInstance) {
+        String inputOps = tc.inputOperationsAsString();
+        if (pipelineInstance.isEmpty()) {
+            return inputOps + " -> ";
+        }
+
+        int pos = inputOps.indexOf(">");
+        return inputOps.substring(0, pos + 1) + " " + pipelineInstance + " :: " + inputOps.substring(pos + 2) + "; ";
+    }
 
     /**
      * Given a set of traffic classes of a service chain, generate the
@@ -875,9 +893,33 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         }
 
         // Drop whatever does not match above
-        tcConf += ", deny all) -> ";
+        tcConf += ", deny all);";
 
         return tcConf;
+    }
+
+    /**
+     * Generate the software-based write operations of a traffic class and
+     * connect them with the rest of a pipeline.
+     *
+     * @param tc a traffic class with write operations
+     * @param pipelineInstance an instance of a pipeline to connect these write operations with
+     */
+    private String generateWriteOperations(TrafficClassInterface tc, String pipelineInstance) {
+        String result = "";
+        String writeOps = tc.writeOperationsAsString();
+        boolean withIpMapper = writeOps.contains(ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString());
+
+        // Squeeze the pipeline between IPMapper definition and the write part
+        if (withIpMapper) {
+            int pos = writeOps.indexOf(";");
+            result = writeOps.substring(0, pos + 1) + " " + pipelineInstance + "[0] -> " + writeOps.substring(pos + 2);
+        } else {
+            result = pipelineInstance + " -> " + writeOps;
+        }
+        result += " -> ";
+
+        return result;
     }
 
     /**

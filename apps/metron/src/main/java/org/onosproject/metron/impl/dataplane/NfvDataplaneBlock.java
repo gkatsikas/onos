@@ -35,6 +35,7 @@ import org.onosproject.metron.api.processing.ProcessingBlockInterface;
 import org.onosproject.metron.api.structures.Pair;
 
 import org.onosproject.metron.impl.processing.blocks.Discard;
+import org.onosproject.metron.impl.processing.blocks.IpRewriter;
 
 import org.onlab.packet.IpAddress;
 
@@ -727,7 +728,23 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
      *        of the configuration we parse
      */
     private void parseIpRewriter(int inputPort) {
-        List<String> rules = Common.separateArguments(this.basicConfiguration);
+        List<String> rules = null;
+
+        // Round-robin load balancer is an exceptional case
+        if (this.basicConfiguration.startsWith(
+                ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString())) {
+            rules = new ArrayList<String>();
+            int endOfMapper = this.basicConfiguration.indexOf(")") + 1;
+            // First rule is the whole RoundRobinIPMapper(...)
+            rules.add(this.basicConfiguration.substring(0, endOfMapper));
+            // Then add the rest as usual
+            rules.addAll(
+                Common.separateArguments(this.basicConfiguration.substring(endOfMapper + 1))
+            );
+        } else {
+            rules = Common.separateArguments(this.basicConfiguration);
+        }
+
         if (rules.isEmpty()) {
             throw new ParseException(
                 "[" + this.name + " (" + this.blockClass + ")] " +
@@ -735,11 +752,30 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
             );
         }
 
-        // Keep only the configuration of the rule associated with the input port.
-        String confLine = rules.get(inputPort);
+        // Detect aggregate parameter
+        for (String rule : rules) {
+            if (rule.contains(IpRewriter.AGGREGATE)) {
+                String[] tokens = rule.split(IpRewriter.AGGREGATE);
+                if (tokens.length != 2) {
+                    continue;
+                }
 
+                IpRewriter rw = (IpRewriter) processor;
+                rw.setAggregate(Boolean.parseBoolean(tokens[1].toLowerCase().trim()));
+
+                break;
+            }
+        }
+
+        // Keep only the configuration of the rule associated with the input port
+        String confLine = rules.get(inputPort);
+        if (confLine.startsWith(ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString())) {
+            this.parseRoundRobinIpMapper(confLine);
+            return;
+        }
         String[] splitLine = confLine.split("\\s+");
 
+        // Drop pattern
         if (splitLine.length == 1) {
             if (confLine.equals("drop") || confLine.equals("discard")) {
                 OutputClass discard = new OutputClass(0);
@@ -751,6 +787,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
                     "Expected a drop/discard action. Instead, I got " + confLine
                 );
             }
+        // IPAddr(Pair)Rewriter pattern
         } else if (splitLine.length == 5) {
             if (!(this.blockClass == ProcessingBlockClass.IP_ADDR_REWRITER) &&
                 !(this.blockClass == ProcessingBlockClass.IP_ADDR_PAIR_REWRITER)) {
@@ -772,8 +809,7 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
 
             /**
              * Convert to an IPRewriter pattern.
-             * This requires to add dashes when IPRewriter
-             * expects ports.
+             * This requires to add dashes where IPRewriter expects ports.
              */
             String[] newLine = new String[7];
             newLine[0] = splitLine[0];
@@ -787,15 +823,42 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
             // Do it!
             Pair<OutputClass, OutputClass> ports = OutputClass.fromPattern(newLine);
             this.addOutputClass(ports.getKey());
+        // Regular IPRewriter pattern
         } else if (splitLine.length == 7) {
             Pair<OutputClass, OutputClass> ports = OutputClass.fromPattern(splitLine);
             this.addOutputClass(ports.getKey());
         } else {
             throw new ParseException(
                 "[" + this.name + " (" + this.blockClass + ")] " +
-                "Failed to parse line: " + confLine
+                "Failed to parse line: " + confLine + ". " +
+                "IPRewriter expects patterns first and then any other configuration."
             );
         }
+
+        return;
+    }
+
+    /**
+     * Parse the configuration of a RoundRobinIPMapper block.
+     * This is a block that performs round-robin load balancing.
+     *
+     * @param config the configuration of the RoundRobinIPMapper element
+     */
+    private void parseRoundRobinIpMapper(String config) {
+        // Remove the initial element name
+        String[] tokens = config.split(ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString());
+        checkArgument(
+            tokens[0].trim().isEmpty() && tokens[1] != null,
+            "Invalid RoundRobinIPMapper configuration: " + config);
+
+        // Keep what is enclosed between the parentheses
+        config = tokens[1].substring(tokens[1].indexOf("(") + 1, tokens[1].lastIndexOf(")"));
+
+        // Tokenize the arguments
+        List<String> rules = Common.separateArguments(config);
+
+        // Get the Round-Robin output port
+        this.addOutputClass(OutputClass.fromIpMapper(rules));
 
         return;
     }
