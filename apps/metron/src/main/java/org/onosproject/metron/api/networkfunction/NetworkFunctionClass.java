@@ -24,19 +24,22 @@ public enum NetworkFunctionClass {
     /**
      * Indicative classes of network functions.
      */
-    TRANSPARENT("transparent"),
-    L2_SWITCH("l2switch"),
-    L3_SWITCH("l3switch"),
-    ROUTER("router"),
-    FIREWALL("firewall"),
-    IP_ENCRYPTION("ipencrypt"),
-    IP_DECRYPTION("ipeecrypt"),
-    WAN_OPTIMIZER("wanopt"),
     DEEP_PACKET_INSPECTION("dpi"),
+    FIREWALL("firewall"),
     INTRUSION_DETECTION_SYSTEM("ids"),
     INTRUSION_PREVENTION_SYSTEM("ips"),
+    IP_DECRYPTION("ipdecrypt"),
+    IP_ENCRYPTION("ipencrypt"),
+    L2_SWITCH("l2switch"),
+    L3_SWITCH("l3switch"),
+    LOAD_BALANCER("loadbalancer"),
+    MONITOR("monitor"),
+    NETWORK_ADDRESS_AND_PORT_TRANSLATOR("napt"),
     NETWORK_ADDRESS_TRANSLATOR("nat"),
-    NETWORK_ADDRESS_AND_PORT_TRANSLATOR("napt");
+    PROXY("proxy"),
+    ROUTER("router"),
+    TRANSPARENT("transparent"),
+    WAN_OPTIMIZER("wanopt");
 
     private String nfClass;
 
