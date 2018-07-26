@@ -336,11 +336,17 @@ public final class PathEstablisher implements PathEstablisherInterface {
         );
 
         if (withServer) {
-            // Forward path: The dst of the last link is the ingress point of the server
-            this.serverIngr = new ConnectPoint(
-                lastFwdLink.dst().deviceId(),
-                lastFwdLink.dst().port()
-            );
+            // No switch before the server
+            if (this.fwdLinks.size() == 1) {
+                this.serverIngr = this.offloaderSwitch;
+            // There are at least 2 devices present
+            } else {
+                // Forward path: The dst of the last link is the ingress point of the server
+                this.serverIngr = new ConnectPoint(
+                    lastFwdLink.dst().deviceId(),
+                    lastFwdLink.dst().port()
+                );
+            }
 
             // Backward path: The src of the first link is the egress point of the server
             Link firstBwdLink = this.bwdLinks.get(0);

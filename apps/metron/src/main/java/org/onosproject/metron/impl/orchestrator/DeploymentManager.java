@@ -675,15 +675,14 @@ public final class DeploymentManager
         PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
         long serverIngPort = serverIngPortNum.toLong();
 
-        TrafficPoint egressPoint  = sc.egressPointOfDevice(deviceId);
-        checkNotNull(egressPoint, "Cannot generate NIC flow rules without ingress point information");
+        TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
+        checkNotNull(egressPoint, "Cannot generate NIC flow rules without egress point information");
         PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
         long serverEgrPort = serverEgrPortNum.toLong();
 
-
         // In Flow Director or RSS modes there is no network placement, thus path must be built here
         if (inFlowDirMode || inRssMode) {
-            PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
+            dpTree.createPathEstablisher(
                 new ConnectPoint(deviceId, serverIngPortNum),
                 new ConnectPoint(deviceId, serverEgrPortNum),
                 serverIngPort, serverEgrPort, true

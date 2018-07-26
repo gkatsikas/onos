@@ -239,8 +239,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
     @Override
     public PathEstablisherInterface createPathEstablisher(
-        Path fwdPath, Path bwdPath,
-        long ingressPort, long egressPort, boolean withServer) {
+            Path fwdPath, Path bwdPath,
+            long ingressPort, long egressPort, boolean withServer) {
         this.pathEstablisher = new PathEstablisher(
             fwdPath, bwdPath, ingressPort, egressPort, withServer
         );
@@ -1497,8 +1497,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             tc.computeOutputOperations(outputNicsUsage.get(outputInterface).longValue());
         }
 
+        // This is how many NICs we currently use
         this.numberOfNics.set(inputNicsUsage.size());
 
+        // Let's also find the idle NICs
         this.idleInterfaceConfiguration = this.configureIdleInterfaces(
             inputNicsUsage, outputNicsUsage
         );
