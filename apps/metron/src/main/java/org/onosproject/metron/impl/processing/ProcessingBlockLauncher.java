@@ -92,6 +92,7 @@ public final class ProcessingBlockLauncher {
         } else if ((blockClass == ProcessingBlockClass.DIRECT_IP_LOOKUP) ||
                    (blockClass == ProcessingBlockClass.LINEAR_IP_LOOKUP) ||
                    (blockClass == ProcessingBlockClass.LOOKUP_IP_ROUTE_MP) ||
+                   (blockClass == ProcessingBlockClass.RANGE_IP_LOOKUP) ||
                    (blockClass == ProcessingBlockClass.RADIX_IP_LOOKUP) ||
                    (blockClass == ProcessingBlockClass.STATIC_IP_LOOKUP)) {
             return new LookupIpRouteMp(instanceId, instanceConf, instanceConfFile);
