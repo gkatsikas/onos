@@ -676,7 +676,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             String tcConf = "";
 
             // A. Input part
-            String inputInst = "in";
+            String inputInst = "in" + tcCount;
             tcConf += this.generateInputOperations(tc, inputInst);
 
             // B. Stateful Write part

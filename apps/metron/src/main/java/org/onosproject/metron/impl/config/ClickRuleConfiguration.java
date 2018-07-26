@@ -112,30 +112,20 @@ public class ClickRuleConfiguration extends RuleConfiguration {
             log.debug("Traffic class: {}", trafficClass);
 
             int outputPort = tc.get(OUTPUT_PORT).asInt();
-            checkArgument(
-                outputPort >= 0,
-                "Rule output port must be greater or equal than zero"
-            );
+            checkArgument(outputPort >= 0, "Rule output port must be greater or equal than zero");
             log.debug("\tOutput Port: {}", outputPort);
 
             int priority = tc.get(PRIORITY).asInt();
-            checkArgument(
-                priority > 0,
-                "Rule priority must be greater than zero"
-            );
+            checkArgument(priority > 0, "Rule priority must be greater than zero");
             log.debug("\t   Priority: {}", priority);
 
             String actionStr = tc.get(ACTION).asText().toUpperCase();
             ClickFlowRuleAction action = Common.<ClickFlowRuleAction>enumFromString(
                 ClickFlowRuleAction.class, actionStr
             );
-            checkNotNull(
-                action,
+            checkNotNull(action,
                 "Incompatible Click flow rule action. Choose one in: " + Common.<ClickFlowRuleAction>
-                enumTypesToString(
-                    ClickFlowRuleAction.class
-                )
-            );
+                enumTypesToString(ClickFlowRuleAction.class));
             log.debug("\t     Action: {}", action);
 
             // Build a classification tree to encode this traffic class
