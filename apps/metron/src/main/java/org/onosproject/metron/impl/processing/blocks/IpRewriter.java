@@ -39,35 +39,60 @@ public class IpRewriter extends ModifierBlock {
     protected int outputPortsNumber;
 
     /**
-     * A classifier is associated with a configuration.
+     * A rewriter is associated with a configuration.
      * This configuration is a set of rules.
      */
     protected PatternConfigurationInterface patternConf;
 
-    protected static final String PATTERN         = "PATTERN";
+    /**
+     * If true, marks flows for monitoring purposes.
+     */
+    protected boolean aggregate;
+
+    public static final String PATTERN   = "PATTERN";
+    public static final String AGGREGATE = "SET_AGGREGATE";
+
+    protected static final boolean DEF_AGGREGATE_STATUS = false;
+
     public    static final String DROP_PATTERN    = "drop";
     public    static final String DISCARD_PATTERN = "discard";
 
     public IpRewriter(
-            String id,
-            String conf,
-            String confFile) {
+            String  id,
+            String  conf,
+            String  confFile) {
         super(id, conf, confFile);
 
         this.outputPortsNumber = 0;
         this.patternConf = null;
+        this.aggregate = DEF_AGGREGATE_STATUS;
     }
 
     public IpRewriter(
-            String id,
-            String conf,
-            String confFile,
-            int    portsNumber,
+            String  id,
+            String  conf,
+            String  confFile,
+            int     portsNumber,
             PatternConfigurationInterface patternConf) {
         super(id, conf, confFile);
 
         this.outputPortsNumber = portsNumber;
         this.patternConf = patternConf;
+        this.aggregate = DEF_AGGREGATE_STATUS;
+    }
+
+    public IpRewriter(
+            String  id,
+            String  conf,
+            String  confFile,
+            int     portsNumber,
+            PatternConfigurationInterface patternConf,
+            boolean aggregate) {
+        super(id, conf, confFile);
+
+        this.outputPortsNumber = portsNumber;
+        this.patternConf = patternConf;
+        this.aggregate = aggregate;
     }
 
     /**
@@ -117,18 +142,32 @@ public class IpRewriter extends ModifierBlock {
         this.addConfiguration();
     }
 
+    /**
+     * Returns the whether aggregate flow monitoring is enabled or not.
+     *
+     * @return aggregate flow monitoring status
+     */
+    public boolean aggregate() {
+        return this.aggregate;
+    }
+
+    /**
+     * Sets the aggregate flow monitoring status of this element.
+     *
+     * @param aggregate aggregate flow monitoring status
+     */
+    public void setAggregate(boolean aggregate) {
+        this.aggregate = aggregate;
+    }
+
     public void addConfiguration() {
         if (this.patternConf == null) {
-            log.error("No patterb configuration available for {}", this.id());
+            log.error("No pattern configuration available for {}", this.id());
             return;
         }
 
         Map<String, Integer> patterns = this.patternConf.datapathPatterns();
-        if (patterns == null) {
-            log.error("No datapath patterns available for {}", this.id());
-            return;
-        }
-        if (patterns.size() == 0) {
+        if ((patterns == null) || (patterns.size() == 0)) {
             log.error("No datapath patterns available for {}", this.id());
             return;
         }
@@ -159,7 +198,12 @@ public class IpRewriter extends ModifierBlock {
 
     @Override
     public void populateConfiguration() {
-        // Nothing to populate
+        Object val = this.configurationMap.get(AGGREGATE);
+        if (val != null) {
+            this.setAggregate(Boolean.valueOf(val.toString()));
+        } else {
+            this.setAggregate(DEF_AGGREGATE_STATUS);
+        }
     }
 
     @Override
@@ -169,7 +213,8 @@ public class IpRewriter extends ModifierBlock {
             "",
             this.configurationFile(),
             this.outputPortsNumber(),
-            this.patternConf()
+            this.patternConf(),
+            this.aggregate()
         );
     }
 

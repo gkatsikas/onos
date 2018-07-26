@@ -40,7 +40,7 @@ public class UdpRewriter extends IpRewriter {
 
     @Override
     public void populateConfiguration() {
-        // Do nothing
+        super.populateConfiguration();
     }
 
     @Override
