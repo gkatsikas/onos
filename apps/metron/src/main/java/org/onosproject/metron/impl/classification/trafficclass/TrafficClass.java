@@ -758,9 +758,16 @@ public class TrafficClass implements TrafficClassInterface {
 
         boolean withIpMapper = ipRw.contains(ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER.toString());
         if (withIpMapper) {
-            this.writeOperationsAsString += "lb :: " + ipRw + "; IPRewriter(lb)";
+            this.writeOperationsAsString += "lb :: " + ipRw + "; IPRewriter(lb";
         } else {
-            this.writeOperationsAsString += "IPRewriter(" + ipRw + ")";
+            this.writeOperationsAsString += "IPRewriter(" + ipRw;
+        }
+
+        String args = writeOperationsArguments();
+        if (args.isEmpty()) {
+            this.writeOperationsAsString += ")";
+        } else {
+            this.writeOperationsAsString += ", " + args + ")";
         }
     }
 
@@ -833,18 +840,10 @@ public class TrafficClass implements TrafficClassInterface {
         ProcessingBlockClass blockClass = block.blockClass();
 
         // Post-routing operations are kept in a map
-        if ((blockClass == ProcessingBlockClass.DROP_BROADCASTS)  ||
-            (blockClass == ProcessingBlockClass.IP_GW_OPTIONS)    ||
-            (blockClass == ProcessingBlockClass.FIX_IP_SRC)       ||
-            (blockClass == ProcessingBlockClass.DEC_IP_TTL)       ||
-            (blockClass == ProcessingBlockClass.IP_OUTPUT_COMBO)  ||
-            (blockClass == ProcessingBlockClass.IP_FRAGMENTER)) {
+        if (ProcessingBlockClass.isPostRouting(blockClass)) {
             this.addPostRoutingOperation(blockClass);
         // Counters
-        } else if ((blockClass == ProcessingBlockClass.AVERAGE_COUNTER)    ||
-                   (blockClass == ProcessingBlockClass.AVERAGE_COUNTER_MP) ||
-                   (blockClass == ProcessingBlockClass.COUNTER)            ||
-                   (blockClass == ProcessingBlockClass.COUNTER_MP)) {
+        } else if (ProcessingBlockClass.isCounter(blockClass)) {
             this.monitorConfiguration = blockClass.toString();
         // Strip will likely change the processing layer
         } else if (blockClass == ProcessingBlockClass.STRIP) {
@@ -1020,7 +1019,7 @@ public class TrafficClass implements TrafficClassInterface {
 
                 // Get the very first element. This must be an input element.
                 NfvDataplaneBlockInterface bl = this.blockPath.get(0);
-                if (!ProcessingBlockClass.isInput(bl.blockClass().toString())) {
+                if (!ProcessingBlockClass.isInput(bl.blockClass())) {
                     throw new SynthesisException(
                         "Failed to identify the input interface of a traffic class. " +
                         "The first element of this traffic class is not an input element"
@@ -1052,7 +1051,7 @@ public class TrafficClass implements TrafficClassInterface {
                 // Search backwards for the last output element
                 for (int i = this.blockPath.size() - 1; i >= 0; --i) {
                     NfvDataplaneBlockInterface bl = this.blockPath.get(i);
-                    if (ProcessingBlockClass.isOutput(bl.blockClass().toString())) {
+                    if (ProcessingBlockClass.isOutput(bl.blockClass())) {
                         toDev = bl;
                         break;
                     }
@@ -1715,7 +1714,7 @@ public class TrafficClass implements TrafficClassInterface {
          * These elements modify part of the header, hence
          * checksum(s) need(s) to be re-calculated.
          */
-        if (ProcessingBlockClass.isPostRouting(blockClass.toString()) &&
+        if (ProcessingBlockClass.isPostRouting(blockClass) &&
             !this.calculateChecksum) {
             this.calculateChecksum = true;
         }
@@ -1749,7 +1748,7 @@ public class TrafficClass implements TrafficClassInterface {
                 // Search backwards for the last output element
                 for (int i = this.blockPath.size() - 1; i >= 0; --i) {
                     NfvDataplaneBlockInterface bl = this.blockPath.get(i);
-                    if (ProcessingBlockClass.isOutput(bl.blockClass().toString())) {
+                    if (ProcessingBlockClass.isOutput(bl.blockClass())) {
                         toDev = bl;
                         break;
                     }
@@ -1801,6 +1800,30 @@ public class TrafficClass implements TrafficClassInterface {
         }
 
         return output;
+    }
+
+    /**
+     * Returns arguments associated with the write operations of this
+     * traffic class.
+     *
+     * @return string-based arguments for write operations
+     */
+    private String writeOperationsArguments() {
+        String args = "";
+
+        for (NfvDataplaneBlockInterface block : this.blockPath) {
+            // Looking for write operations
+            if (!ProcessingBlockClass.isRewriter(block.blockClass())) {
+                continue;
+            }
+
+            IpRewriter ipRw = (IpRewriter) block.processor();
+            if (ipRw.aggregate()) {
+                args += IpRewriter.AGGREGATE + " true";
+            }
+        }
+
+        return args;
     }
 
 }
