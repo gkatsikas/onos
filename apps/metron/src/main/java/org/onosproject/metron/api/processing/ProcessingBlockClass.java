@@ -117,12 +117,10 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is an input processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean input or non-input
      */
-    public static boolean isInput(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isInput(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
@@ -143,12 +141,10 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is an output processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean output or non-output
      */
-    public static boolean isOutput(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isOutput(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
@@ -168,12 +164,10 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is a classifier processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean classifier or non-classifier
      */
-    public static boolean isClassifier(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isClassifier(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
@@ -186,7 +180,9 @@ public enum ProcessingBlockClass {
             (blockClass == LOOKUP_IP_ROUTE_MP) ||
             (blockClass == OPENFLOW_CLASSIFIER) ||
             (blockClass == RADIX_IP_LOOKUP) ||
+            (blockClass == RANGE_IP_LOOKUP) ||
             (blockClass == SIMPLE_ETHERNET_CLASSIFIER) ||
+            (blockClass == SORTED_IP_LOOKUP) ||
             (blockClass == STATIC_IP_LOOKUP)) {
             return true;
         }
@@ -198,12 +194,10 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is a rewriter processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean rewriter or non-rewriter
      */
-    public static boolean isRewriter(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isRewriter(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
@@ -223,12 +217,10 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is a blackbox processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean blackbox or non-blackbox
      */
-    public static boolean isBlackbox(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isBlackbox(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
@@ -247,20 +239,42 @@ public enum ProcessingBlockClass {
      * Classifies the input block name to assess whether
      * it is a post-routing processing block.
      *
-     * @param nameStr the name of the block to be checked
+     * @param blockClass the class of the block to be checked
      * @return boolean post-routing or non-post-routing
      */
-    public static boolean isPostRouting(String nameStr) {
-        ProcessingBlockClass blockClass = MAP.get(nameStr);
-
+    public static boolean isPostRouting(ProcessingBlockClass blockClass) {
         if (blockClass == null) {
             return false;
         }
 
         if ((blockClass == DEC_IP_TTL) ||
+            (blockClass == DROP_BROADCASTS) ||
             (blockClass == FIX_IP_SRC) ||
+            (blockClass == IP_FRAGMENTER) ||
             (blockClass == IP_GW_OPTIONS) ||
             (blockClass == IP_OUTPUT_COMBO)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Classifies the input block name to assess whether
+     * it is a counter processing block.
+     *
+     * @param blockClass the class of the block to be checked
+     * @return boolean counter or non-counter
+     */
+    public static boolean isCounter(ProcessingBlockClass blockClass) {
+        if (blockClass == null) {
+            return false;
+        }
+
+        if ((blockClass == AVERAGE_COUNTER) ||
+            (blockClass == AVERAGE_COUNTER_MP) ||
+            (blockClass == COUNTER) ||
+            (blockClass == COUNTER_MP)) {
             return true;
         }
 

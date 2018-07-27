@@ -678,9 +678,9 @@ public final class SynthesisManager
             ProcessingBlockInterface dstBlock = dst.processingBlock();
 
             // Blackbox integration must be consistent
-            if (ProcessingBlockClass.isBlackbox(srcBlock.processingBlockClass().toString())) {
+            if (ProcessingBlockClass.isBlackbox(srcBlock.processingBlockClass())) {
                 // E.g., FromBlackboxDevice must be strictly followed by ToBlackboxDevice
-                checkArgument(ProcessingBlockClass.isBlackbox(dstBlock.processingBlockClass().toString()));
+                checkArgument(ProcessingBlockClass.isBlackbox(dstBlock.processingBlockClass()));
 
                 // Peer these two blocks
                 ToBlackboxDevice devBlock = (ToBlackboxDevice) dstBlock;

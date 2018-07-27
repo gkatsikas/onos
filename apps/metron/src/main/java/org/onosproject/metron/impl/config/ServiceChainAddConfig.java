@@ -1223,7 +1223,7 @@ public final class ServiceChainAddConfig
         //     !ProcessingBlockClass.isRewriter(blockName)) {
         //     return;
         // }
-        if (!ProcessingBlockClass.isClassifier(blockName)) {
+        if (!ProcessingBlockClass.isClassifier(ProcessingBlockClass.getByName(blockName))) {
             return;
         }
 
