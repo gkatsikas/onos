@@ -102,10 +102,7 @@ public abstract class ClassifierBlock extends ProcessingBlock {
      * @param ruleConf a rule configuration object
      */
     public void setRuleConf(RuleConfigurationInterface ruleConf) {
-        checkNotNull(
-            ruleConf,
-            "NULL or empty element configuration."
-        );
+        checkNotNull(ruleConf, "NULL or empty element configuration.");
 
         this.ruleConf = ruleConf;
         this.addConfiguration();
@@ -167,18 +164,12 @@ public abstract class ClassifierBlock extends ProcessingBlock {
             return;
         }
 
-        Map<String, Integer> rules = this.ruleConf.datapathTrafficClasses();
-        if (rules == null) {
-            log.error("No datapath rules available for {}", this.id());
-            return;
-        }
-        if (rules.size() == 0) {
-            log.error("No datapath rules available for {}", this.id());
-            return;
-        }
-
         // Turn the rules into a single string
         String conf = this.ruleConf.datapathTrafficClassesToString();
+        if (conf.isEmpty()) {
+            log.error("No datapath rules available for {}", this.id());
+            return;
+        }
 
         // Update the block's configuration
         this.setConfiguration(conf);
