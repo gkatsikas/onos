@@ -1,33 +1,27 @@
 {
     "entries": [
         {
-            "trafficClass": "dst net 18.26.4.24/32",
+            "trafficClass": "dst net 139.165.164.0/28",
             "outputPort": 0,
             "priority": 1,
             "action": "allow"
         },
         {
-            "trafficClass": "dst net 18.26.4.255/32",
+            "trafficClass": "dst net 139.165.47.0/24",
             "outputPort": 0,
             "priority": 2,
             "action": "allow"
         },
         {
-            "trafficClass": "dst net 18.26.4.0/32",
+            "trafficClass": "dst net 139.165.181.22/24",
             "outputPort": 0,
             "priority": 3,
             "action": "allow"
         },
         {
-            "trafficClass": "dst net 18.26.4.0/24",
-            "outputPort": 1,
+            "trafficClass": "dst net 139.165.32.0/18",
+            "outputPort": 0,
             "priority": 4,
-            "action": "allow"
-        },
-        {
-            "trafficClass": "dst net 0.0.0.0/0 and gw 18.26.4.1",
-            "outputPort": 1,
-            "priority": 5,
             "action": "allow"
         }
     ]
