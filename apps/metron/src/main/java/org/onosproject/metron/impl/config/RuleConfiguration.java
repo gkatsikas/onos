@@ -126,38 +126,43 @@ public abstract class RuleConfiguration
     @Override
     public String datapathTrafficClassesToString() {
         Map<String, Integer> rules = this.datapathTrafficClasses();
-        if (rules == null) {
+        if ((rules == null) || (rules.size() == 0)) {
             return "";
         }
+
+        String conf = "";
 
         /**
          * The rules in the map might not be in order,
          * but they should appear in order
          * (by increasing output port number).
          */
-        String[] array = new String[rules.size()];
+        // String[] array = new String[rules.size()];
+        // for (Map.Entry<String, Integer> rule : rules.entrySet()) {
+        //     // Reflects the rule's priority
+        //     int index = rule.getValue().intValue();
+
+        //     // This is occupied, traverse to find the first available
+        //     if (array[index] != null) {
+        //         int i = index;
+        //         while (i < rules.size()) {
+        //             if (array[i] == null) {
+        //                 array[i] = rule.getKey();
+        //                 break;
+        //             }
+        //             i++;
+        //         }
+        //     } else {
+        //         array[index] = rule.getKey();
+        //     }
+        // }
+
+        // for (String s : array) {
+        //     conf += s + ", ";
+        // }
+
         for (Map.Entry<String, Integer> rule : rules.entrySet()) {
-            // Reflects the rule's priority
-            int index = rule.getValue().intValue();
-
-            // This is occupied, traverse to find the first available
-            if (array[index] != null) {
-                int i = index;
-                while (i < rules.size()) {
-                    if (array[i] == null) {
-                        array[i] = rule.getKey();
-                        break;
-                    }
-                    i++;
-                }
-            } else {
-                array[index] = rule.getKey();
-            }
-        }
-
-        String conf = "";
-        for (String s : array) {
-            conf += s + ", ";
+            conf += rule.getKey() + ", ";
         }
 
         // Remove the trailing ", "
