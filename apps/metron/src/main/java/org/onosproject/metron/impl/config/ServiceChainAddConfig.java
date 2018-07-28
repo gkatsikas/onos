@@ -216,6 +216,7 @@ public final class ServiceChainAddConfig
      */
     private static final String TOPO_NETWORK_INGRESS_POINTS = "ingressPoints";
     private static final String TOPO_NETWORK_EGRESS_POINTS  = "egressPoints";
+    private static final String TOPO_NETWORK_TARGET_DEVICE  = "targetDevice";
 
     /**
      * Each ingress or egress point in a network topology should have
@@ -438,6 +439,15 @@ public final class ServiceChainAddConfig
             egressPointsNode.isArray(),
             "Service chain's egress points are organized in a JSON array"
         );
+
+        JsonNode targetDeviceNode = networkNode.path(TOPO_NETWORK_TARGET_DEVICE);
+        if (!targetDeviceNode.isMissingNode()) {
+            checkArgument(
+                targetDeviceNode.isTextual(),
+                "Service chain's target device ID must be a string"
+            );
+            result &= targetDeviceNode.isTextual();
+        }
 
         // A non-NULL JSON array is expected
         JsonNode serverNode = topoObjNode.path(TOPO_SERVER);
@@ -981,6 +991,7 @@ public final class ServiceChainAddConfig
         JsonNode networkNode = topoNode.path(TOPO_NETWORK);
         JsonNode ingressPointsNode = networkNode.path(TOPO_NETWORK_INGRESS_POINTS);
         JsonNode egressPointsNode  = networkNode.path(TOPO_NETWORK_EGRESS_POINTS);
+        String       targetDevice  = networkNode.path(TOPO_NETWORK_TARGET_DEVICE).asText();
 
         // Read ingress and egress points
         Set<TrafficPoint> ingressPoints = this.loadTrafficPoints(ingressPointsNode, "ingress");
@@ -1122,7 +1133,8 @@ public final class ServiceChainAddConfig
             .withAutoScalingAbility(scAutoScale)
             .serviceChainGraph(scGraph)
             .ingressPoints(ingressPoints)
-            .egressPoints(egressPoints);
+            .egressPoints(egressPoints)
+            .withTargetDevice(targetDevice);
 
         serviceChainCounter++;
 
