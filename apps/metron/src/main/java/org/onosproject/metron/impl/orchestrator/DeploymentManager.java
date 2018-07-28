@@ -653,15 +653,31 @@ public final class DeploymentManager
         ServiceChainId scId = sc.id();
 
         // Pick a server with enough resources
-        RestServerSBDevice server = this.getLeastOverloadedServer(userRequestedMaxCpus, userRequestedNics);
+        RestServerSBDevice server = null;
+        if (sc.targetDevice() == null) {
+            server = this.getLeastOverloadedServer(userRequestedMaxCpus, userRequestedNics);
+        } else {
+            server = this.getDesiredServer(sc.targetDevice(), userRequestedMaxCpus, userRequestedNics);
+        }
+
         if (server == null) {
-            log.error(
-                "[{}] \t Service chain with ID {} cannot be deployed. " +
-                "Either no servers are available or none of the available servers " +
-                "complies with the processing requirements (i.e., {} NICs and up to {} CPU cores) " +
-                "of this service chain.",
-                label(), scId, Integer.toString(userRequestedNics), Integer.toString(userRequestedMaxCpus)
-            );
+            if (sc.targetDevice() == null) {
+                log.error(
+                    "[{}] \t Service chain with ID {} cannot be deployed. " +
+                    "Either no servers are available or none of the available servers " +
+                    "complies with the processing requirements (i.e., {} NICs and up to {} CPU cores) " +
+                    "of this service chain.",
+                    label(), scId, userRequestedNics, userRequestedMaxCpus
+                );
+            } else {
+                log.error(
+                    "[{}] \t Service chain with ID {} cannot be deployed. " +
+                    "The desired server with ID {} is either unavailable or " +
+                    "it does not comply with the processing requirements (i.e., " +
+                    "{} NICs and up to {} CPU cores) of this service chain.",
+                    label(), scId, sc.targetDevice(), userRequestedNics, userRequestedMaxCpus
+                );
+            }
 
             return null;
         }
@@ -1111,6 +1127,30 @@ public final class DeploymentManager
         return (RestServerSBDevice) topologyService.getLeastOverloadedServerPowerOfTwoChoices(
             numberOfCores, numberOfNics
         );
+    }
+
+    /**
+     * Ask for a desired device, provided that it meets the number
+     * of CPU cores and NICs we want to use.
+     *
+     * @param targetDevId target Device ID
+     * @param numberOfCores number of CPU cores we want to use
+     * @param numberOfNics number of NICs we want to use
+     */
+    private RestServerSBDevice getDesiredServer(DeviceId targetDevId, int numberOfCores, int numberOfNics) {
+        RestServerSBDevice server = (RestServerSBDevice) topologyService.getDevice(targetDevId);
+
+        // No such server
+        if (server == null) {
+            return null;
+        }
+
+        // Check if it meets the resource criteria
+        if ((server.numberOfNics() < numberOfNics) || (server.numberOfCpus() < numberOfCores)) {
+            return null;
+        }
+
+        return server;
     }
 
     /**

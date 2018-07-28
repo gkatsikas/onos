@@ -34,9 +34,9 @@ import org.slf4j.Logger;
 import java.util.Objects;
 import java.util.Set;
 
-import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.slf4j.LoggerFactory.getLogger;
 import static org.onosproject.metron.api.servicechain.ServiceChainState.INIT;
 
 /**
@@ -63,6 +63,7 @@ public class ServiceChain implements ServiceChainInterface {
     private ServiceChainGraphInterface serviceChainGraph;
     private Set<TrafficPoint>          ingressPoints;
     private Set<TrafficPoint>          egressPoints;
+    private DeviceId                   targetDevice;
 
     protected ServiceChain(
             String                     name,
@@ -76,7 +77,8 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChainState          state,
             ServiceChainGraphInterface serviceChainGraph,
             Set<TrafficPoint>          ingressPoints,
-            Set<TrafficPoint>          egressPoints) {
+            Set<TrafficPoint>          egressPoints,
+            DeviceId                   targetDevice) {
         // Sanity checks
         checkArgument(
             !Strings.isNullOrEmpty(name),
@@ -134,6 +136,7 @@ public class ServiceChain implements ServiceChainInterface {
         this.serviceChainGraph = serviceChainGraph;
         this.ingressPoints     = ingressPoints;
         this.egressPoints      = egressPoints;
+        this.targetDevice      = targetDevice;
     }
 
     /**
@@ -158,7 +161,8 @@ public class ServiceChain implements ServiceChainInterface {
             state,
             sc.serviceChainGraph,
             sc.ingressPoints,
-            sc.egressPoints
+            sc.egressPoints,
+            sc.targetDevice
         );
     }
 
@@ -184,6 +188,7 @@ public class ServiceChain implements ServiceChainInterface {
         scOld.setServiceChainGraph(scNew.serviceChainGraph());
         scOld.setIngressPoints(scNew.ingressPoints());
         scOld.setEgressPoints(scNew.egressPoints());
+        scOld.setTargetDevice(scNew.targetDevice());
 
         return scOld;
     }
@@ -430,6 +435,16 @@ public class ServiceChain implements ServiceChainInterface {
         return ServiceChainScope.isHardwareBased(this.scope);
     }
 
+    @Override
+    public DeviceId targetDevice() {
+        return this.targetDevice;
+    }
+
+    @Override
+    public void setTargetDevice(DeviceId targetDevice) {
+        this.targetDevice = targetDevice;
+    }
+
     /**
      * Returns a label with the module's identify.
      * Serves for printing.
@@ -494,6 +509,7 @@ public class ServiceChain implements ServiceChainInterface {
                 .add("graph",         serviceChainGraph.toString())
                 .add("ingressPoints", ingressPoints.toString())
                 .add("egressPoints",  egressPoints.toString())
+                .add("targetDevice",  (targetDevice == null) ? "" : targetDevice)
                 .toString();
     }
 
@@ -522,6 +538,7 @@ public class ServiceChain implements ServiceChainInterface {
         private ServiceChainGraphInterface serviceChainGraph = null;
         private Set<TrafficPoint>          ingressPoints = null;
         private Set<TrafficPoint>          egressPoints = null;
+        private DeviceId                   targetDevice = null;
 
         private Builder() {
         }
@@ -532,7 +549,7 @@ public class ServiceChain implements ServiceChainInterface {
                 cpuCores, maxCpuCores,
                 scale, autoScale, state,
                 serviceChainGraph, ingressPoints,
-                egressPoints
+                egressPoints, targetDevice
             );
         }
 
@@ -665,6 +682,21 @@ public class ServiceChain implements ServiceChainInterface {
          */
         public Builder egressPoints(Set<TrafficPoint> egressPoints) {
             this.egressPoints = egressPoints;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with target device ID.
+         *
+         * @param targetDeviceStr a target device ID as a string
+         * @return service chain builder
+         */
+        public Builder withTargetDevice(String targetDeviceStr) {
+            if (Strings.isNullOrEmpty(targetDeviceStr)) {
+                this.targetDevice = null;
+            } else {
+                this.targetDevice = DeviceId.deviceId(targetDeviceStr);
+            }
             return this;
         }
 

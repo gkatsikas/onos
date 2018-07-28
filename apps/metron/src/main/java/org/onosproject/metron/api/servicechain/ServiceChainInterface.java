@@ -286,4 +286,18 @@ public interface ServiceChainInterface {
      * @return boolean scope status
      */
     boolean isHardwareBased();
+
+    /**
+     * Returns the target device ID for this service chain.
+     *
+     * @return target device ID
+     */
+    DeviceId targetDevice();
+
+    /**
+     * Sets a target device ID for this service chain.
+     *
+     * @param targetDevice target device ID
+     */
+    void setTargetDevice(DeviceId targetDevice);
 }
