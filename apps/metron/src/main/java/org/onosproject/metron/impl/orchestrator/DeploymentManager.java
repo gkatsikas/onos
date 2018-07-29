@@ -120,10 +120,6 @@ public final class DeploymentManager
     private static final int     DEF_NUMBER_OF_SW_TO_SRV_PATHS = 8;
     // Indicates any port
     private static final long    ANY_PORT = -1;
-    // If true, the controller exploits offloading opportunities for packet processing
-    private static final boolean DEF_HW_OFFLOADING = true;
-    // If true, the dataplane is responsible for reacting upon load imbalances
-    public  static final boolean DEF_AUTOSCALE = false;
 
     /**
      * Members:
@@ -153,8 +149,10 @@ public final class DeploymentManager
      * service chain will be translated into a highly optimized
      * equivalent, before it becomes READY.
      */
+    private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
+    private static final boolean DEF_HW_OFFLOADING = true;
     @Property(
-        name = "enableHwOffloading", boolValue = true,
+        name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
         label = "Enable the HW offloading features of Metron; default is true"
     )
     private boolean enableHwOffloading = DEF_HW_OFFLOADING;
@@ -164,8 +162,10 @@ public final class DeploymentManager
      * If true, the data plane undertakes scaling, otherwise
      * the controller performs scaling.
      */
+    private static final String ENABLE_AUTOSCALE = "enableAutoScale";
+    public  static final boolean DEF_AUTOSCALE = false;
     @Property(
-        name = "enableAutoScale", boolValue = false,
+        name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
         label = "Allow the data plane to undertake scaling in case of load imbalances; default is false"
     )
     private boolean enableAutoScale = DEF_AUTOSCALE;
@@ -473,16 +473,16 @@ public final class DeploymentManager
             // TODO: Eliminate lists?
             // Get the port where traffic is expected to show up
             TrafficPoint ingressPoint = sc.ingressPointOfDevice(coreSwitchId);
-            long coreSwitchIngrPort   = ingressPoint.portIds().get(0).toLong();
+            long   coreSwitchIngrPort = ingressPoint.portIds().get(0).toLong();
             // Get the port where traffic is expected to leave
             TrafficPoint egressPoint  = sc.egressPointOfDevice(coreSwitchId);
-            long coreSwitchEgrPort    = egressPoint.portIds().get(0).toLong();
+            long   coreSwitchEgrPort  = egressPoint.portIds().get(0).toLong();
 
             // This is the destination we want to reach
             DeviceId serverId = server.deviceId();
-            // TODO: Always 1? numberOfNics?
+            // TODO: Always 0? numberOfNics?
             List<Link> serverIngLinks = new ArrayList<Link>(
-                topologyService.getDeviceIngressLinksWithPort(serverId, 1)
+                topologyService.getDeviceIngressLinksWithPort(serverId, 0)
             );
             List<Link> serverEgrLinks = new ArrayList<Link>(
                 topologyService.getDeviceEgressLinksWithPort(serverId, numberOfNics)
@@ -521,6 +521,9 @@ public final class DeploymentManager
                 serverId, serverEgrPort, coreSwitchId, ANY_PORT
             );
             if ((selectedFwdPath == null) || (selectedBwdPath == null)) {
+                log.error(
+                    "[{}] \t Could not establish forward/backward paths towards {} for service chain",
+                    label(), serverId, scId);
                 return false;
             }
 
@@ -631,13 +634,16 @@ public final class DeploymentManager
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be placed in a server");
         checkNotNull(dpTree, "[" + label() + "] NULL dataplane configuration cannot be placed in a server");
 
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
         boolean inFlowDirMode = sc.isServerLevel() && sc.isHardwareBased();
         boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
 
         // Scaling ability for this service chain
         boolean scale = sc.scale();
         // Autoscale must be asked by the user and approved by this module
-        boolean autoScale = sc.autoScale() && this.enableAutoScale;
+        boolean autoScale = hasAutoScale(scId, sc.autoScale());
         // If scaling is disabled, start with the maximum CPU cores
         int userRequestedCpus = scale ? sc.cpuCores() : sc.maxCpuCores();
         // This is an upper limit of the cores you can use
@@ -648,9 +654,6 @@ public final class DeploymentManager
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("[{}] Instantiating server-level Metron traffic classes", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
-
-        // Obtain the ID of the service chain
-        ServiceChainId scId = sc.id();
 
         // Pick a server with enough resources
         RestServerSBDevice server = null;
@@ -1058,8 +1061,11 @@ public final class DeploymentManager
     }
 
     @Override
-    public boolean hasAutoScale() {
-        return this.enableAutoScale;
+    public boolean hasAutoScale(ServiceChainId scId, boolean userRequestedAutoScale) {
+        if (userRequestedAutoScale && !this.enableAutoScale) {
+            log.warn("Service chain {} requested autoscale but network operator has disabled this feature", scId);
+        }
+        return this.enableAutoScale && userRequestedAutoScale;
     }
 
     @Override
@@ -1748,60 +1754,56 @@ public final class DeploymentManager
         checkArgument(
             this.hwOffloadingEnabled(),
             "Network-wide service chain deployment requires to enable Metron's hardware offloading. " +
-            "Set configuration property 'enableHwOffloading = true'"
+            "Set configuration property '" + ENABLE_HW_OFFLOADING + " = true'"
         );
 
         checkArgument(
             topologyService.hasSwitches(),
             "Network-wide service chain deployment requires the presence of programmable switches. " +
-            "If no programmable switches exist, use scope='server-hardware' or scope='server-software'"
+            "If no programmable switches exist, use scope='server-rules' or scope='server-rss'"
         );
 
         return true;
     }
 
     /**
-     * Extracts properties from the component configuration context.
+     * Extracts properties from the component configuration context
+     * and updates local parameters accordingly.
      *
      * @param context the component context
      */
     private void readComponentConfiguration(ComponentContext context) {
+        if (context == null) {
+            return;
+        }
+
         Dictionary<?, ?> properties = context.getProperties();
 
         // Read the new value
-        Boolean newEnableHwOffloading =
-                Tools.isPropertyEnabled(properties, "enableHwOffloading");
+        Boolean newEnableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING);
 
         // Not actually given, fall back to default
         if (newEnableHwOffloading == null) {
             this.enableHwOffloading = DEF_HW_OFFLOADING;
-            log.info(
-                "[{}] HW offloading is not configured; " +
-                 "using current value of {}", label(), this.enableHwOffloading
-            );
+            log.info("[{}] Not configured. Hardware offloading remains: {}",
+                label(), this.enableHwOffloading ? "enabled" : "disabled");
         } else {
             this.enableHwOffloading = newEnableHwOffloading;
-            log.info(
-                "[{}] Configured! HW offloading is {}",
-                label(), this.enableHwOffloading ? "enabled" : "disabled"
-            );
+            log.info("[{}] Configured! Hardware offloading is now: {}",
+                label(), this.enableHwOffloading ? "enabled" : "disabled");
         }
 
         // Read the new value
-        Boolean newEnableAutoScale =
-                Tools.isPropertyEnabled(properties, "enableAutoScale");
+        Boolean newEnableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE);
 
         // Not actually given, fall back to default
         if (newEnableAutoScale == null) {
             this.enableHwOffloading = DEF_AUTOSCALE;
-            log.info(
-                "[{}] Autoscale is not configured; " +
-                 "using current value of {}", label(), this.enableAutoScale
-            );
+            log.info("[{}] Not configured. Autoscale remains: {}",
+                label(), this.enableAutoScale ? "enabled" : "disabled");
         } else {
             this.enableAutoScale = newEnableAutoScale;
-            log.info(
-                "[{}] Configured! Autoscale is {}",
+            log.info("[{}] Configured! Autoscale is now {}",
                 label(), this.enableAutoScale ? "enabled" : "disabled"
             );
         }

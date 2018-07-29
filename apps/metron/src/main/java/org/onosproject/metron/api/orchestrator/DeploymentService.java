@@ -121,11 +121,16 @@ public interface DeploymentService {
     boolean removeRules(ServiceChainId scId, Set<FlowRule> rules);
 
     /**
-     * Returns whether the autoscale feature is active or not.
+     * Returns whether the autoscale feature is active or not
+     * for a given service chain.
+     * Despite a user's preference, autoscale must also be set by the
+     * network administrator in order to take effect.
      *
+     * @param scId a service chain ID
+     * @param userRequestedAutoScale a user defined autoscale preference
      * @return boolean autoscale status
      */
-    boolean hasAutoScale();
+    boolean hasAutoScale(ServiceChainId scId, boolean userRequestedAutoScale);
 
     /**
      * Returns whether the HW offloading feature is active or not.
