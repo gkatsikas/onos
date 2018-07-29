@@ -38,6 +38,7 @@ import org.onosproject.metron.api.topology.NfvTopologyService;
 import org.onosproject.metron.impl.dataplane.NfvDataplaneTree;
 
 // ONOS libraries
+import org.onosproject.cfg.ComponentConfigService;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.DeviceId;
@@ -56,8 +57,13 @@ import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Modified;
+import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+
+import org.onlab.util.Tools;
+import org.osgi.service.component.ComponentContext;
 
 // Guava
 import com.google.common.collect.Sets;
@@ -66,11 +72,12 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 
 // Java libraries
-import java.net.URI;
-import java.util.Set;
-import java.util.Map;
-import java.util.Iterator;
 import java.util.Collection;
+import java.util.Dictionary;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
+import java.net.URI;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -100,13 +107,9 @@ public final class OrchestrationManager
     /**
      * Some management constants.
      */
-    // The frequency of the Orchestrator's monitor in milliseconds
-    private static final int   MONITORING_PERIOD_MS = 500;
-    // The CPU thresholds used for load balancing
-    private static final float ZERO_CPU_LOAD        = (float) 0.0;
-    private static final float CPU_OVERLOAD_LIMIT   = (float) 0.75;
-    private static final float CPU_UNDERLOAD_LIMIT  = (float) 0.35;
-    private static final float CPU_MINIMUM_LIMIT    = (float) 0.01;
+    // Some CPU thresholds used for load balancing
+    private static final float CPU_LOAD_ZERO = (float) 0.0;
+    private static final float CPU_MINIMUM_PRINTABLE_LIMIT = (float) 0.01;
 
     /**
      * Members:
@@ -116,7 +119,6 @@ public final class OrchestrationManager
      * |-> A map between service chains and their runtime information.
      */
     private ApplicationId appId = null;
-    private boolean autoScale   = DeploymentManager.DEF_AUTOSCALE;
     private Set<ServiceChainInterface> activeServiceChains    = null;
     private Set<ServiceChainInterface> suspendedServiceChains = null;
 
@@ -148,6 +150,9 @@ public final class OrchestrationManager
     protected CoreService coreService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ComponentConfigService cfgService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ServiceChainService serviceChainService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -162,6 +167,30 @@ public final class OrchestrationManager
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected TagService taggingService;
 
+    // The CPU utilization threshold to perform scale in
+    private static final String SCALE_IN_LOAD_THRESHOLD = "scaleInLoadThreshold";
+    private static final float DEFAULT_SCALE_IN_LOAD_THRESHOLD = (float) 0.35;
+    @Property(name = SCALE_IN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_IN_LOAD_THRESHOLD,
+            label = "Configure the amount of CPU load to trigger scale in events; " +
+                    "default is 35% CPU core utilization")
+    private float scaleInLoadThreshold = DEFAULT_SCALE_IN_LOAD_THRESHOLD;
+
+    // The CPU utilization threshold to perform scale out
+    private static final String SCALE_OUT_LOAD_THRESHOLD = "scaleOutLoadThreshold";
+    private static final float DEFAULT_SCALE_OUT_LOAD_THRESHOLD = (float) 0.75;
+    @Property(name = SCALE_OUT_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_OUT_LOAD_THRESHOLD,
+            label = "Configure the amount of CPU load to trigger scale out events; " +
+                    "default is 75% CPU core utilization")
+    private float scaleOutLoadThreshold = DEFAULT_SCALE_OUT_LOAD_THRESHOLD;
+
+    // The frequency of the Orchestrator's monitoring in milliseconds
+    private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
+    private static final int DEFAULT_MONITORING_PERIOD_MS = 500;
+    @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
+            label = "Configure the data plane monitoring frequency (in milliseconds); " +
+                    "default is 500 ms")
+    private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
+
     public OrchestrationManager() {
         this.activeServiceChains    = Sets.<ServiceChainInterface>newConcurrentHashSet();
         this.suspendedServiceChains = Sets.<ServiceChainInterface>newConcurrentHashSet();
@@ -175,16 +204,24 @@ public final class OrchestrationManager
         // Catch events coming from the service chain manager.
         serviceChainService.addListener(serviceChainListener);
 
-        // Get this from the deployer
-        this.autoScale = deployerService.hasAutoScale();
+        // Configuration service is up
+        cfgService.registerProperties(getClass());
 
         log.info("[{}] Started", label());
+    }
+
+    @Modified
+    public void modified(ComponentContext context) {
+        this.readComponentConfiguration(context);
     }
 
     @Deactivate
     protected void deactivate() {
         // Remove the listener for the events coming from the service chain manager.
         serviceChainService.removeListener(serviceChainListener);
+
+        // Disable configuration service
+        cfgService.unregisterProperties(getClass(), false);
 
         // Take care of the thread pool
         this.managerExecutor.shutdown();
@@ -248,9 +285,9 @@ public final class OrchestrationManager
             new ConcurrentHashMap<ServiceChainId, Map<URI, AtomicBoolean>>();
 
         while (true) {
-            // Periodic monitoring every MONITORING_PERIOD_MS milliseconds
+            // Periodic monitoring every monitoringPeriodMilli milliseconds
             try {
-                Thread.sleep(MONITORING_PERIOD_MS);
+                Thread.sleep(monitoringPeriodMilli);
             } catch (InterruptedException intEx) {
                 continue;
             }
@@ -376,6 +413,7 @@ public final class OrchestrationManager
         }
 
         ServiceChainId scId = sc.id();
+        boolean autoScale = deployerService.hasAutoScale(scId, sc.autoScale());
         boolean withLimitedReconfiguration = sc.isSoftwareBased() ? true : false;
 
         // Fetch the dataplane tree of this service chain
@@ -386,7 +424,7 @@ public final class OrchestrationManager
         // Get the list of CPU cores with non-zero load
         Collection<CpuStatistics> cpuStats = stats.cpuStatisticsAll();
 
-        Map<Integer, Float> loadedCores = this.getCoresWithLoadGreaterThan(cpuStats, ZERO_CPU_LOAD);
+        Map<Integer, Float> loadedCores = this.getCoresWithLoadGreaterThan(cpuStats, CPU_LOAD_ZERO);
 
         // Get the number of CPU cores that exhbit some load
         int loadedCpusOfThisTc = loadedCores.size();
@@ -408,7 +446,7 @@ public final class OrchestrationManager
             float loadScaled = load * 100;
 
             // Print load only if there is some
-            if (load >= CPU_MINIMUM_LIMIT) {
+            if (load >= CPU_MINIMUM_PRINTABLE_LIMIT) {
                 log.info(
                     "[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
                     label(), tcId, cpu, loadScaled
@@ -419,12 +457,12 @@ public final class OrchestrationManager
             monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, load);
 
             // We let the agent handle imbalances by auto scaling
-            if (this.autoScale) {
+            if (autoScale) {
                 continue;
             }
 
             // An overload has been detected for more than one iterations
-            if (load >= CPU_OVERLOAD_LIMIT) {
+            if (load >= scaleOutLoadThreshold) {
                 // Scale out
                 this.deflateLoad(
                     scId,
@@ -441,8 +479,8 @@ public final class OrchestrationManager
                 return;
             // Load has decreased to the desired level for scale in
             } else if (
-                    ((load <= CPU_UNDERLOAD_LIMIT) && (previousLoad.get() >= CPU_UNDERLOAD_LIMIT)) ||
-                    ((load <= CPU_UNDERLOAD_LIMIT) &&  !isRebalanced.get())
+                    ((load <= scaleInLoadThreshold) && (previousLoad.get() >= scaleInLoadThreshold)) ||
+                    ((load <= scaleInLoadThreshold) &&  !isRebalanced.get())
             ) {
                 // Scale in
                 this.inflateLoad(
@@ -844,6 +882,64 @@ public final class OrchestrationManager
                 label(),
                 sc.id()
             );
+        }
+    }
+
+    /**
+     * Extracts properties from the component configuration context
+     * and updates local parameters accordingly.
+     *
+     * @param context the component context
+     */
+    private void readComponentConfiguration(ComponentContext context) {
+        if (context == null) {
+            return;
+        }
+
+        Dictionary<?, ?> properties = context.getProperties();
+
+        if (Tools.isPropertyEnabled(properties, SCALE_OUT_LOAD_THRESHOLD)) {
+            float previousScaleOutLoadThreshold = scaleOutLoadThreshold;
+            scaleOutLoadThreshold = Tools.getFloatProperty(properties, SCALE_OUT_LOAD_THRESHOLD);
+
+            if ((scaleOutLoadThreshold < 0) || (scaleOutLoadThreshold > 1) ||
+                (scaleOutLoadThreshold < scaleInLoadThreshold)) {
+                scaleOutLoadThreshold = previousScaleOutLoadThreshold;
+                log.info(
+                    "Not configured due to invalid range. CPU load to trigger scale out remains {}%",
+                    scaleOutLoadThreshold * 100);
+            } else {
+                log.info("Configured. CPU load to trigger scale out is now {}%", scaleOutLoadThreshold * 100);
+            }
+        }
+
+        if (Tools.isPropertyEnabled(properties, SCALE_IN_LOAD_THRESHOLD)) {
+            float previousScaleInLoadThreshold = scaleInLoadThreshold;
+            scaleInLoadThreshold = Tools.getFloatProperty(properties, SCALE_IN_LOAD_THRESHOLD);
+
+            if ((scaleInLoadThreshold < 0) || (scaleInLoadThreshold > 1) ||
+                (scaleInLoadThreshold > scaleOutLoadThreshold)) {
+                scaleInLoadThreshold = previousScaleInLoadThreshold;
+                log.info(
+                    "Not configured due to invalid range. CPU load to trigger scale in remains {}%",
+                    scaleInLoadThreshold * 100);
+            } else {
+                log.info("Configured. CPU load to trigger scale in is now {}%", scaleInLoadThreshold * 100);
+            }
+        }
+
+        if (Tools.isPropertyEnabled(properties, MONITORING_PERIOD_MS)) {
+            int previousMonitoringPeriodMilli = monitoringPeriodMilli;
+            monitoringPeriodMilli = Tools.getIntegerProperty(
+                properties, MONITORING_PERIOD_MS, DEFAULT_MONITORING_PERIOD_MS);
+
+            if (monitoringPeriodMilli <= 0) {
+                monitoringPeriodMilli = previousMonitoringPeriodMilli;
+                log.info(
+                    "Not configured due to invalid value. Monitoring frequency remains {} ms", monitoringPeriodMilli);
+            } else {
+                log.info("Configured. Monitoring frequency is now {} ms", monitoringPeriodMilli);
+            }
         }
     }
 
