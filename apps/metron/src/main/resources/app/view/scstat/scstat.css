@@ -15,33 +15,33 @@
  */
 
 /*
- ONOS GUI -- Metron Service Chain Manager -- CSS file
+ ONOS GUI -- Metron Service Chain Stats -- CSS file
  */
 
-#ov-scdepl {
+#ov-scstat {
     padding: 20px;
     position: relative;
 }
-.light #ov-scdepl {
+.light #ov-scstat {
     color: navy;
 }
-.dark #ov-scdepl {
+.dark #ov-scstat {
     color: #88f;
 }
 
-#ov-scdepl .button-panel {
+#ov-scstat .button-panel {
     margin: 10px;
     width: 200px;
 }
 
-.light #ov-scdepl .button-panel {
+.light #ov-scstat .button-panel {
     background-color: #ccf;
 }
-.dark #ov-scdepl .button-panel {
+.dark #ov-scstat .button-panel {
     background-color: #444;
 }
 
-#ov-scdepl #chart-loader {
+#ov-scstat #chart-loader {
     position: absolute;
     width: 200px;
     height: 50px;
