@@ -42,33 +42,33 @@ import static org.onosproject.ui.UiView.Category.NETWORK;
  * Mechanism to stream data to the GUI.
  */
 @Component(immediate = true, enabled = true)
-@Service(value = ServiceChainDeploymentUI.class)
-public class ServiceChainDeploymentUI {
+@Service(value = ServiceChainStatsUI.class)
+public class ServiceChainStatsUI {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     /**
      * The label of this component.
      */
-    private static final String COMPONET_LABEL = "Metron Service Chains Web UI";
+    private static final String COMPONET_LABEL = "Metron Service Chains Stats Web UI";
 
     /**
      * GUI Information.
      */
-    private static final String SC_DEPL_ID = "scdepl";
-    private static final String SC_DEPL_TEXT = "NFV Service Chains";
+    private static final String SC_STATS_ID = "scstat";
+    private static final String SC_STATS_TEXT = "Service Chains-Stats";
     private static final String RES_PATH = "gui";
-    private static final ClassLoader CL = ServiceChainDeploymentUI.class.getClassLoader();
+    private static final ClassLoader CL = ServiceChainStatsUI.class.getClassLoader();
 
     // Factory for UI message handlers
     private final UiMessageHandlerFactory messageHandlerFactory =
             () -> ImmutableList.of(
-                new ServiceChainDeploymentViewMessageHandler()
+                new ServiceChainStatsViewMessageHandler()
             );
 
     // List of application views
     private final List<UiView> views = ImmutableList.of(
-            new UiView(NETWORK, SC_DEPL_ID, SC_DEPL_TEXT)
+            new UiView(NETWORK, SC_STATS_ID, SC_STATS_TEXT)
     );
 
     // Application UI extension

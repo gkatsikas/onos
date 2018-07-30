@@ -22,25 +22,9 @@ package org.onosproject.metron.impl.gui;
 public enum MetricType {
 
     /**
-     * CPU Cores of an NFV server.
-     * We assume that maximum is 16.
+     * Server CPU cores.
      */
-    CPU_0,
-    CPU_1,
-    CPU_2,
-    CPU_3,
-    CPU_4,
-    CPU_5,
-    CPU_6,
-    CPU_7,
-    CPU_8,
-    CPU_9,
-    CPU_10,
-    CPU_11,
-    CPU_12,
-    CPU_13,
-    CPU_14,
-    CPU_15,
+    CPU,
 
     /**
      * Time to synthesize a service chain.
@@ -60,6 +44,6 @@ public enum MetricType {
     /**
      * Time to reconfigure a service chain.
      */
-    RECONFIGURATION_TIME
+    RECONFIGURATION_TIME;
 
 }

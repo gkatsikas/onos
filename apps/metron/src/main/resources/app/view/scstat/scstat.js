@@ -15,7 +15,7 @@
  */
 
 /*
- ONOS GUI -- Metron Service Chain Manager View Module
+ ONOS GUI -- Metron Service Chain Stats View Module
  */
 (function () {
     'use strict';
@@ -50,8 +50,8 @@
         return Math.max.apply(null, merged);
     }
 
-    angular.module('ovScdepl', ["chart.js"])
-        .controller('OvScdeplCtrl',
+    angular.module('ovScstat', ["chart.js"])
+        .controller('OvScstatCtrl',
         ['$log', '$scope', '$location', 'FnService', 'ChartBuilderService', 'NavService',
 
         function (_$log_, _$scope_, _$location_, _fs_, _cbs_, _ns_) {
@@ -74,7 +74,7 @@
 
             cbs.buildChart({
                 scope: $scope,
-                tag: 'scdepl',
+                tag: 'scstat',
                 query: params
             });
 
@@ -114,7 +114,7 @@
                 $scope.onClick = function (points, evt) {
                     var label = labels[points[0]._index];
                     if (label) {
-                        ns.navTo('scdepl', { scId: label });
+                        ns.navTo('scstat', { scId: label });
                         $log.log(label);
                     }
                 };
@@ -124,7 +124,7 @@
                 }
 
                 $scope.onChange = function (serviceChainId) {
-                    ns.navTo('scdepl', { scId: serviceChainId });
+                    ns.navTo('scstat', { scId: serviceChainId });
                 };
             });
 
@@ -147,7 +147,7 @@
 
             $scope.showLoader = true;
 
-            $log.log('OvScdeplCtrl has been created');
+            $log.log('OvScstatCtrl has been created');
         }]);
 
 }());

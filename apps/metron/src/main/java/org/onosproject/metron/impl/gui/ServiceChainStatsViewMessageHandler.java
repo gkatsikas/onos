@@ -57,15 +57,15 @@ import static org.onosproject.metron.impl.gui.MetricType.RECONFIGURATION_TIME;
 import static org.onosproject.metron.impl.gui.Resource.SERVICE_CHAIN_DEPL_METRICS;
 
 /**
- * Message handler for passing service chain data to the Web UI.
+ * Message handler for passing service chain stats to the Web UI.
  */
-public class ServiceChainDeploymentViewMessageHandler extends UiMessageHandler {
+public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
 
-    private static final Logger log = getLogger(ServiceChainDeploymentViewMessageHandler.class);
+    private static final Logger log = getLogger(ServiceChainStatsViewMessageHandler.class);
 
-    private static final String SC_DEPL_DATA_REQ = "scdeplDataRequest";
-    private static final String SC_DEPL_DATA_RESP = "scdeplDataResponse";
-    private static final String SC_DEPLS = "scdepls";
+    private static final String SC_STATS_DATA_REQ = "scstatDataRequest";
+    private static final String SC_STATS_DATA_RESP = "scstatDataResponse";
+    private static final String SC_STATS = "scstats";
 
     private static final String SERVICE_CHAIN_IDS = "serviceChainIds";
 
@@ -90,7 +90,7 @@ public class ServiceChainDeploymentViewMessageHandler extends UiMessageHandler {
     private final class ControlMessageRequest extends ChartRequestHandler {
 
         private ControlMessageRequest() {
-            super(SC_DEPL_DATA_REQ, SC_DEPL_DATA_RESP, SC_DEPLS);
+            super(SC_STATS_DATA_REQ, SC_STATS_DATA_RESP, SC_STATS);
         }
 
         @Override
