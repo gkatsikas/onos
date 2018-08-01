@@ -167,21 +167,21 @@ public final class OrchestrationManager
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected TagService taggingService;
 
-    // The CPU utilization threshold to perform scale in
-    private static final String SCALE_IN_LOAD_THRESHOLD = "scaleInLoadThreshold";
-    private static final float DEFAULT_SCALE_IN_LOAD_THRESHOLD = (float) 0.35;
-    @Property(name = SCALE_IN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_IN_LOAD_THRESHOLD,
-            label = "Configure the amount of CPU load to trigger scale in events; " +
+    // The CPU utilization threshold to perform scale down
+    private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
+    private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.35;
+    @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
+            label = "Configure the amount of CPU load to trigger scale down events; " +
                     "default is 35% CPU core utilization")
-    private float scaleInLoadThreshold = DEFAULT_SCALE_IN_LOAD_THRESHOLD;
+    private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
 
-    // The CPU utilization threshold to perform scale out
-    private static final String SCALE_OUT_LOAD_THRESHOLD = "scaleOutLoadThreshold";
-    private static final float DEFAULT_SCALE_OUT_LOAD_THRESHOLD = (float) 0.75;
-    @Property(name = SCALE_OUT_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_OUT_LOAD_THRESHOLD,
-            label = "Configure the amount of CPU load to trigger scale out events; " +
+    // The CPU utilization threshold to perform scale up
+    private static final String SCALE_UP_LOAD_THRESHOLD = "scaleUpLoadThreshold";
+    private static final float DEFAULT_SCALE_UP_LOAD_THRESHOLD = (float) 0.75;
+    @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
+            label = "Configure the amount of CPU load to trigger scale up events; " +
                     "default is 75% CPU core utilization")
-    private float scaleOutLoadThreshold = DEFAULT_SCALE_OUT_LOAD_THRESHOLD;
+    private float scaleUpLoadThreshold = DEFAULT_SCALE_UP_LOAD_THRESHOLD;
 
     // The frequency of the Orchestrator's monitoring in milliseconds
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
@@ -462,38 +462,28 @@ public final class OrchestrationManager
             }
 
             // An overload has been detected for more than one iterations
-            if (load >= scaleOutLoadThreshold) {
-                // Scale out
-                this.deflateLoad(
-                    scId,
-                    tcId,
-                    deviceId,
-                    cpu,
-                    maxCpus,
-                    withLimitedReconfiguration
-                );
+            if (load >= scaleUpLoadThreshold) {
+                // Scale up
+                if (this.deflateLoad(scId, tcId, deviceId, cpu, maxCpus, withLimitedReconfiguration)) {
+                    isRebalanced.set(true);
+                    sc.setCpuCores(sc.cpuCores() + 1);
+                }
 
                 previousLoad.set(load);
-                isRebalanced.set(true);
 
                 return;
-            // Load has decreased to the desired level for scale in
+            // Load has decreased to the desired level for scale down
             } else if (
-                    ((load <= scaleInLoadThreshold) && (previousLoad.get() >= scaleInLoadThreshold)) ||
-                    ((load <= scaleInLoadThreshold) &&  !isRebalanced.get())
+                    ((load <= scaleDownLoadThreshold) && (previousLoad.get() >= scaleDownLoadThreshold)) ||
+                    ((load <= scaleDownLoadThreshold) &&  !isRebalanced.get())
             ) {
-                // Scale in
-                this.inflateLoad(
-                    scId,
-                    tcId,
-                    deviceId,
-                    cpu,
-                    maxCpus,
-                    withLimitedReconfiguration
-                );
+                // Scale down
+                if (this.inflateLoad(scId, tcId, deviceId, cpu, maxCpus, withLimitedReconfiguration)) {
+                    isRebalanced.set(true);
+                    sc.setCpuCores(sc.cpuCores() - 1);
+                }
 
                 previousLoad.set(load);
-                isRebalanced.set(true);
 
                 return;
             }
@@ -504,7 +494,7 @@ public final class OrchestrationManager
     }
 
     @Override
-    public void deflateLoad(
+    public boolean deflateLoad(
             ServiceChainId scId,
             URI            tcId,
             DeviceId       deviceId,
@@ -523,13 +513,11 @@ public final class OrchestrationManager
             log.warn("[{}] \t Not enough cores to deflate this traffic class group", label());
             log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
             log.info("");
-            return;
+            return false;
         }
 
-        log.info(
-            "[{}] \t Initial # of CPU Cores {} --> New # of CPU cores {}",
-            label(), initialCores, cpuCoresToAllocate
-        );
+        log.info("[{}] \t Initial # of CPU Cores {} --> New # of CPU cores {}",
+            label(), initialCores, cpuCoresToAllocate);
 
         /**
          * Measure the time it takes to compute the reconfiguration.
@@ -541,9 +529,7 @@ public final class OrchestrationManager
         RestServerSBDevice device = (RestServerSBDevice) topologyService.getDevice(deviceId);
 
         // Fetch the dataplane tree of this service chain
-        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(
-            scId, tcId
-        );
+        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(scId, tcId);
 
         Set<FlowRule> newRules = null;
 
@@ -553,7 +539,7 @@ public final class OrchestrationManager
         // Check what is sent back
         if (changes == null) {
             log.warn("[{}] \t {}", label(), taggingService.getLbStatusOfTrafficClassGroup(tcId));
-            return;
+            return false;
         }
 
         // Proper way of deflating
@@ -599,10 +585,12 @@ public final class OrchestrationManager
         log.info("[{}] \t Done", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("");
+
+        return true;
     }
 
     @Override
-    public void inflateLoad(
+    public boolean inflateLoad(
             ServiceChainId scId,
             URI            tcId,
             DeviceId       deviceId,
@@ -611,7 +599,7 @@ public final class OrchestrationManager
             boolean        limitedReconfiguration) {
         int initialCores = taggingService.getNumberOfActiveCoresOfTrafficClassGroup(tcId);
         if (initialCores == 1) {
-            return;
+            return false;
         }
 
         log.info("");
@@ -624,13 +612,11 @@ public final class OrchestrationManager
             log.warn("[{}] \t Only one CPU core is left, cannot inflate this traffic class group", label());
             log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
             log.info("");
-            return;
+            return false;
         }
 
-        log.info(
-            "[{}] \t Initial # of CPU Cores {} --> New # of CPU cores {}",
-            label(), initialCores, cpuCoresToAllocate
-        );
+        log.info("[{}] \t Initial # of CPU Cores {} --> New # of CPU cores {}",
+            label(), initialCores, cpuCoresToAllocate);
 
         /**
          * Measure the time it takes to compute the reconfiguration.
@@ -642,9 +628,7 @@ public final class OrchestrationManager
         RestServerSBDevice device = (RestServerSBDevice) topologyService.getDevice(deviceId);
 
         // Fetch the dataplane tree of this service chain
-        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(
-            scId, tcId
-        );
+        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(scId, tcId);
 
         Set<FlowRule> newRules = null;
 
@@ -654,7 +638,7 @@ public final class OrchestrationManager
         // Check what is sent back
         if (changes == null) {
             log.warn("[{}] \t {}", label(), taggingService.getLbStatusOfTrafficClassGroup(tcId));
-            return;
+            return false;
         }
 
         // Proper way of deflating
@@ -700,6 +684,8 @@ public final class OrchestrationManager
         log.info("[{}] \t Done", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.info("");
+
+        return true;
     }
 
     /**
@@ -898,33 +884,33 @@ public final class OrchestrationManager
 
         Dictionary<?, ?> properties = context.getProperties();
 
-        if (Tools.isPropertyEnabled(properties, SCALE_OUT_LOAD_THRESHOLD)) {
-            float previousScaleOutLoadThreshold = scaleOutLoadThreshold;
-            scaleOutLoadThreshold = Tools.getFloatProperty(properties, SCALE_OUT_LOAD_THRESHOLD);
+        if (Tools.isPropertyEnabled(properties, SCALE_UP_LOAD_THRESHOLD)) {
+            float previousScaleUpLoadThreshold = scaleUpLoadThreshold;
+            scaleUpLoadThreshold = Tools.getFloatProperty(properties, SCALE_UP_LOAD_THRESHOLD);
 
-            if ((scaleOutLoadThreshold < 0) || (scaleOutLoadThreshold > 1) ||
-                (scaleOutLoadThreshold < scaleInLoadThreshold)) {
-                scaleOutLoadThreshold = previousScaleOutLoadThreshold;
+            if ((scaleUpLoadThreshold < 0) || (scaleUpLoadThreshold > 1) ||
+                (scaleUpLoadThreshold < scaleDownLoadThreshold)) {
+                scaleUpLoadThreshold = previousScaleUpLoadThreshold;
                 log.info(
-                    "Not configured due to invalid range. CPU load to trigger scale out remains {}%",
-                    scaleOutLoadThreshold * 100);
+                    "Not configured due to invalid range. CPU load to trigger scale up remains {}%",
+                    scaleUpLoadThreshold * 100);
             } else {
-                log.info("Configured. CPU load to trigger scale out is now {}%", scaleOutLoadThreshold * 100);
+                log.info("Configured. CPU load to trigger scale up is now {}%", scaleUpLoadThreshold * 100);
             }
         }
 
-        if (Tools.isPropertyEnabled(properties, SCALE_IN_LOAD_THRESHOLD)) {
-            float previousScaleInLoadThreshold = scaleInLoadThreshold;
-            scaleInLoadThreshold = Tools.getFloatProperty(properties, SCALE_IN_LOAD_THRESHOLD);
+        if (Tools.isPropertyEnabled(properties, SCALE_DOWN_LOAD_THRESHOLD)) {
+            float previousScaleDownLoadThreshold = scaleDownLoadThreshold;
+            scaleDownLoadThreshold = Tools.getFloatProperty(properties, SCALE_DOWN_LOAD_THRESHOLD);
 
-            if ((scaleInLoadThreshold < 0) || (scaleInLoadThreshold > 1) ||
-                (scaleInLoadThreshold > scaleOutLoadThreshold)) {
-                scaleInLoadThreshold = previousScaleInLoadThreshold;
+            if ((scaleDownLoadThreshold < 0) || (scaleDownLoadThreshold > 1) ||
+                (scaleDownLoadThreshold > scaleUpLoadThreshold)) {
+                scaleDownLoadThreshold = previousScaleDownLoadThreshold;
                 log.info(
-                    "Not configured due to invalid range. CPU load to trigger scale in remains {}%",
-                    scaleInLoadThreshold * 100);
+                    "Not configured due to invalid range. CPU load to trigger scale down remains {}%",
+                    scaleDownLoadThreshold * 100);
             } else {
-                log.info("Configured. CPU load to trigger scale in is now {}%", scaleInLoadThreshold * 100);
+                log.info("Configured. CPU load to trigger scale down is now {}%", scaleDownLoadThreshold * 100);
             }
         }
 
