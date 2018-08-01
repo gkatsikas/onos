@@ -1,0 +1,74 @@
+<!-- scinfo partial HTML -->
+<div id="ov-scinfo">
+    <div class="tabular-header">
+        <h2>Service Chains ({{tableData.length}} total)</h2>
+        <div class="ctrl-btns">
+            <div class="refresh" ng-class="{active: autoRefresh}"
+                 icon icon-size="42" icon-id="refresh"
+                 tooltip tt-msg="autoRefreshTip"
+                 ng-click="toggleRefresh()"></div>
+        </div>
+        <div class="search">
+             <input type="text" ng-model="query" placeholder="Search"/>
+             <select ng-model="queryBy">
+                 <option value="" disabled>Search By</option>
+                 <option value="$">All Fields</option>
+                 <option value="id">Service Chain ID</option>
+                 <option value="nfs">Network Functions</option>
+                 <option value="scope">Scope</option>
+                 <option value="dispatcher">Dispatcher</option>
+                 <option value="ingress">Ingress Points</option>
+                 <option value="processing">Processing Points</option>
+                 <option value="egress">Egress Points</option>
+                 <option value="cpus">CPU Cores</option>
+                 <option value="nics">NICs</option>
+             </select>
+         </div>
+    </div>
+
+    <div class="summary-list" onos-table-resize>
+        <div class="table-header" onos-sortable-header>
+            <table>
+                <tr>
+                    <td colId="id" sortable col-width="260px">Service Chain ID </td>
+                    <td colId="nfs" sortable col-width="200px">Network Functions </td>
+                    <td colId="scope" sortable col-width="80px">Scope </td>
+                    <td colId="dispatcher" sortable col-width="200px">Dispatcher </td>
+                    <td colId="ingress" sortable col-width="200px">Ingress Points </td>
+                    <td colId="processing" sortable col-width="200px">Processing Points </td>
+                    <td colId="egress" sortable col-width="200px">Egress Points </td>
+                    <td colId="cpus" sortable col-width="60px">CPU Cores </td>
+                    <td colId="nics" sortable col-width="60px">NICs </td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="table-body">
+            <table onos-flash-changes id-prop="id">
+                <tr ng-if="!tableData.length" class="no-data">
+                    <td colspan="9">
+                        {{annots.no_rows_msg}}
+                    </td>
+                </tr>
+
+                <tr ng-repeat="scinfo in tableData track by $index"
+                    ng-click="selectCallback($event, scinfo)"
+                    ng-class="{selected: scinfo.id === selId}"
+                    ng-repeat-complete row-id="{{scinfo.id}}">
+                    <td>{{scinfo.id}}</td>
+                    <td>{{scinfo.nfs}}</td>
+                    <td>{{scinfo.scope}}</td>
+                    <td>{{scinfo.dispatcher}}</td>
+                    <td>{{scinfo.ingress}}</td>
+                    <td>{{scinfo.processing}}</td>
+                    <td>{{scinfo.egress}}</td>
+                    <td>{{scinfo.cpus}}</td>
+                    <td>{{scinfo.nics}}</td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+    <scinfo-details-panel></scinfo-details-panel>
+
+</div>
