@@ -81,8 +81,9 @@ public interface OrchestrationService {
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               increase the number of queues)
+     * @return boolean deflation status
      */
-    void deflateLoad(
+    boolean deflateLoad(
         ServiceChainId scId,
         URI            tcId,
         DeviceId       deviceId,
@@ -103,8 +104,9 @@ public interface OrchestrationService {
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               decrease the number of queues)
+     * @return boolean inflation status
      */
-    void inflateLoad(
+    boolean inflateLoad(
         ServiceChainId scId,
         URI            tcId,
         DeviceId       deviceId,
