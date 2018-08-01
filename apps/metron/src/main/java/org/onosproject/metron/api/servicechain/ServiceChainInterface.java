@@ -192,6 +192,27 @@ public interface ServiceChainInterface {
     void setIngressPoints(Set<TrafficPoint> ingressPoints);
 
     /**
+     * Returns the set of processing points of this service chain.
+     *
+     * @return service chain's set of processing points
+     */
+    Set<TrafficPoint> processingPoints();
+
+    /**
+     * Sets the set of processing points of this service chain.
+     *
+     * @param processingPoints service chain's set of processing points
+     */
+    void setProcessingPoints(Set<TrafficPoint> processingPoints);
+
+    /**
+     * Adds a processing point to this service chain.
+     *
+     * @param processingPoint service chain's processing point to add
+     */
+    void addProcessingPoint(TrafficPoint processingPoint);
+
+    /**
      * Returns the set of egress points of this service chain.
      *
      * @return service chain's set of egress points
@@ -206,7 +227,7 @@ public interface ServiceChainInterface {
     void setEgressPoints(Set<TrafficPoint> egressPoints);
 
     /**
-     * Checks whether the input ingress point belongs to the set
+     * Checks whether the input traffic point belongs to the set
      * of ingress points of this service chain.
      *
      * @param ingressPoint input ingress point
@@ -224,7 +245,25 @@ public interface ServiceChainInterface {
     boolean isIngressPoint(DeviceId deviceId);
 
     /**
-     * Checks whether the input egress point belongs to the set
+     * Checks whether the input traffic point belongs to the set
+     * of processing points of this service chain.
+     *
+     * @param ingressPoint input processing point
+     * @return boolean status (belongs or not)
+     */
+    boolean isProcessingPoint(TrafficPoint ingressPoint);
+
+    /**
+     * Checks whether the input device belongs to the set
+     * of processing points of this service chain.
+     *
+     * @param deviceId input device ID
+     * @return boolean status (belongs or not)
+     */
+    boolean isProcessingPoint(DeviceId deviceId);
+
+    /**
+     * Checks whether the input traffic point belongs to the set
      * of egress points of this service chain.
      *
      * @param egressPoint input egress point
@@ -300,4 +339,5 @@ public interface ServiceChainInterface {
      * @param targetDevice target device ID
      */
     void setTargetDevice(DeviceId targetDevice);
+
 }

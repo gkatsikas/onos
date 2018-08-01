@@ -44,6 +44,7 @@ public final class TrafficPoint {
      */
     public enum TrafficPointType {
         INGRESS("ingress"),
+        PROCESSING("processing"),
         EGRESS("egress");
 
         private String tpType;
@@ -61,10 +62,8 @@ public final class TrafficPoint {
         }
 
         private TrafficPointType(String tpType) {
-            checkArgument(
-                !Strings.isNullOrEmpty(tpType),
-                "Traffic point type is NULL or empty"
-            );
+            checkArgument(!Strings.isNullOrEmpty(tpType),
+                "Traffic point type is NULL or empty");
             this.tpType = tpType;
         }
 
@@ -99,18 +98,9 @@ public final class TrafficPoint {
 
     public TrafficPoint(
             TrafficPointType tpType, DeviceId deviceId, List<PortNumber> portIds) {
-        checkNotNull(
-            tpType,
-            "Traffic point type is NULL"
-        );
-        checkNotNull(
-            deviceId,
-            "Device ID for traffic point is NULL"
-        );
-        checkNotNull(
-            portIds,
-            "Set of port IDs for traffic point is NULL"
-        );
+        checkNotNull(tpType, "Traffic point type is NULL");
+        checkNotNull(deviceId, "Device ID for traffic point is NULL");
+        checkNotNull(portIds, "Set of port IDs for traffic point is NULL");
 
         this.tpType   = tpType;
         this.deviceId = deviceId;
@@ -238,18 +228,14 @@ public final class TrafficPoint {
          * @return traffic points builder
          */
         public Builder portIds(Set<Long> portIds) {
-            checkNotNull(
-                portIds,
-                "Set of port IDs for traffic point is NULL"
-            );
+            checkNotNull(portIds,
+                "Set of port IDs for traffic point is NULL");
 
             this.portIds = new ArrayList<PortNumber>();
             for (Long portL : portIds) {
                 long port = portL.longValue();
-                checkArgument(
-                    port >= 0,
-                    "Port ID for traffic point is negative"
-                );
+                checkArgument(port >= 0,
+                    "Port ID for traffic point is negative");
                 this.portIds.add(PortNumber.portNumber(port));
             }
 
