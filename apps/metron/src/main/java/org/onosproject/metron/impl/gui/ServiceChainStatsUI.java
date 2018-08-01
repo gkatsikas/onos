@@ -16,13 +16,11 @@
 
 package org.onosproject.metron.impl.gui;
 
-// ONOS libraries
 import org.onosproject.ui.UiExtension;
 import org.onosproject.ui.UiExtensionService;
 import org.onosproject.ui.UiMessageHandlerFactory;
 import org.onosproject.ui.UiView;
 
-// Other libraries
 import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -39,7 +37,7 @@ import java.util.List;
 import static org.onosproject.ui.UiView.Category.NETWORK;
 
 /**
- * Mechanism to stream data to the GUI.
+ * Mechanism to stream service chain statistics to the GUI.
  */
 @Component(immediate = true, enabled = true)
 @Service(value = ServiceChainStatsUI.class)
@@ -50,7 +48,7 @@ public class ServiceChainStatsUI {
     /**
      * The label of this component.
      */
-    private static final String COMPONET_LABEL = "Metron Service Chains Stats Web UI";
+    private static final String COMPONET_LABEL = "Metron Service Chains Stats UI";
 
     /**
      * GUI Information.
@@ -62,9 +60,7 @@ public class ServiceChainStatsUI {
 
     // Factory for UI message handlers
     private final UiMessageHandlerFactory messageHandlerFactory =
-            () -> ImmutableList.of(
-                new ServiceChainStatsViewMessageHandler()
-            );
+            () -> ImmutableList.of(new ServiceChainStatsViewMessageHandler());
 
     // List of application views
     private final List<UiView> views = ImmutableList.of(
