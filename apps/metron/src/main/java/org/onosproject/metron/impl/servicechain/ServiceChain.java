@@ -32,6 +32,7 @@ import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 
 import java.util.Objects;
+import java.util.HashSet;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -46,11 +47,6 @@ public class ServiceChain implements ServiceChainInterface {
 
     private static final Logger log = getLogger(ServiceChain.class);
 
-    /**
-     * Default amount of processing resources for a service chain.
-     */
-    private static final int DEFAULT_CPU_CORES = 1;
-
     private String                     name;
     private String                     type;
     private ServiceChainScope          scope;
@@ -62,6 +58,7 @@ public class ServiceChain implements ServiceChainInterface {
     private ServiceChainState          state;
     private ServiceChainGraphInterface serviceChainGraph;
     private Set<TrafficPoint>          ingressPoints;
+    private Set<TrafficPoint>          processingPoints;
     private Set<TrafficPoint>          egressPoints;
     private DeviceId                   targetDevice;
 
@@ -77,50 +74,34 @@ public class ServiceChain implements ServiceChainInterface {
             ServiceChainState          state,
             ServiceChainGraphInterface serviceChainGraph,
             Set<TrafficPoint>          ingressPoints,
+            Set<TrafficPoint>          processingPoints,
             Set<TrafficPoint>          egressPoints,
             DeviceId                   targetDevice) {
         // Sanity checks
-        checkArgument(
-            !Strings.isNullOrEmpty(name),
-            "Service chain name is NULL or empty"
-        );
-        checkArgument(
-            !Strings.isNullOrEmpty(type),
-            "Service chain type is NULL or empty"
-        );
-        checkArgument(
-            ServiceChainScope.isValid(scope),
-            "Service chain scope " + scope + " is invalid"
-        );
-        checkArgument(
-            !Strings.isNullOrEmpty(id.toString()),
-            "Service chain ID is NULL or empty"
-        );
-        checkArgument(
-            cpuCores > 0,
+        checkArgument(!Strings.isNullOrEmpty(name),
+            "Service chain name is NULL or empty");
+        checkArgument(!Strings.isNullOrEmpty(type),
+            "Service chain type is NULL or empty");
+        checkArgument(ServiceChainScope.isValid(scope),
+            "Service chain scope " + scope + " is invalid");
+        checkArgument(!Strings.isNullOrEmpty(id.toString()),
+            "Service chain ID is NULL or empty");
+        checkArgument(cpuCores > 0,
             "The number of CPU cores to be allocated for this service chain must be positive"
         );
-        checkArgument(
-            maxCpuCores > 0,
+        checkArgument(maxCpuCores > 0,
             "The maximum number of CPU cores to be allocated for this service chain must be positive"
         );
-        checkNotNull(
-            state,
-            "Service chain state is NULL"
-        );
+        checkNotNull(state, "Service chain state is NULL");
         if (!ArrayUtils.contains(ServiceChainState.values(), state)) {
             throw new IllegalArgumentException(String.valueOf(state));
         }
-        checkNotNull(
-            serviceChainGraph,
-            "Service chain graph is NULL"
-        );
-        checkArgument(
-            (ingressPoints != null) && !ingressPoints.isEmpty(),
+        checkNotNull(serviceChainGraph, "Service chain graph is NULL");
+        checkArgument((ingressPoints != null) && !ingressPoints.isEmpty(),
             "Service chain's ingress points are NULL or empty"
         );
-        checkArgument(
-            (egressPoints != null) && !egressPoints.isEmpty(),
+        checkNotNull(processingPoints, "Service chain's processing points are NULL");
+        checkArgument((egressPoints != null) && !egressPoints.isEmpty(),
             "Service chain's egress points are NULL or empty"
         );
 
@@ -135,6 +116,7 @@ public class ServiceChain implements ServiceChainInterface {
         this.state             = state;
         this.serviceChainGraph = serviceChainGraph;
         this.ingressPoints     = ingressPoints;
+        this.processingPoints  = processingPoints;
         this.egressPoints      = egressPoints;
         this.targetDevice      = targetDevice;
     }
@@ -161,6 +143,7 @@ public class ServiceChain implements ServiceChainInterface {
             state,
             sc.serviceChainGraph,
             sc.ingressPoints,
+            sc.processingPoints,
             sc.egressPoints,
             sc.targetDevice
         );
@@ -187,6 +170,7 @@ public class ServiceChain implements ServiceChainInterface {
         scOld.setState(scNew.state());
         scOld.setServiceChainGraph(scNew.serviceChainGraph());
         scOld.setIngressPoints(scNew.ingressPoints());
+        scOld.setProcessingPoints(scNew.processingPoints());
         scOld.setEgressPoints(scNew.egressPoints());
         scOld.setTargetDevice(scNew.targetDevice());
 
@@ -316,11 +300,27 @@ public class ServiceChain implements ServiceChainInterface {
 
     @Override
     public void setIngressPoints(Set<TrafficPoint> ingressPoints) {
-        checkArgument(
-            (ingressPoints != null) && !ingressPoints.isEmpty(),
-            "Service chain's ingress points are NULL or empty"
-        );
+        checkArgument((ingressPoints != null) && !ingressPoints.isEmpty(),
+            "Service chain's ingress points are NULL or empty");
         this.ingressPoints = ingressPoints;
+    }
+
+    @Override
+    public Set<TrafficPoint> processingPoints() {
+        return this.processingPoints;
+    }
+
+    @Override
+    public void setProcessingPoints(Set<TrafficPoint> processingPoints) {
+        checkNotNull(processingPoints,
+            "Service chain's processing points are NULL or empty");
+        this.processingPoints = processingPoints;
+    }
+
+    @Override
+    public void addProcessingPoint(TrafficPoint processingPoint) {
+        checkNotNull(processingPoints, "Service chain's processing point is NULL");
+        this.processingPoints.add(processingPoint);
     }
 
     @Override
@@ -330,27 +330,21 @@ public class ServiceChain implements ServiceChainInterface {
 
     @Override
     public void setEgressPoints(Set<TrafficPoint> egressPoints) {
-        checkArgument(
-            (egressPoints != null) && !egressPoints.isEmpty(),
-            "Service chain's egress points are NULL or empty"
-        );
+        checkArgument((egressPoints != null) && !egressPoints.isEmpty(),
+            "Service chain's egress points are NULL or empty");
         this.egressPoints = egressPoints;
     }
 
     @Override
     public boolean isIngressPoint(TrafficPoint ingressPoint) {
-        checkNotNull(
-            ingressPoint, "Ingress point is NULL or empty"
-        );
+        checkNotNull(ingressPoint, "Ingress point is NULL or empty");
 
         return this.ingressPoints.contains(ingressPoint);
     }
 
     @Override
     public boolean isIngressPoint(DeviceId deviceId) {
-        checkNotNull(
-            deviceId, "Cannot retrieve ingress point of NULL device"
-        );
+        checkNotNull(deviceId, "Cannot retrieve ingress point of NULL device");
 
         for (TrafficPoint tp : this.ingressPoints) {
             if (tp.deviceId().equals(deviceId)) {
@@ -362,19 +356,35 @@ public class ServiceChain implements ServiceChainInterface {
     }
 
     @Override
+    public boolean isProcessingPoint(TrafficPoint processingPoint) {
+        checkNotNull(processingPoint, "Processing point is NULL or empty");
+
+        return this.processingPoints.contains(processingPoint);
+    }
+
+    @Override
+    public boolean isProcessingPoint(DeviceId deviceId) {
+        checkNotNull(deviceId, "Cannot retrieve processing point of NULL device");
+
+        for (TrafficPoint tp : this.processingPoints) {
+            if (tp.deviceId().equals(deviceId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @Override
     public boolean isEgressPoint(TrafficPoint egressPoint) {
-        checkNotNull(
-            egressPoint, "Egress point is NULL or empty"
-        );
+        checkNotNull(egressPoint, "Egress point is NULL or empty");
 
         return this.egressPoints.contains(egressPoint);
     }
 
     @Override
     public boolean isEgressPoint(DeviceId deviceId) {
-        checkNotNull(
-            deviceId, "Cannot retrieve egress point of NULL device"
-        );
+        checkNotNull(deviceId, "Cannot retrieve egress point of NULL device");
 
         for (TrafficPoint tp : this.egressPoints) {
             if (tp.deviceId().equals(deviceId)) {
@@ -387,9 +397,7 @@ public class ServiceChain implements ServiceChainInterface {
 
     @Override
     public TrafficPoint ingressPointOfDevice(DeviceId deviceId) {
-        checkNotNull(
-            deviceId, "Cannot retrieve ingress point of NULL device"
-        );
+        checkNotNull(deviceId, "Cannot retrieve ingress point of NULL device");
 
         for (TrafficPoint tp : this.ingressPoints) {
             if (tp.deviceId().equals(deviceId)) {
@@ -402,9 +410,7 @@ public class ServiceChain implements ServiceChainInterface {
 
     @Override
     public TrafficPoint egressPointOfDevice(DeviceId deviceId) {
-        checkNotNull(
-            deviceId, "Cannot retrieve egress point of NULL device"
-        );
+        checkNotNull(deviceId, "Cannot retrieve egress point of NULL device");
 
         for (TrafficPoint tp : this.egressPoints) {
             if (tp.deviceId().equals(deviceId)) {
@@ -474,15 +480,10 @@ public class ServiceChain implements ServiceChainInterface {
                 Objects.equals(this.id,   that.id) &&
                 this.cpuCores == that.cpuCores &&
                 this.maxCpuCores == that.maxCpuCores &&
-                Objects.equals(
-                    this.serviceChainGraph, that.serviceChainGraph
-                ) &&
-                Objects.equals(
-                    this.ingressPoints, that.ingressPoints
-                ) &&
-                Objects.equals(
-                    this.egressPoints, that.egressPoints
-                )) {
+                Objects.equals(this.serviceChainGraph, that.serviceChainGraph) &&
+                Objects.equals(this.ingressPoints, that.ingressPoints) &&
+                Objects.equals(this.processingPoints, that.processingPoints) &&
+                Objects.equals(this.egressPoints, that.egressPoints)) {
                 return true;
             }
         }
@@ -497,19 +498,20 @@ public class ServiceChain implements ServiceChainInterface {
     @Override
     public String toString() {
         return MoreObjects.toStringHelper(getClass())
-                .add("name",          name)
-                .add("type",          type)
-                .add("scope",         scope.toString())
-                .add("id",            id.toString())
-                .add("cpuCores",      String.valueOf(cpuCores()))
-                .add("maxCpuCores",   String.valueOf(maxCpuCores()))
-                .add("scale",         scale() ? "active" : "inactive")
-                .add("autoScale",     autoScale() ? "active" : "inactive")
-                .add("state",         state.name())
-                .add("graph",         serviceChainGraph.toString())
-                .add("ingressPoints", ingressPoints.toString())
-                .add("egressPoints",  egressPoints.toString())
-                .add("targetDevice",  (targetDevice == null) ? "" : targetDevice)
+                .add("name",             name)
+                .add("type",             type)
+                .add("scope",            scope.toString())
+                .add("id",               id.toString())
+                .add("cpuCores",         String.valueOf(cpuCores()))
+                .add("maxCpuCores",      String.valueOf(maxCpuCores()))
+                .add("scale",            scale() ? "active" : "inactive")
+                .add("autoScale",        autoScale() ? "active" : "inactive")
+                .add("state",            state.name())
+                .add("graph",            serviceChainGraph.toString())
+                .add("ingressPoints",    ingressPoints.toString())
+                .add("processingPoints", processingPoints.toString())
+                .add("egressPoints",     egressPoints.toString())
+                .add("targetDevice",     (targetDevice == null) ? "" : targetDevice)
                 .toString();
     }
 
@@ -537,6 +539,7 @@ public class ServiceChain implements ServiceChainInterface {
         private ServiceChainState          state = INIT;
         private ServiceChainGraphInterface serviceChainGraph = null;
         private Set<TrafficPoint>          ingressPoints = null;
+        private Set<TrafficPoint>          processingPoints = new HashSet<TrafficPoint>();
         private Set<TrafficPoint>          egressPoints = null;
         private DeviceId                   targetDevice = null;
 
@@ -549,7 +552,8 @@ public class ServiceChain implements ServiceChainInterface {
                 cpuCores, maxCpuCores,
                 scale, autoScale, state,
                 serviceChainGraph, ingressPoints,
-                egressPoints, targetDevice
+                processingPoints, egressPoints,
+                targetDevice
             );
         }
 
@@ -671,6 +675,19 @@ public class ServiceChain implements ServiceChainInterface {
          */
         public Builder ingressPoints(Set<TrafficPoint> ingressPoints) {
             this.ingressPoints = ingressPoints;
+            return this;
+        }
+
+        /**
+         * Returns service chain builder with processing points.
+         *
+         * @param processingPoints service chain's processing points
+         * @return service chain builder
+         */
+        public Builder processingPoints(Set<TrafficPoint> processingPoints) {
+            if (processingPoints != null) {
+                this.processingPoints = processingPoints;
+            }
             return this;
         }
 

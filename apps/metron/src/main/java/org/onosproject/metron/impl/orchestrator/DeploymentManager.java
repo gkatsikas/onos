@@ -89,6 +89,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 
+import static org.onosproject.metron.api.config.TrafficPoint.TrafficPointType.PROCESSING;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.onlab.util.Tools.groupedThreads;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -512,6 +513,10 @@ public final class DeploymentManager
 
             log.info("[{}] \t Partial offloading of service chain {}", label(), scId);
 
+            // Add the switch and the server to the set of processing points of this service chain
+            addProcessingPoint(sc, coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort);
+            addProcessingPoint(sc, serverId, serverIngrPort, serverEgrPort);
+
             // Get the shortest path between the target switch and the target server
             Path selectedFwdPath = this.selectShortestPath(
                 coreSwitchId, ANY_PORT, serverId, serverIngrPort
@@ -706,6 +711,8 @@ public final class DeploymentManager
                 new ConnectPoint(deviceId, serverEgrPortNum),
                 serverIngPort, serverEgrPort, true
             );
+
+            addProcessingPoint(sc, deviceId, serverIngPort, serverEgrPort);
         }
 
         // Get the configuration
@@ -724,25 +731,21 @@ public final class DeploymentManager
          * into two sub-groups until load gets balanced.
          */
         int neededCpus = serviceChainConf.size();
-        checkArgument(
-            neededCpus > 0,
+        checkArgument(neededCpus > 0,
             "[" + label() + "] No server-level CPU configuration for service chain " +
                 sc.name() + "; nothing to instantiate");
-        checkArgument(
-            neededCpus <= userRequestedMaxCpus,
+        checkArgument(neededCpus <= userRequestedMaxCpus,
             "[" + label() + "] Service chain " + sc.name() + " requires " + neededCpus +
             "CPU cores, but user has requested only " + userRequestedMaxCpus + " CPU cores");
 
         // This is the number of NICs required for this service chain
         int neededNics = dpTree.numberOfNics();
-        checkArgument(
-            serverNics >= neededNics,
+        checkArgument(serverNics >= neededNics,
             "Metron agent " + deviceId + " has " +
             Integer.toString(serverNics) + " NICs, but " +
             Integer.toString(neededNics) + " are required for this deployment"
         );
-        checkArgument(
-            userRequestedNics >= neededNics,
+        checkArgument(userRequestedNics >= neededNics,
             "User defined ingress/egress point indicate the need for " +
             Integer.toString(userRequestedNics) + " NICs, " +
             "but the required number of NICs according to the Click elements is " +
@@ -839,22 +842,21 @@ public final class DeploymentManager
         );
 
         TrafficPoint ingressPoint = sc.ingressPointOfDevice(switchId);
-        checkNotNull(
-            ingressPoint,
-            "Invalid ingress device to redirect traffic. Check your service chain configuration"
-        );
+        checkNotNull(ingressPoint,
+            "Invalid ingress device to redirect traffic. Check your service chain configuration");
         PortNumber ingressPortNum = ingressPoint.portIds().get(0);
         long ingressPort = ingressPortNum.toLong();
         checkArgument(ingressPort >= 0, "Invalid ingress port to redirect traffic");
 
         TrafficPoint egressPoint = sc.egressPointOfDevice(switchId);
-        checkNotNull(
-            egressPoint,
-            "Invalid egress device to redirect traffic. Check your service chain configuration"
-        );
+        checkNotNull(egressPoint,
+            "Invalid egress device to redirect traffic. Check your service chain configuration");
         PortNumber egressPortNum = egressPoint.portIds().get(0);
         long egressPort = egressPortNum.toLong();
         checkArgument(egressPort >= 0, "Invalid egress port to redirect traffic");
+
+        // Add this switch to the set of processing points of this service chain
+        addProcessingPoint(sc, switchId, ingressPort, egressPort);
 
         /**
          * Generate the hardware configuration of this service chain.
@@ -1040,6 +1042,23 @@ public final class DeploymentManager
         }
 
         return tcTags;
+    }
+
+    /**
+     * Adds a device to the processing traffic points of a service chain.
+     *
+     * @param sc the target service chain
+     * @param deviceId the device ID of the processing point
+     * @param ingrPort the ingress port of the processing point
+     * @param egrPort the egress port of the processing point
+     */
+    private void addProcessingPoint(ServiceChainInterface sc, DeviceId deviceId, long ingrPort, long egrPort) {
+        checkNotNull(sc, "Cannot add processing point to null service chain");
+        TrafficPoint.Builder procTrafficPointBuilder = TrafficPoint.builder()
+                .type(PROCESSING.toString())
+                .deviceId(deviceId.toString())
+                .portIds(Sets.newHashSet(ingrPort, egrPort));
+        sc.addProcessingPoint(procTrafficPointBuilder.build());
     }
 
     @Override
