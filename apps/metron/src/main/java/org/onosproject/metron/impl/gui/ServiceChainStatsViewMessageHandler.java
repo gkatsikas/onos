@@ -16,20 +16,17 @@
 
 package org.onosproject.metron.impl.gui;
 
-// Metron libraries
 import org.onosproject.metron.api.structures.LruCache;
 import org.onosproject.metron.api.monitor.MonitorService;
 import org.onosproject.metron.api.orchestrator.OrchestrationService;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
 import org.onosproject.metron.api.servicechain.ServiceChainInterface;
 
-// ONOS libraries
 import org.onosproject.ui.RequestHandler;
 import org.onosproject.ui.UiMessageHandler;
 import org.onosproject.ui.chart.ChartModel;
 import org.onosproject.ui.chart.ChartRequestHandler;
 
-// Other libraries
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
@@ -41,7 +38,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDateTime;
 import org.slf4j.Logger;
 
-// Java libraries
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;

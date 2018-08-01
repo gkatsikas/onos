@@ -22,11 +22,6 @@ package org.onosproject.metron.impl.gui;
 public enum MetricType {
 
     /**
-     * Server CPU cores.
-     */
-    CPU,
-
-    /**
      * Time to synthesize a service chain.
      */
     SYNTHESIS_TIME,
