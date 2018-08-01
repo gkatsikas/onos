@@ -546,7 +546,7 @@ public final class MonitorManager implements MonitorService {
     public void updateLaunchDelayOfTrafficClass(ServiceChainId scId, URI tcId, long delay) {
         checkNotNull(scId, "[" + this.label() + "] NULL service chain ID");
         checkNotNull(tcId, "[" + this.label() + "] NULL traffic class ID");
-        checkArgument(delay > 0, "[" + this.label() + "] Negative delay to launch traffic class " + tcId);
+        checkArgument(delay >= 0, "[" + this.label() + "] Negative delay to launch traffic class " + tcId);
 
         Map<URI, Long> scDelay = null;
         if (!this.launchDelayMap.containsKey(scId)) {
