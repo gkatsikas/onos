@@ -77,7 +77,6 @@ import java.util.List;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.TimerTask;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -777,34 +776,6 @@ public class NfvTopologyManager implements NfvTopologyService {
      */
     private static String label() {
         return COMPONET_LABEL;
-    }
-
-    /**
-     * Thread that gets port statistics from the network devices.
-     */
-    class PortStatsTask extends TimerTask {
-        @Override
-        public void run() {
-            // For each device
-            for (DeviceId dev : devices()) {
-                List<PortStatistics> portStatisticsList = deviceService.getPortDeltaStatistics(dev);
-                for (PortStatistics portStats : portStatisticsList) {
-                    // Totally idle port
-                    if (portStats.isZero()) {
-                        log.debug("Device {} - Port {}: No statistics", dev, portStats.port());
-                        continue;
-                    }
-
-                    log.debug("Device {} - Port {}", dev, portStats.port());
-                    log.debug(
-                        "\t\tRx packets {} ({} bytes) - Tx packets {} ({} bytes)",
-                        portStats.packetsReceived(), portStats.bytesReceived(),
-                        portStats.packetsSent(),     portStats.bytesSent()
-                    );
-                    log.debug("");
-                }
-            }
-        }
     }
 
     /**
