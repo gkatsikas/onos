@@ -774,9 +774,7 @@ public class NetworkFunction implements NetworkFunctionInterface, Comparable {
                 Objects.equals(this.nfClass, that.nfClass) &&
                 Objects.equals(this.devices, that.devices) &&
                 Objects.equals(this.peerNFs, that.peerNFs) &&
-                Objects.equals(
-                    this.networkFunctionGraph, that.networkFunctionGraph)
-                ) {
+                Objects.equals(this.networkFunctionGraph, that.networkFunctionGraph)) {
                 return true;
             }
         }

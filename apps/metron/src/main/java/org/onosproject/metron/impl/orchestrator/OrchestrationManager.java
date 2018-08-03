@@ -105,9 +105,8 @@ public final class OrchestrationManager
     private static final String COMPONET_LABEL = "Metron Orchestrator";
 
     /**
-     * Some management constants.
+     * Some CPU thresholds used for load balancing.
      */
-    // Some CPU thresholds used for load balancing
     private static final float CPU_LOAD_ZERO = (float) 0.0;
     private static final float CPU_MINIMUM_PRINTABLE_LIMIT = (float) 0.01;
 
@@ -132,7 +131,7 @@ public final class OrchestrationManager
     /**
      * A dedicated thread pool to orchestrate Metron service chains at runtime.
      */
-    private static final int MANAGER_THREADS_NO = 3;
+    private static final int MANAGER_THREADS_NO = 8;
     private final ExecutorService managerExecutor = newFixedThreadPool(
         MANAGER_THREADS_NO,
         groupedThreads(this.getClass().getSimpleName(), "sc-orchestrator", log)
@@ -185,10 +184,10 @@ public final class OrchestrationManager
 
     // The frequency of the Orchestrator's monitoring in milliseconds
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
-    private static final int DEFAULT_MONITORING_PERIOD_MS = 500;
+    private static final int DEFAULT_MONITORING_PERIOD_MS = 300;
     @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
             label = "Configure the data plane monitoring frequency (in milliseconds); " +
-                    "default is 500 ms")
+                    "default is 300 ms")
     private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
 
     public OrchestrationManager() {
@@ -331,7 +330,7 @@ public final class OrchestrationManager
 
                     // Allocate local resources at the traffic class level
                     if (!previousLoad.get(scId).containsKey(tcId)) {
-                        previousLoad.get(scId).put(tcId, new AtomicReference<Float>(new Float(0)));
+                        previousLoad.get(scId).put(tcId, new AtomicReference<Float>(new Float(CPU_LOAD_ZERO)));
                     }
                     if (!isRebalanced.get(scId).containsKey(tcId)) {
                         isRebalanced.get(scId).put(tcId, new AtomicBoolean(false));
@@ -417,9 +416,7 @@ public final class OrchestrationManager
         boolean withLimitedReconfiguration = sc.isSoftwareBased() ? true : false;
 
         // Fetch the dataplane tree of this service chain
-        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(
-            scId, tcId
-        );
+        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(scId, tcId);
 
         // Get the list of CPU cores with non-zero load
         Collection<CpuStatistics> cpuStats = stats.cpuStatisticsAll();
@@ -432,7 +429,7 @@ public final class OrchestrationManager
         // No need to react
         if (loadedCpusOfThisTc == 0) {
             // Store it so that we can compare in the future
-            monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, (float) 0);
+            monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, CPU_LOAD_ZERO);
 
             log.debug("[{}] \t Traffic class {}: 0 overloaded cores", label(), tcId);
             return;
@@ -443,14 +440,11 @@ public final class OrchestrationManager
             int cpu = entry.getKey().intValue();
             // The amount of load on this CPU core
             float load = entry.getValue().floatValue();
-            float loadScaled = load * 100;
 
             // Print load only if there is some
             if (load >= CPU_MINIMUM_PRINTABLE_LIMIT) {
-                log.info(
-                    "[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
-                    label(), tcId, cpu, loadScaled
-                );
+                log.info("[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
+                    label(), tcId, cpu, load * 100);
             }
 
             // Update with the new one
@@ -468,10 +462,6 @@ public final class OrchestrationManager
                     isRebalanced.set(true);
                     sc.setCpuCores(sc.cpuCores() + 1);
                 }
-
-                previousLoad.set(load);
-
-                return;
             // Load has decreased to the desired level for scale down
             } else if (
                     ((load <= scaleDownLoadThreshold) && (previousLoad.get() >= scaleDownLoadThreshold)) ||
@@ -482,10 +472,6 @@ public final class OrchestrationManager
                     isRebalanced.set(true);
                     sc.setCpuCores(sc.cpuCores() - 1);
                 }
-
-                previousLoad.set(load);
-
-                return;
             }
 
             // Update the previous load any way
