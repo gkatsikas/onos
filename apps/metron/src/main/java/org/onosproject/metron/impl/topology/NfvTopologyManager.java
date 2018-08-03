@@ -37,7 +37,6 @@ import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceEvent;
 import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.device.PortStatistics;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.Host;
 import org.onosproject.net.host.HostService;
