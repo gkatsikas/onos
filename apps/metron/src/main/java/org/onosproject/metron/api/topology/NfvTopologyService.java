@@ -205,7 +205,7 @@ public interface NfvTopologyService {
     );
 
     /**
-     * Checks whether a device is SDN or not.
+     * Checks whether a device is SDN-based or not.
      * This is done by checking the first letters of its name.
      * OpenFlow devices start with a certain prefix.
      *
@@ -215,15 +215,15 @@ public interface NfvTopologyService {
     boolean isSdnDevice(DeviceId deviceId);
 
     /**
-     * Checks whether a device is NFV or not.
+     * Checks whether a device is a server or not.
      * This is done by checking the first letters of its name.
-     * NFV devices start with a certain prefix which is the prefix
+     * Servers start with a certain prefix which is the prefix
      * that characterizes REST devices.
      *
      * @param deviceId the ID of the device to be checked
      * @return boolean identity (NFV or not)
      */
-    boolean isNfvDevice(DeviceId deviceId);
+    boolean isServer(DeviceId deviceId);
 
     /**
      * Print the topology.

@@ -71,8 +71,7 @@ public interface NfvDataplaneTreeInterface {
      */
     PathEstablisherInterface createPathEstablisher(
         Path fwdPath, Path bwdPath,
-        long ingressPort, long egressPort,
-        boolean withServer
+        long ingressPort, long egressPort, boolean withServer
     );
 
     /**
@@ -87,8 +86,7 @@ public interface NfvDataplaneTreeInterface {
      */
     PathEstablisherInterface createPathEstablisher(
         ConnectPoint point1, ConnectPoint point2,
-        long ingressPort, long egressPort,
-        boolean withServer
+        long ingressPort, long egressPort, boolean withServer
     );
 
     /**
@@ -228,13 +226,15 @@ public interface NfvDataplaneTreeInterface {
      * of this traffic class per CPU core.
      *
      * @param server device to get configuration from
+     * @param coresNumber the number of cores to spread
+     *        the traffic classes across
      * @param withHwOffloading if true the generated software
      *        configuration contains only part of the entire
      *        service chain
      * @return software configuration map of this traffic class
      */
     Map<Integer, String> softwareConfiguration(
-        RestServerSBDevice server, boolean withHwOffloading
+        RestServerSBDevice server, int coresNumber, boolean withHwOffloading
     );
 
     /**
@@ -303,14 +303,16 @@ public interface NfvDataplaneTreeInterface {
      * in software.
      *
      * @param server device to configure
+     * @param coresNumber the number of cores to spread
+     *        the traffic classes across
      * @param withHwOffloading if true the generated software
      *        configuration contains only part of the entire
      *        service chain
      * @throws DeploymentException if the generation fails
      */
     void generateSoftwareConfiguration(
-        RestServerSBDevice server, boolean withHwOffloading
-    ) throws DeploymentException;
+        RestServerSBDevice server, int coresNumber, boolean withHwOffloading)
+        throws DeploymentException;
 
     /**
      * Generates the configuration of each traffic class
@@ -322,6 +324,8 @@ public interface NfvDataplaneTreeInterface {
      *        this hardware configuration
      * @param deviceId the device where the hardware
      *        configuration will be installed
+     * @param coresNumber the number of cores to spread
+     *        the traffic classes across
      * @param inputPort the input port where hardware
      *        configuration is applied
      * @param queuesNumber the number of input queues to
@@ -339,6 +343,7 @@ public interface NfvDataplaneTreeInterface {
         ServiceChainId  scId,
         ApplicationId   appId,
         DeviceId        deviceId,
+        int             coresNumber,
         long            inputPort,
         long            queuesNumber,
         long            outputPort,
