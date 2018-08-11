@@ -497,21 +497,9 @@ public final class ServiceChainAddConfig
 
             int scCores = scNode.path(SC_CPU_CORES).asInt();
             int scMaxCores = scNode.path(SC_MAX_CPU_CORES).asInt();
-            checkArgument(
-                scMaxCores > 0,
+            checkArgument(scMaxCores > 0,
                 "Please specify a positive number of maximum CPU cores " +
-                "to be allocated for this service chain"
-            );
-
-            // If invalid input, use maximum
-            if (scCores <= 0) {
-                scCores = scMaxCores;
-            }
-            checkArgument(
-                scCores <= scMaxCores,
-                "The number of CPU cores to be allocated for this service chain " +
-                "must not exceed the maximum number of CPU cores"
-            );
+                "to be allocated for this service chain");
 
             boolean scScale = scNode.path(SC_SCALE).asBoolean();
             boolean scAutoScale = false;
@@ -519,22 +507,34 @@ public final class ServiceChainAddConfig
                 scAutoScale = scNode.path(SC_AUTO_SCALE).asBoolean();
             }
             if (!scScale && scAutoScale) {
-                log.warn("Scale=false and autoScale=true are contradictive. Auto-setting scale=true!");
+                log.warn("Setting scale=false and autoScale=true is contradictive. Auto-setting scale=true!");
                 scScale = true;
             }
+            if (!scScale) {
+                log.warn("Setting scale=false means that cpuCores=" + scCores + " will be ignored. " +
+                         "Maximum CPU allocation (i.e., maxCpuCores=" + scMaxCores + ") will be used right away");
+            }
+
+            // TODO: Can this be more explicit?
+            if (scScale) {
+                log.warn("Currently, setting scale=true means that the number of CPU cores ranges in [1, " + scMaxCores + "]");
+                scCores = 1;
+            }
+
+            // If invalid input, use maximum
+            if (scCores <= 0) {
+                scCores = scMaxCores;
+            }
+            checkArgument(scCores <= scMaxCores,
+                "The number of CPU cores to be allocated for this service chain " +
+                "must not exceed the maximum number of CPU cores");
 
             // Deployed on a single server (server-level) or across the network (network-wide)
             ServiceChainScope scScope = Common.<ServiceChainScope>enumFromString(
-                ServiceChainScope.class,
-                scNode.path(SC_SCOPE).asText().toLowerCase()
-            );
-            checkNotNull(
-                scScope,
-                "Invalid service chain scope. Choose one in: " + Common.<ServiceChainScope>
-                enumTypesToString(
-                    ServiceChainScope.class
-                )
-            );
+                ServiceChainScope.class, scNode.path(SC_SCOPE).asText().toLowerCase());
+            checkNotNull(scScope,
+                "Invalid service chain scope. Choose one in: " +
+                Common.<ServiceChainScope>enumTypesToString(ServiceChainScope.class));
 
             /**
              * A. Parse the components of the service chain
@@ -622,17 +622,8 @@ public final class ServiceChainAddConfig
              */
             JsonNode topoNode = scNode.path(SC_TOPOLOGY);
             ServiceChain.Builder scBuilder = buildServiceChainTopology(
-                topoNode,
-                sortedNfs,
-                scName,
-                scType,
-                scScope,
-                scNetId,
-                scCores,
-                scMaxCores,
-                scScale,
-                scAutoScale
-            );
+                topoNode, sortedNfs, scName, scType, scScope, scNetId,
+                scCores, scMaxCores, scScale, scAutoScale);
 
             // Add this service chain to the set to be returned
             scs.add(scBuilder.build());

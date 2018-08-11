@@ -114,7 +114,7 @@ public class ServerManager
     private static final String PARAM_TITLE                = "servicechains";
 
     private static final String PARAM_MAX_CPUS             = "maxCpus";
-    private static final String PARAM_AUTOSCALE            = "autoscale";
+    private static final String PARAM_AUTOSCALE            = "autoScale";
     private static final String PARAM_CONFIG_TYPE          = "configType";
     private static final String PARAM_CONFIG               = "config";
     private static final String PARAM_STATUS               = "status";
@@ -505,10 +505,8 @@ public class ServerManager
         try {
             response = controller.get(deviceId, scUrl, BasicServerDriver.JSON);
         } catch (ProcessingException pEx) {
-            log.error(
-                "[{}] \t Failed to retrieve runtime information for traffic class {} of service chain {}",
-                label(), tcId, scId
-            );
+            log.error("[{}] \t Failed to retrieve runtime information for traffic class {} of service chain {}",
+                label(), tcId, scId);
             return null;
         }
 
@@ -522,10 +520,8 @@ public class ServerManager
             jsonNode = mapper.convertValue(jsonMap, JsonNode.class);
             objNode  = (ObjectNode) jsonNode;
         } catch (IOException ioEx) {
-            log.error(
-                "[{}] \t Failed to retrieve runtime information for traffic class {} of service chain {}",
-                label(), tcId, scId
-            );
+            log.error("[{}] \t Failed to retrieve runtime information for traffic class {} of service chain {}",
+                label(), tcId, scId);
             return null;
         }
         checkNotNull(jsonMap, "[" + label() + "] Received NULL runtime information object");
@@ -535,10 +531,8 @@ public class ServerManager
 
         // And verify that this is the traffic class we want to monitor
         if (!id.equals(tcId.toString())) {
-            throw new ProtocolException(
-                "[" + label() + "] Failed to retrieve monitoring data for traffic class " +
-                tcId + " of service chain " + scId + ". Traffic class chain ID does not agree."
-            );
+            throw new ProtocolException("[" + label() + "] Failed to retrieve monitoring data for traffic class " +
+                tcId + " of service chain " + scId + ". Traffic class chain ID does not agree.");
         }
 
         JsonNode    tagNode = objNode.path(BasicServerDriver.NIC_PARAM_RX_FILTER);
@@ -550,10 +544,8 @@ public class ServerManager
         // Check if the Rx filter type conforms to what we have
         RxFilter supportedMethod = tcInfo.rxFilterMethodOfDeviceOfNic(deviceId, nic);
         if (!tagMethod.equals(supportedMethod.toString())) {
-            throw new ProtocolException(
-                "[" + label() + "] Rx filter method for traffic class " + tcId +
-                " of service chain " + scId + " does not agree with what the device reported."
-            );
+            throw new ProtocolException("[" + label() + "] Rx filter method for traffic class " + tcId +
+                " of service chain " + scId + " does not agree with what the device reported.");
         }
 
         // Each NIC has a list of tags, one per CPU core
@@ -569,8 +561,7 @@ public class ServerManager
             } catch (IOException ioEx) {
                 throw new ProtocolException(
                     "[" + label() + "] Failed to retrieve the list of Rx filter values of traffic class " +
-                    tcId + " of service chain " + scId + "."
-                );
+                    tcId + " of service chain " + scId + ".");
             }
 
             // Add the tags for this NIC
@@ -585,10 +576,8 @@ public class ServerManager
 
         // The service chain is expected to be active
         if (!status) {
-            throw new ProtocolException(
-                "[" + label() + "] Traffic class " + tcId + " of service chain " + scId +
-                " is inactive although it should have been active."
-            );
+            throw new ProtocolException("[" + label() + "] Traffic class " + tcId + " of service chain " + scId +
+                " is inactive although it should have been active.");
         }
 
         // Convert the JSON list of CPUs into a set
@@ -596,10 +585,8 @@ public class ServerManager
         try {
             cpuList = mapper.readValue(cpuNode.traverse(), new TypeReference<HashSet<Integer>>() { });
         } catch (IOException ioEx) {
-            throw new ProtocolException(
-                "[" + label() + "] Failed to retrieve the list of CPUs of traffic class " +
-                tcId + " of service chain " + scId + "."
-            );
+            throw new ProtocolException("[" + label() + "] Failed to retrieve the list of CPUs of traffic class " +
+                tcId + " of service chain " + scId + ".");
         }
 
         // Fetch the existing CPU core number associated with the configuration
@@ -614,15 +601,13 @@ public class ServerManager
             if (!tcInfo.removeDeviceConfigurationFromCore(deviceId, currentCore)) {
                 throw new ProtocolException(
                     "[" + label() + "] Failed to remove old CPU configuration for traffic class " + tcId +
-                    " of service chain " + scId + "."
-                );
+                    " of service chain " + scId + ".");
             }
         } else {
             if (!cpuList.contains(Integer.valueOf(currentCore))) {
                 throw new ProtocolException(
                     "[" + label() + "] Inconsistent CPU configuration for traffic class " + tcId +
-                    " of service chain " + scId + "."
-                );
+                    " of service chain " + scId + ".");
             }
         }
 
@@ -639,8 +624,7 @@ public class ServerManager
         } catch (IOException ioEx) {
             throw new ProtocolException(
                 "[" + label() + "] Failed to retrieve the list of NICs of traffic class " +
-                tcId + " of service chain " + scId + "."
-            );
+                tcId + " of service chain " + scId + ".");
         }
 
         // Get the difference between the stored NICs and the ones retrieved by the device
@@ -650,8 +634,7 @@ public class ServerManager
         if (difference.size() != 0) {
             throw new ProtocolException(
                 "[" + label() + "] NICs for traffic class " + tcId +
-                " of service chain " + scId + " do not agree with what the device reported."
-            );
+                " of service chain " + scId + " do not agree with what the device reported.");
         }
         return tcInfo;
     }
@@ -669,10 +652,8 @@ public class ServerManager
             MonitoringStatistics tcStats = this.getTrafficClassMonitoringStats(deviceId, scId, tcId);
             if (tcStats == null) {
                 // Graceful return to properly tear down the service
-                log.error(
-                    "[{}] Failed to retrieve monitoring data for traffic class {} of service chain {}",
-                    label(), tcId, scId
-                );
+                log.error("[{}] Failed to retrieve monitoring data for traffic class {} of service chain {}",
+                    label(), tcId, scId);
                 continue;
             }
             serviceChainStats.add(tcStats);
@@ -777,10 +758,8 @@ public class ServerManager
 
         for (URI tcId : tcIds) {
             if (!this.deleteTrafficClassOfServiceChain(deviceId, scId, tcId)) {
-                throw new ProtocolException(
-                    "[" + label() + "] Failed to delete traffic class " + tcId +
-                    " of service chain " + scId + " from device " + deviceId
-                );
+                throw new ProtocolException("[" + label() + "] Failed to delete traffic class " + tcId +
+                    " of service chain " + scId + " from device " + deviceId);
             }
         }
 
@@ -820,11 +799,8 @@ public class ServerManager
         );
 
         if (!BasicServerDriver.checkStatusCode(response)) {
-            log.error(
-                "[{}] \t Failed to delete traffic class {} of service chain {} on device {} with status {}",
-                label(), tcId, scId, deviceId, response
-            );
-
+            log.error("[{}] \t Failed to delete traffic class {} of service chain {} on device {} with status {}",
+                label(), tcId, scId, deviceId, response);
             return false;
         }
 
@@ -911,10 +887,8 @@ public class ServerManager
                 int coreId = Integer.parseInt(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue(coreId));
             } else {
-                throw new ProtocolException(
-                    "[" + label() + "] Unsupported Rx filter method for traffic class " +
-                    tcId + " of service chain " + scId + "."
-                );
+                throw new ProtocolException("[" + label() + "] Unsupported Rx filter method for traffic class " +
+                    tcId + " of service chain " + scId + ".");
             }
 
             log.info("[{}] \t NIC {} - Tag {}", label(), nicName, tagValue);

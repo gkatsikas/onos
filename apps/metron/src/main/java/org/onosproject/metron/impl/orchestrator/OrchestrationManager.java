@@ -93,8 +93,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
  */
 @Component(immediate = true)
 @Service
-public final class OrchestrationManager
-        implements OrchestrationService {
+public final class OrchestrationManager implements OrchestrationService {
 
     private static final Logger log = getLogger(OrchestrationManager.class);
 
@@ -115,7 +114,6 @@ public final class OrchestrationManager
      * |-> An application ID is necessary to register with the core.
      * |-> A set of already deployed service chains (active).
      * |-> A set of suspended service chains (undeployed due to some issue).
-     * |-> A map between service chains and their runtime information.
      */
     private ApplicationId appId = null;
     private Set<ServiceChainInterface> activeServiceChains    = null;
@@ -132,10 +130,8 @@ public final class OrchestrationManager
      * A dedicated thread pool to orchestrate Metron service chains at runtime.
      */
     private static final int MANAGER_THREADS_NO = 8;
-    private final ExecutorService managerExecutor = newFixedThreadPool(
-        MANAGER_THREADS_NO,
-        groupedThreads(this.getClass().getSimpleName(), "sc-orchestrator", log)
-    );
+    private final ExecutorService managerExecutor = newFixedThreadPool(MANAGER_THREADS_NO,
+        groupedThreads(this.getClass().getSimpleName(), "sc-orchestrator", log));
 
     /**
      * The Metron Orchestrator requires:
@@ -170,7 +166,7 @@ public final class OrchestrationManager
     private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
     private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.35;
     @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
-            label = "Configure the amount of CPU load to trigger scale down events; " +
+             label = "Configure the amount of CPU load to trigger scale down events; " +
                     "default is 35% CPU core utilization")
     private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
 
@@ -178,7 +174,7 @@ public final class OrchestrationManager
     private static final String SCALE_UP_LOAD_THRESHOLD = "scaleUpLoadThreshold";
     private static final float DEFAULT_SCALE_UP_LOAD_THRESHOLD = (float) 0.75;
     @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
-            label = "Configure the amount of CPU load to trigger scale up events; " +
+             label = "Configure the amount of CPU load to trigger scale up events; " +
                     "default is 75% CPU core utilization")
     private float scaleUpLoadThreshold = DEFAULT_SCALE_UP_LOAD_THRESHOLD;
 
@@ -186,7 +182,7 @@ public final class OrchestrationManager
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
     private static final int DEFAULT_MONITORING_PERIOD_MS = 300;
     @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
-            label = "Configure the data plane monitoring frequency (in milliseconds); " +
+             label = "Configure the data plane monitoring frequency (in milliseconds); " +
                     "default is 300 ms")
     private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
 
@@ -268,7 +264,9 @@ public final class OrchestrationManager
         this.suspendedServiceChains.add(sc);
 
         // Remove this service chain from the list of active service chains
-        scIterator.remove();
+        if (scIterator != null) {
+            scIterator.remove();
+        }
     }
 
     @Override
@@ -338,7 +336,7 @@ public final class OrchestrationManager
 
                     for (DeviceId deviceId : tcInfo.devices()) {
 
-                        if (!topologyService.isNfvDevice(deviceId)) {
+                        if (!topologyService.isServer(deviceId)) {
                             continue;
                         }
 
@@ -347,12 +345,10 @@ public final class OrchestrationManager
 
                         // This device seems to be down or a problem suddenly occured
                         if (stats == null) {
-                            // There is something wrong with this service chain
+                            // There is something wrong with this service chain, tear it down
                             if (previousStats == null) {
-                                // Undeploy it
                                 this.markServiceChainAsUndeployed(sc, scIterator);
                             }
-
                             continue;
                         } else {
                             previousStats = stats;
@@ -362,15 +358,7 @@ public final class OrchestrationManager
                         AtomicBoolean isRebalancedTc = isRebalanced.get(scId).get(tcId);
 
                         // Check for potential load imbalance
-                        this.checkForLoadImbalance(
-                            sc,
-                            tcId,
-                            deviceId,
-                            stats,
-                            maxCpus,
-                            previousLoadTc,
-                            isRebalancedTc
-                        );
+                        this.checkForLoadImbalance(sc, tcId, deviceId, stats, maxCpus, previousLoadTc, isRebalancedTc);
                     }
                 }
             }
@@ -443,8 +431,7 @@ public final class OrchestrationManager
 
             // Print load only if there is some
             if (load >= CPU_MINIMUM_PRINTABLE_LIMIT) {
-                log.info("[{}] \t Traffic class {}: CPU Core {} ---> Load {}%",
-                    label(), tcId, cpu, load * 100);
+                log.info("[{}] \t Traffic class {}: CPU Core {} ---> Load {}%", label(), tcId, cpu, load * 100);
             }
 
             // Update with the new one
@@ -732,9 +719,7 @@ public final class OrchestrationManager
         WallClockTimestamp startMon = new WallClockTimestamp();
 
         // Get the statistics from this device
-        MonitoringStatistics stats = topologyService.getTrafficClassMonitoringStats(
-            deviceId, scId, tcId
-        );
+        MonitoringStatistics stats = topologyService.getTrafficClassMonitoringStats(deviceId, scId, tcId);
 
         // STOP
         WallClockTimestamp endMon = new WallClockTimestamp();
@@ -849,11 +834,7 @@ public final class OrchestrationManager
      */
     private void printActiveServiceChains() {
         for (ServiceChainInterface sc : this.activeServiceChains) {
-            log.info(
-                "[{}] Service chain with ID {} is active",
-                label(),
-                sc.id()
-            );
+            log.info("[{}] Service chain with ID {} is active", label(), sc.id());
         }
     }
 

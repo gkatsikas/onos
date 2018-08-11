@@ -101,7 +101,7 @@ public class NfvTopologyManager implements NfvTopologyService {
     /**
      * Key device identifiers.
      */
-    private static final String NFV_SERVER_LABEL_PREFIX      = "rest:";
+    private static final String SERVER_LABEL_PREFIX = "rest:";
     private static final String OPENFLOW_SWITCH_LABEL_PREFIX = "of:";
 
     /**
@@ -389,7 +389,7 @@ public class NfvTopologyManager implements NfvTopologyService {
             }
 
             // Non-NFV devices are discovered by ONOS
-            if (!this.isNfvDevice(deviceId)) {
+            if (!this.isServer(deviceId)) {
                 continue;
             }
 
@@ -637,8 +637,8 @@ public class NfvTopologyManager implements NfvTopologyService {
     }
 
     @Override
-    public boolean isNfvDevice(DeviceId deviceId) {
-        if (deviceId.toString().startsWith(NFV_SERVER_LABEL_PREFIX)) {
+    public boolean isServer(DeviceId deviceId) {
+        if (deviceId.toString().startsWith(SERVER_LABEL_PREFIX)) {
             return true;
         }
 

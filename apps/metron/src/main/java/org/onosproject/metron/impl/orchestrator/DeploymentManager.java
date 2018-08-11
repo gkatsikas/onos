@@ -101,8 +101,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
  */
 @Component(immediate = true)
 @Service
-public final class DeploymentManager
-        implements DeploymentService {
+public final class DeploymentManager implements DeploymentService {
 
     private static final Logger log = getLogger(DeploymentManager.class);
 
@@ -115,12 +114,10 @@ public final class DeploymentManager
     /**
      * Constants.
      */
-    // The time interval to attempt asking the Metron agent for updates, in case of a failure
-    private static final int     RETRY_ASKING_FOR_UPDATES = 100;
     // Default number of requested paths from a switch to a server
-    private static final int     DEF_NUMBER_OF_SW_TO_SRV_PATHS = 8;
+    private static final int  DEF_NUMBER_OF_SW_TO_SRV_PATHS = 8;
     // Indicates any port
-    private static final long    ANY_PORT = -1;
+    private static final long ANY_PORT = -1;
 
     /**
      * Members:
@@ -128,6 +125,7 @@ public final class DeploymentManager
      * |-> A set of service chains (fetched by the Service Chain Manager) ready to be deployed.
      * |-> A set of already deployed service chains (active).
      * |-> A map between deployed service chains and their runtime information.
+     * |-> A map between active servers and their rules.
      */
     private ApplicationId appId = null;
     private Set<ServiceChainInterface> serviceChainsToDeploy = null;
@@ -152,10 +150,8 @@ public final class DeploymentManager
      */
     private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
     private static final boolean DEF_HW_OFFLOADING = true;
-    @Property(
-        name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
-        label = "Enable the HW offloading features of Metron; default is true"
-    )
+    @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
+             label = "Enable the HW offloading features of Metron; default is true")
     private boolean enableHwOffloading = DEF_HW_OFFLOADING;
 
     /**
@@ -165,20 +161,16 @@ public final class DeploymentManager
      */
     private static final String ENABLE_AUTOSCALE = "enableAutoScale";
     public  static final boolean DEF_AUTOSCALE = false;
-    @Property(
-        name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
-        label = "Allow the data plane to undertake scaling in case of load imbalances; default is false"
-    )
+    @Property(name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
+             label = "Allow the data plane to undertake scaling in case of load imbalances; default is false")
     private boolean enableAutoScale = DEF_AUTOSCALE;
 
     /**
      * A dedicated thread pool to deploy Metron service chains.
      */
     private static final int DEPLOYER_THREADS_NO = 1;
-    private final ExecutorService deployerExecutor = newFixedThreadPool(
-        DEPLOYER_THREADS_NO,
-        groupedThreads(this.getClass().getSimpleName(), "sc-deployer", log)
-    );
+    private final ExecutorService deployerExecutor = newFixedThreadPool(DEPLOYER_THREADS_NO,
+        groupedThreads(this.getClass().getSimpleName(), "sc-deployer", log));
 
     /**
      * The Metron Deployer requires:
@@ -304,10 +296,8 @@ public final class DeploymentManager
             ServiceChainInterface sc = scIterator.next();
             ServiceChainId scId = sc.id();
             ServiceChainState scState = sc.state();
-            checkArgument(
-                scState == ServiceChainState.READY,
-                "Only service chains in READY state are handled by the Deployment Manager"
-            );
+            checkArgument(scState == ServiceChainState.READY,
+                "Only service chains in READY state are handled by the Deployment Manager");
 
             boolean correctDeployment = true;
 
@@ -371,10 +361,8 @@ public final class DeploymentManager
                 }
 
                 if (server == null) {
-                    throw new DeploymentException(
-                        "[" + label() +
-                        "] Failed to instantiate the software part of service chain: " + scId
-                    );
+                    throw new DeploymentException("[" + label() +
+                        "] Failed to instantiate the software part of service chain: " + scId);
                 }
 
                 // Now let's see if the deployment requires both network and server
@@ -427,8 +415,8 @@ public final class DeploymentManager
      * @throws DeploymentException if network placement fails
      */
     private boolean networkPlacer(
-            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree,
-            RestServerSBDevice server) throws DeploymentException {
+            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree, RestServerSBDevice server)
+            throws DeploymentException {
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be placed in the network");
         checkNotNull(dpTree, "[" + label() + "] NULL dataplane configuration cannot be placed in the network");
 
@@ -438,6 +426,12 @@ public final class DeploymentManager
 
         // Obtain the ID of the service chain
         ServiceChainId scId = sc.id();
+
+        // Scaling ability for this service chain
+        boolean scale = sc.scale();
+
+        // The number of CPU cores at the server side
+        int numberOfCores = scale ? sc.cpuCores() : sc.maxCpuCores();
 
         // and the number of NICs required
         int numberOfNics = dpTree.numberOfNics();
@@ -452,7 +446,7 @@ public final class DeploymentManager
             TopologyVertex device = cluster.root();
 
             // We only care about network devices, not servers
-            if (topologyService.isNfvDevice(device.deviceId())) {
+            if (topologyService.isServer(device.deviceId())) {
                 continue;
             }
 
@@ -503,11 +497,8 @@ public final class DeploymentManager
                 this.hasPortConflicts(
                     serverEgrLinks, coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort
                 )) {
-                log.error(
-                    "[{}] Conflicts detected between {} and {} ingress/egress ports. " +
-                    "Please check your JSON configuration",
-                    label(), coreSwitchId, serverId
-                );
+                log.error("[{}] Conflicts detected between {} and {} ingress/egress ports. " +
+                    "Please check your JSON configuration", label(), coreSwitchId, serverId);
                 return false;
             }
 
@@ -518,16 +509,13 @@ public final class DeploymentManager
             addProcessingPoint(sc, serverId, serverIngrPort, serverEgrPort);
 
             // Get the shortest path between the target switch and the target server
-            Path selectedFwdPath = this.selectShortestPath(
-                coreSwitchId, ANY_PORT, serverId, serverIngrPort
-            );
+            Path selectedFwdPath = this.selectShortestPath(coreSwitchId, ANY_PORT, serverId, serverIngrPort);
             // And the reverse path
             Path selectedBwdPath = this.selectShortestPath(
                 serverId, serverEgrPort, coreSwitchId, ANY_PORT
             );
             if ((selectedFwdPath == null) || (selectedBwdPath == null)) {
-                log.error(
-                    "[{}] \t Could not establish forward/backward paths towards {} for service chain",
+                log.error("[{}] \t Could not establish forward/backward paths towards {} for service chain",
                     label(), serverId, scId);
                 return false;
             }
@@ -581,7 +569,7 @@ public final class DeploymentManager
              * Tagging flag is true to indicate partial offloading with tagging.
              */
             Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, coreSwitchId, -1, -1, coreSwitchEgrPort, true, false
+                scId, dpTree, coreSwitchId, numberOfCores, -1, -1, coreSwitchEgrPort, true, false
             );
 
             // Get the set of OpenFlow rules that comprise the hardware configuration
@@ -631,10 +619,7 @@ public final class DeploymentManager
      * @throws DeploymentException if network placement fails
      */
     private RestServerSBDevice serverPlacer(
-            ServiceChainInterface sc,
-            String iface,
-            NfvDataplaneTreeInterface dpTree,
-            boolean isOffloadable)
+            ServiceChainInterface sc, String iface, NfvDataplaneTreeInterface dpTree, boolean isOffloadable)
             throws DeploymentException {
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be placed in a server");
         checkNotNull(dpTree, "[" + label() + "] NULL dataplane configuration cannot be placed in a server");
@@ -649,10 +634,10 @@ public final class DeploymentManager
         boolean scale = sc.scale();
         // Autoscale must be asked by the user and approved by this module
         boolean autoScale = hasAutoScale(scId, sc.autoScale());
-        // If scaling is disabled, start with the maximum CPU cores
-        int userRequestedCpus = scale ? sc.cpuCores() : sc.maxCpuCores();
         // This is an upper limit of the cores you can use
         int userRequestedMaxCpus = sc.maxCpuCores();
+        // If scaling is disabled, start with the maximum CPU cores
+        int userRequestedCpus = scale ? sc.cpuCores() : userRequestedMaxCpus;
         // The required number of NICs
         int userRequestedNics = sc.nics();
 
@@ -718,7 +703,7 @@ public final class DeploymentManager
         // Get the configuration
         String confType = dpTree.type().toString();
         checkNotNull(confType, "[" + label() + "] Service chain configuration type is NULL");
-        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(server, isOffloadable);
+        Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(server, userRequestedCpus, isOffloadable);
         checkNotNull(serviceChainConf, "[" + label() + "] Service chain configuration is NULL");
 
         /**
@@ -767,22 +752,22 @@ public final class DeploymentManager
             int core = entry.getKey().intValue();
             String conf = entry.getValue();
 
+            // Scale=false means that we create 'userRequestedMaxCpus' groups of independent traffic classes
+            // Each group is assigned to 1 CPU core and the maximum CPU cores is also 1 (thus never scales).
+            int cores = scale ? sc.cpuCores() : 1;
+            int maxCores = scale ? userRequestedMaxCpus : 1;
+
             // Fetch the ID of the (grouped) traffic class of this service chain
             URI tcId = dpTree.groupTrafficClassIdOnCore(core);
 
             // Ask from the topology manager to deploy this traffic class
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.deployTrafficClassOfServiceChain(
-                    deviceId, scId, tcId, sc.scope(),
-                    confType, conf, userRequestedCpus, userRequestedMaxCpus,
-                    nics, autoScale
-                );
+                    deviceId, scId, tcId, sc.scope(), confType, conf, cores, maxCores, nics, autoScale);
 
             if (tcRuntimeInfo == null) {
-                throw new DeploymentException(
-                    "[" + label() + "] Failed to deploy traffic class " + tcId +
-                    " of service chain " + scId
-                );
+                throw new DeploymentException("[" + label() + "] Failed to deploy traffic class " + tcId +
+                    " of service chain " + scId);
             }
 
             log.debug("Runtime info: {}", tcRuntimeInfo.toString());
@@ -791,7 +776,7 @@ public final class DeploymentManager
             serviceChainRuntimeInfo.add(tcRuntimeInfo);
 
             // Update the monitoring service
-            monitoringService.addActiveCoresToDevice(deviceId, userRequestedCpus);
+            monitoringService.addActiveCoresToDevice(deviceId, cores);
         }
 
         // Push this information to the distributed store
@@ -799,16 +784,16 @@ public final class DeploymentManager
 
         // Now the traffic class is deployed; ask Metron agent to provide deployment information
         if (!this.askForRuntimeInfo(scId, iface)) {
-            throw new DeploymentException(
-                "\t Failed to retrieve runtime information for service chain " + scId
-            );
+            throw new DeploymentException("\t Failed to retrieve runtime information for service chain " + scId);
         }
 
         // Perform rule installation in the server's NIC
         if (inFlowDirMode) {
+            long numberOfQueues = (long) userRequestedCpus;
+
             // Generate the hardware configuration for this service chain
             Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, deviceId, serverIngPort, userRequestedCpus, serverEgrPort, true, false
+                scId, dpTree, deviceId, userRequestedCpus, serverIngPort, numberOfQueues, serverEgrPort, true, false
             );
 
             // Get the set of rules that comprise the hardware configuration
@@ -860,10 +845,12 @@ public final class DeploymentManager
 
         /**
          * Generate the hardware configuration of this service chain.
+         * Number of CPU cores is irrelevant as traffic will never reach a server,
+         * therefore argument no4 is set to 1.
          * Tagging flag is false to indicate total offloading.
          */
         Map<URI, RxFilterValue> tcTags = this.createRules(
-            scId, dpTree, switchId, -1, -1, egressPort, false, true
+            scId, dpTree, switchId, 1, -1, -1, egressPort, false, true
         );
 
         // Get the set of OpenFlow rules that comprise the hardware configuration
@@ -994,6 +981,7 @@ public final class DeploymentManager
      * @param scId the target service chain
      * @param dpTree the data plane tree of the service chain
      * @param deviceId the device where hardware configuration will be applied
+     * @param coresNumber the number of cores to spread the traffic classes across
      * @param ingressPort the ingress port where input traffic appears
      * @param queuesNumber the number of input queues to spread the traffic across
      * @param egressPort the egress port where matched traffic will be redirected
@@ -1005,6 +993,7 @@ public final class DeploymentManager
             ServiceChainId            scId,
             NfvDataplaneTreeInterface dpTree,
             DeviceId                  deviceId,
+            int                       coresNumber,
             long                      ingressPort,
             long                      queuesNumber,
             long                      egressPort,
@@ -1016,20 +1005,14 @@ public final class DeploymentManager
         Map<URI, Float> tcCompDelays = new ConcurrentHashMap<URI, Float>();
         try {
             tcTags = dpTree.generateHardwareConfiguration(
-                scId, this.appId, deviceId, ingressPort, queuesNumber, egressPort, tagging, tcCompDelays
+                scId, this.appId, deviceId, coresNumber, ingressPort, queuesNumber, egressPort, tagging, tcCompDelays
             );
         } catch (DeploymentException depEx) {
             log.error("[{}] {}", label(), depEx.toString());
             return null;
         }
-        checkNotNull(
-            tcTags,
-            "Failed to generate hardware configuration for service chain " + scId
-        );
-        checkNotNull(
-            tcCompDelays,
-            "Failed to measure hardware configuration for service chain " + scId
-        );
+        checkNotNull(tcTags, "Failed to generate hardware configuration for service chain " + scId);
+        checkNotNull(tcCompDelays, "Failed to measure hardware configuration for service chain " + scId);
 
         // Report the time it took to do so
         this.reportRuleComputationDelays(scId, tcCompDelays);
@@ -1230,22 +1213,17 @@ public final class DeploymentManager
         String srcPortStr = (srcPort == ANY_PORT) ? "ANY" : String.valueOf(srcPort);
         String dstPortStr = (dstPort == ANY_PORT) ? "ANY" : String.valueOf(dstPort);
 
-        log.debug(
-            "Looking for shortest path between {}/{} and {}/{}",
-            srcDeviceId, srcPortStr, dstDeviceId, dstPortStr
-        );
+        log.debug("Looking for shortest path between {}/{} and {}/{}",
+            srcDeviceId, srcPortStr, dstDeviceId, dstPortStr);
 
         // Find a set of shortest paths between the core switch and the server
         Set<Path> shortestPaths = topologyService.getKShortestPathsBasedOnHopCount(
-            srcDeviceId, dstDeviceId, DEF_NUMBER_OF_SW_TO_SRV_PATHS
-        );
+            srcDeviceId, dstDeviceId, DEF_NUMBER_OF_SW_TO_SRV_PATHS);
 
         // This is really bad!
         if ((shortestPaths == null) || (shortestPaths.size() == 0)) {
-            throw new DeploymentException(
-                "[" + label() + "] Failed to retrieve a path between " +
-                srcDeviceId + " and " + dstDeviceId
-            );
+            throw new DeploymentException("[" + label() + "] Failed to retrieve a path between " +
+                srcDeviceId + " and " + dstDeviceId);
         }
 
         // Get a path that satisfies the port requirements
@@ -1264,18 +1242,14 @@ public final class DeploymentManager
                 (onlyDstCheck && topologyService.linkHasPort(lastLink,  dstPort)) ||
                 (topologyService.linkHasPort(firstLink, srcPort) &&
                  topologyService.linkHasPort(lastLink, dstPort))) {
-                log.info(
-                    "[{}] \t Retrieved a path between {}/{} and {}/{}",
-                    label(), srcDeviceId, srcPortStr, dstDeviceId, dstPortStr
-                );
+                log.info("[{}] \t Retrieved a path between {}/{} and {}/{}",
+                    label(), srcDeviceId, srcPortStr, dstDeviceId, dstPortStr);
                 return path;
             }
         }
 
-        log.error(
-            "[{}] \t Failed to retrieve a path between {}/{} and {}/{}",
-            label(), srcDeviceId, srcPortStr, dstDeviceId, dstPortStr
-        );
+        log.error("[{}] \t Failed to retrieve a path between {}/{} and {}/{}",
+            label(), srcDeviceId, srcPortStr, dstDeviceId, dstPortStr);
 
         return null;
     }
@@ -1291,8 +1265,7 @@ public final class DeploymentManager
      */
     private void buildRuntimeInfoForHwBasedTrafficClass(ServiceChainId scId, Set<URI> tcIds, DeviceId deviceId) {
         // Runtime information per traffic class
-        Set<TrafficClassRuntimeInfo> serviceChainRuntimeInfo =
-                Sets.<TrafficClassRuntimeInfo>newConcurrentHashSet();
+        Set<TrafficClassRuntimeInfo> serviceChainRuntimeInfo = Sets.<TrafficClassRuntimeInfo>newConcurrentHashSet();
 
         // Deploy the traffic classes one by one
         for (URI tcId : tcIds) {
@@ -1304,9 +1277,7 @@ public final class DeploymentManager
 
             if (tcRuntimeInfo == null) {
                 throw new DeploymentException(
-                    "[" + label() + "] Failed to deploy traffic class " + tcId +
-                    " of service chain " + scId
-                );
+                    "[" + label() + "] Failed to deploy traffic class " + tcId + " of service chain " + scId);
             }
 
             log.debug("Runtime info: {}", tcRuntimeInfo.toString());
@@ -1336,38 +1307,13 @@ public final class DeploymentManager
      */
     private boolean askForRuntimeInfo(ServiceChainId scId, String iface) {
         // Get the runnable service chain
-        NfvDataplaneTreeInterface dpTree =
-            serviceChainService.runnableServiceChainOfIface(scId, iface);
-
-        Set<URI> unresponsiveTrafficClasses = Sets.<URI>newConcurrentHashSet();
+        NfvDataplaneTreeInterface dpTree = serviceChainService.runnableServiceChainOfIface(scId, iface);
 
         // Iterate through the grouped traffic classes
         for (URI tcGroupId : dpTree.groupedTrafficClasses().keySet()) {
-            // Mark this traffic class as naughty :p
+            // Unresponsive traffic class means trouble
             if (!this.askForRuntimeInfoOfTrafficClass(scId, tcGroupId, dpTree)) {
-                unresponsiveTrafficClasses.add(tcGroupId);
-                continue;
-            }
-        }
-
-        // Wait a bit until you finally get information for these naughty traffic classes
-        if (unresponsiveTrafficClasses.size() > 0) {
-            log.error(
-                "[{}] \t Retrying to get runtime information for {} traffic classes...",
-                label(), unresponsiveTrafficClasses.size()
-            );
-
-            // Let the Metron agent time some time
-            try {
-                Thread.sleep(RETRY_ASKING_FOR_UPDATES);
-            } catch (InterruptedException intEx) {
-                //
-            }
-
-            for (URI tcGroupId : unresponsiveTrafficClasses) {
-                if (!this.askForRuntimeInfoOfTrafficClass(scId, tcGroupId, dpTree)) {
-                    return false;
-                }
+                return false;
             }
         }
 
@@ -1389,7 +1335,7 @@ public final class DeploymentManager
             .runtimeInformationForTrafficClassOfServiceChain(scId, tcId);
 
         if (initRuntimeInfo == null) {
-            log.error("[{}] Runtime information for traffic class {} is NULL.", label(), tcId);
+            log.error("[{}] Runtime information for traffic class {} is NULL", label(), tcId);
             return false;
         }
 
@@ -1404,11 +1350,8 @@ public final class DeploymentManager
             );
 
             if (runtimeInfo == null) {
-                log.error(
-                    "[{}] Device {} provided no runtime information for traffic class {}.",
-                    label(), deviceId, tcId
-                );
-
+                log.error("[{}] Device {} provided no runtime information for traffic class {}.",
+                    label(), deviceId, tcId);
                 return false;
             }
 
@@ -1450,10 +1393,8 @@ public final class DeploymentManager
         Set<RxFilterValue> rxFilterValues = runtimeInfo.rxFiltersOfDeviceOfNic(deviceId, nic);
 
         // Verify that there is no memory error
-        checkNotNull(
-            rxFilter,
-            "[" + label() + "] NULL Rx mechanism for traffic class " + tcId + " of service chain " + scId
-        );
+        checkNotNull(rxFilter,
+            "[" + label() + "] NULL Rx mechanism for traffic class " + tcId + " of service chain " + scId);
 
         // Provide relevant information for this group of traffic classes to the Tag Manager
         if (rxFilterValues != null) {
@@ -1475,7 +1416,7 @@ public final class DeploymentManager
     private boolean deleteTrafficClassOfServiceChain(DeviceId devId, ServiceChainId scId, URI tcId) {
         // Delete
         if (!topologyService.deleteTrafficClassOfServiceChain(devId, scId, tcId)) {
-            log.error("[{}] Failed to delete traffic class {} of service chain {}.", tcId, scId);
+            log.error("[{}] Failed to delete traffic class {} of service chain {}", tcId, scId);
             return false;
         }
 
@@ -1552,9 +1493,7 @@ public final class DeploymentManager
             float compDelay = entry.getValue().floatValue();
 
             // Store it
-            monitoringService.updateOffloadingComputationDelayOfTrafficClass(
-                scId, tcId, compDelay
-            );
+            monitoringService.updateOffloadingComputationDelayOfTrafficClass(scId, tcId, compDelay);
         }
     }
 
@@ -1571,8 +1510,7 @@ public final class DeploymentManager
 
         if (dpTrees.size() == 0) {
             throw new DeploymentException(
-                "[" + label() + "] No dataplane configuration is found for service chain " + scId
-            );
+                "[" + label() + "] No dataplane configuration is found for service chain " + scId);
         }
 
         // The delay to install the rules is first divided among the dataplane trees of this service chain
@@ -1673,25 +1611,21 @@ public final class DeploymentManager
 
             // And the devices where it is deployed
             for (DeviceId deviceId : tcInfo.devices()) {
-                // Only for NFV devices (i.e., servers)
+                // Only for servers
                 if (!topologyService.deviceExists(deviceId) ||
-                    !topologyService.isNfvDevice(deviceId)) {
+                    !topologyService.isServer(deviceId)) {
                     continue;
                 }
 
                 // Ask the Metron agent to delete it
                 if (!topologyService.deleteTrafficClassOfServiceChain(deviceId, sc.id(), tcId)) {
-                    log.error(
-                        "[{}] Failed to delete traffic class {} of service chain {}",
-                        label(), tcId, sc.id()
-                    );
+                    log.error("[{}] Failed to delete traffic class {} of service chain {}",
+                        label(), tcId, sc.id());
                     continue;
                 }
 
-                log.info(
-                    "[{}] Successfully deleted traffic class {} of service chain {}",
-                    label(), tcId, sc.id()
-                );
+                log.info("[{}] Successfully deleted traffic class {} of service chain {}",
+                    label(), tcId, sc.id());
             }
         }
     }
@@ -1705,11 +1639,8 @@ public final class DeploymentManager
         Map<String, NfvDataplaneTreeInterface> dpTrees = serviceChainService.runnableServiceChains(scId);
 
         if ((dpTrees == null) || (dpTrees.values() == null)) {
-            log.warn(
-                "[{}] Service chain with ID {} is not runnable; no rules for removal",
-                label(),
-                scId
-            );
+            log.warn("[{}] Service chain with ID {} is not runnable; no rules for removal",
+                label(), scId);
             return;
         }
 
@@ -1727,11 +1658,7 @@ public final class DeploymentManager
      */
     private void printReadyToDeployServiceChains() {
         for (ServiceChainInterface sc : this.serviceChainsToDeploy) {
-            log.info(
-                "[{}] Service chain with ID {} is ready to be deployed",
-                label(),
-                sc.id()
-            );
+            log.info("[{}] Service chain with ID {} is ready to be deployed", label(), sc.id());
         }
     }
 
@@ -1740,11 +1667,7 @@ public final class DeploymentManager
      */
     private void printDeployedServiceChains() {
         for (ServiceChainInterface sc : this.deployedServiceChains) {
-            log.info(
-                "[{}] Service chain with ID {} is deployed",
-                label(),
-                sc.id()
-            );
+            log.info("[{}] Service chain with ID {} is deployed", label(), sc.id());
         }
     }
 
@@ -1875,12 +1798,7 @@ public final class DeploymentManager
             // Filter out the events we do care about.
             if (this.isReady(state)) {
                 log.info("");
-                log.info(
-                    "[{}] Service chain with ID {} is in state {}",
-                    label(),
-                    sc.id(),
-                    state
-                );
+                log.info("[{}] Service chain with ID {} is in state {}", label(), sc.id(), state);
 
                 // Add this service chain to the list of "ready to deploy" service chains
                 sendServiceChainToDeployer(sc);

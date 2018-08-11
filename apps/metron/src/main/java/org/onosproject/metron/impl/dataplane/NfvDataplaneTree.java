@@ -397,10 +397,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
     @Override
     public synchronized Map<Integer, String> softwareConfiguration(
-            RestServerSBDevice server, boolean withHwOffloading) {
+            RestServerSBDevice server, int coresNumber, boolean withHwOffloading) {
         if (this.softwareConfiguration.size() == 0) {
             try {
-                this.generateSoftwareConfiguration(server, withHwOffloading);
+                this.generateSoftwareConfiguration(server, coresNumber, withHwOffloading);
             } catch (DeploymentException dEx) {
                 return null;
             }
@@ -480,7 +480,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
     @Override
     public void generateSoftwareConfiguration(
-            RestServerSBDevice server, boolean withHwOffloading)
+            RestServerSBDevice server, int coresNumber, boolean withHwOffloading)
             throws DeploymentException {
         // The software configuration is already computed
         if (this.softwareConfiguration.size() > 0) {
@@ -500,7 +500,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
          * In case of a load imbalance, this will also give us the opportunity
          * to scale out, by re-grouping (splitting into subgroups) the traffic classes.
          */
-        this.groupTrafficClasses();
+        this.groupTrafficClasses(coresNumber);
 
         int tcCount = 0;
 
@@ -581,6 +581,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             ServiceChainId  scId,
             ApplicationId   appId,
             DeviceId        deviceId,
+            int             coresNumber,
             long            inputPort,
             long            queuesNumber,
             long            outputPort,
@@ -606,7 +607,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
          */
         this.composeTrafficClassesConfiguration(null, true);
 
-        this.groupTrafficClasses();
+        this.groupTrafficClasses(coresNumber);
 
         int tcCount = 0;
 
@@ -1228,10 +1229,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                 if (outTc.type()  != inTc.type() &&
                    ((outTc.type() != null) && (inTc.type() != null)) &&
                    ((outTc.type() != TrafficClassType.NEUTRAL) || (inTc.type() != TrafficClassType.NEUTRAL))) {
-                    log.debug(
-                        "[{}] \t\t Conflicting header space between {} and {}",
-                        label(), outReadOps, inReadOps
-                    );
+                    log.debug("[{}] \t\t Conflicting header space between {} and {}", label(), outReadOps, inReadOps);
                     inIndex++;
                     continue;
                 }
@@ -1264,11 +1262,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
                 // Last condition is that the two traffic classes must have identical write operations.
                 if (outTc.operation().equals(inTc.operation())) {
-
-                    log.debug(
-                        "[{}] \t\t Merging {} with {}", label(),
-                        outReadOps, inReadOps
-                    );
+                    log.debug("[{}] \t\t Merging {} with {}", label(), outReadOps, inReadOps);
 
                     // Mark these indices as deleted
                     deletedIndices.add(new Integer(outIndex));
@@ -1310,11 +1304,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         int compressedTrafficClasses = initialNumberOfTcs - this.trafficClasses.size();
 
         log.debug("");
-        log.info(
-            "[{}] Compressed {} traffic classes",
-            label(), compressedTrafficClasses
-        );
-
+        log.info("[{}] Compressed {} traffic classes", label(), compressedTrafficClasses);
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
         log.debug("");
 
@@ -1322,20 +1312,24 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     }
 
     /**
-     * For software based configurations,
-     * aggregate traffic classes into a single IPClassifier.
+     * Aggregate traffic classes into a single IPClassifier.
      * The requirement is that all such traffic classes will later
      * exhibit the same write operations.
+     * Traffic classes are grouped into a desired number of groups,
+     * according to the number of requested CPU cores.
+     *
+     * @param coresNumber the number of cores to spread the traffic across
      */
-    private void groupTrafficClasses() {
+    /*
+    private void groupTrafficClasses(int coresNumber) {
+        checkArgument(coresNumber > 0, "Cannot group traffic classes into " + coresNumber + " groups");
+
         if (this.groupedTrafficClasses.size() > 0) {
             return;
         }
 
         Map<Integer, TrafficClassInterface> clonedTrafficClasses =
             new ConcurrentHashMap<Integer, TrafficClassInterface>(this.trafficClasses);
-        Map<Integer, Set<TrafficClassInterface>> readersToWriters =
-            new ConcurrentHashMap<Integer, Set<TrafficClassInterface>>();
 
         Set<Integer> grouped = Sets.<Integer>newConcurrentHashSet();
 
@@ -1348,14 +1342,11 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         while (iterator.hasNext()) {
             Map.Entry<Integer, TrafficClassInterface> pair = iterator.next();
 
-            int outLogCore = pair.getKey();
+            int outTcCore = pair.getKey();
             TrafficClassInterface outTc = pair.getValue();
 
-            if (grouped.contains(outLogCore)) {
-                log.debug(
-                    "[{}] Traffic class {} is already grouped",
-                    label(), outTc.readOperationsAsString()
-                );
+            if (grouped.contains(outTcCore)) {
+                log.debug("[{}] Traffic class {} is already grouped", label(), outTc.readOperationsAsString());
                 continue;
             }
 
@@ -1365,16 +1356,16 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
             for (Map.Entry<Integer, TrafficClassInterface> inEntry : this.trafficClasses.entrySet()) {
 
-                int inLogCore = inEntry.getKey();
+                int inTcCore = inEntry.getKey();
                 TrafficClassInterface inTc = inEntry.getValue();
 
                 // Skip identity
-                if (inLogCore == outLogCore) {
+                if (inTcCore == outTcCore) {
                     continue;
                 }
 
                 // Already grouped traffic class
-                if (grouped.contains(inLogCore)) {
+                if (grouped.contains(inTcCore)) {
                     continue;
                 }
 
@@ -1392,7 +1383,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                     // Add this traffic class to the group
                     group.add(inTc);
                     // .. and mark it as grouped
-                    grouped.add(new Integer(inLogCore));
+                    grouped.add(new Integer(inTcCore));
                 }
             }
 
@@ -1400,7 +1391,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             group.add(outTc);
 
             // Remove it to avoid duplicate checks
-            grouped.add(new Integer(outLogCore));
+            grouped.add(new Integer(outTcCore));
             iterator.remove();
 
             // Create a virtual group ID
@@ -1408,9 +1399,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             try {
                 groupId = new URI(UUID.randomUUID().toString());
             } catch (URISyntaxException sEx) {
-                throw new SynthesisException(
-                    "Failed to create a unique group traffic class ID."
-                );
+                throw new SynthesisException("Failed to create a unique group traffic class ID.");
             }
 
             // Add this group into the memory
@@ -1420,10 +1409,66 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             this.pinGroupTrafficClassToCore(groupId, tcCount++);
         }
 
-        log.info(
-            "[{}] {} traffic class groups are formed",
-            label(), this.groupedTrafficClasses.size()
-        );
+        log.info("[{}] {} traffic class groups are formed", label(), this.groupedTrafficClasses.size());
+
+        // Print the grouped traffic classes
+        if (VERBOSE) {
+            this.printGroupedTrafficClasses();
+        }
+    }
+    */
+    private void groupTrafficClasses(int coresNumber) {
+        checkArgument(coresNumber > 0, "Cannot group traffic classes into " + coresNumber + " groups");
+
+        int currentGroupsNumber = this.groupedTrafficClasses.size();
+        // Desired number of groups already established
+        if (currentGroupsNumber == coresNumber) {
+            return;
+        }
+
+        // Go through the original map of traffic classes
+        Iterator<Map.Entry<Integer, TrafficClassInterface>> iterator = this.trafficClasses.entrySet().iterator();
+
+        int nextCore = 0;
+
+        while (iterator.hasNext()) {
+            Map.Entry<Integer, TrafficClassInterface> pair = iterator.next();
+
+            TrafficClassInterface tc = pair.getValue();
+
+            log.debug("[{}] Traffic class {} ---> CPU Core {}", label(), tc.readOperationsAsString(), nextCore);
+
+            // Search for an existing group on this core
+            URI groupId = this.groupTrafficClassIdOnCore(nextCore);
+
+            // No traffic class on this core
+            if (groupId == null) {
+                // Create a new group and put this one
+                Set<TrafficClassInterface> newTcGroup = Sets.<TrafficClassInterface>newConcurrentHashSet();
+                newTcGroup.add(tc);
+
+                // Generate a new group ID
+                try {
+                    groupId = new URI(UUID.randomUUID().toString());
+                } catch (URISyntaxException sEx) {
+                    throw new SynthesisException("Failed to create a unique group traffic class ID");
+                }
+
+                // Map this group ID to the new group
+                this.groupedTrafficClasses.put(groupId, newTcGroup);
+
+                // and pin it to a logical CPU core
+                this.pinGroupTrafficClassToCore(groupId, nextCore);
+            // Add this traffic class to the existing group
+            } else {
+                this.getGroupedTrafficClassesWithID(groupId).add(tc);
+            }
+
+            // Find a core to accommodate the next traffic class
+            nextCore = (nextCore + 1) % coresNumber;
+        }
+
+        log.info("[{}] {} traffic class groups are formed", label(), this.groupedTrafficClasses.size());
 
         // Print the grouped traffic classes
         if (VERBOSE) {
