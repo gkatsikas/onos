@@ -78,7 +78,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
     /**
      * Verbosity flag.
      */
-    private static final boolean VERBOSE = true;
+    private static final boolean VERBOSE = false;
 
     /**
      * Pointer to the root node of the tree.
@@ -699,7 +699,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             this.setSoftwareConfigurationOnCore(tcCount++, tcConf);
         }
 
-        // Print the hardware and software (if any) configuration
+        // Print the hardware and software (if any) configurations
         if (VERBOSE) {
             this.printHardwareConfiguration();
             this.printSoftwareConfiguration();
