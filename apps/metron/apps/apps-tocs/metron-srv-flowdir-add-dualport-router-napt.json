@@ -4,7 +4,7 @@
             "add" : {
                 "servicechains" : [
                     {
-                        "name"       : "metron-srv-flowdir-singleport-firewall-napt",
+                        "name"       : "metron-srv-flowdir-dualport-router-napt",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
@@ -16,8 +16,8 @@
                             {
                                 "name"  : "nf1",
                                 "type"  : "click",
-                                "class" : "firewall",
-                                "id"    : "kth-firewall-nf1"
+                                "class" : "router",
+                                "id"    : "kth-router-nf1"
                             },
                             {
                                 "name"  : "nf2",
@@ -49,15 +49,15 @@
                                         "configFile": ""
                                     },
                                     {
-                                        "block": "IPFilter",
-                                        "instance": "nf1_ipFilter1",
+                                        "block": "LookupIPRouteMP",
+                                        "instance": "nf1_ipLookUp1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/apps-tocs/firewall.json"
+                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/apps-tocs/router.json"
                                     },
                                     {
                                         "block": "EtherEncap",
                                         "instance": "nf1_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 24:8a:07:58:c4:44, DST 24:8a:07:55:46:b1",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:cb, DST 24:8a:07:55:46:b0",
                                         "configFile": ""
                                     },
                                     {
@@ -100,13 +100,13 @@
                                             "port": 0
                                         },
                                         "dst": {
-                                            "instance": "nf1_ipFilter1",
+                                            "instance": "nf1_ipLookUp1",
                                             "port": 0
                                         }
                                     },
                                     {
                                         "src": {
-                                            "instance": "nf1_ipFilter1",
+                                            "instance": "nf1_ipLookUp1",
                                             "port": -1
                                         },
                                         "dst": {
@@ -142,7 +142,7 @@
                                     {
                                         "block": "FromDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno1",
                                         "configFile": ""
                                     },
                                     {
@@ -166,7 +166,7 @@
                                     {
                                         "block": "EtherEncap",
                                         "instance": "nf2_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 24:8a:07:58:c4:44, DST 24:8a:07:55:46:b1",
+                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:cb, DST 24:8a:07:55:46:b0",
                                         "configFile": ""
                                     },
                                     {
@@ -178,7 +178,7 @@
                                     {
                                         "block": "ToDevice",
                                         "instance": "nf2_td1",
-                                        "configArgs": "DEVNAME eno1",
+                                        "configArgs": "DEVNAME eno2",
                                         "configFile": ""
                                     }
                                 ],
@@ -250,7 +250,7 @@
                             "network": {
                                 "ingressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.169:80",
+                                        "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
                                                 "portId": 0
@@ -260,15 +260,15 @@
                                 ],
                                 "egressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.169:80",
+                                        "deviceId": "rest:192.16.125.166:80",
                                         "portIds": [
                                             {
-                                                "portId": 0
+                                                "portId": 1
                                             }
                                         ]
                                     }
                                 ],
-                                "targetDevice": "rest:192.16.125.169:80"
+                                "targetDevice": "rest:192.16.125.166:80"
                             },
                             "server": [
                                 {
@@ -288,13 +288,13 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno2"
+                                        "interface"   : "eno1"
                                     }
                                 },
                                 {
                                     "src" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     },
                                     "dst" : {
                                         "entity"      : "destination",
