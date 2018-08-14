@@ -272,7 +272,7 @@ public final class OrchestrationManager implements OrchestrationService {
     @Override
     public void manage() {
         log.debug(Constants.STDOUT_BARS);
-        log.debug("Service Chains' Manager");
+        log.debug("Service Chains Orchestrator - Runtime Load Balancing");
         log.debug(Constants.STDOUT_BARS);
 
         Map<ServiceChainId, Map<URI, AtomicReference<Float>>> previousLoad =
@@ -297,7 +297,7 @@ public final class OrchestrationManager implements OrchestrationService {
                 ServiceChainInterface sc = scIterator.next();
                 ServiceChainId scId = sc.id();
 
-                log.debug("[{}] Monitoring active service chain {}", label(), scId);
+                log.debug("[{}] Managing active service chain {}", label(), scId);
 
                 // Allocate local resources at the service chain level
                 if (!previousLoad.containsKey(scId)) {
@@ -614,7 +614,7 @@ public final class OrchestrationManager implements OrchestrationService {
             return false;
         }
 
-        // Proper way of deflating
+        // Proper way of inflating
         if (!limitedReconfiguration) {
             // The Tag Manager sent us the affected traffic classes along with their new tag
             RxFilterValue changedTag = changes.getKey();
@@ -663,7 +663,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
     /**
      * Parse the collected CPU statistics and report the CPU cores that
-     * exhibit load greater or equal than a certain threshold.
+     * exhibit load greater than a certain threshold.
      *
      * @param cpuStats the CPU statistics to be parsed
      * @param loadThreshold the load threshold we are looking for
@@ -684,7 +684,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
     /**
      * Parse the collected CPU statistics and report the CPU cores that
-     * exhibit load less or equal than a certain threshold.
+     * exhibit load less than a certain threshold.
      *
      * @param cpuStats the CPU statistics to be parsed
      * @param loadThreshold the load threshold we are looking for
@@ -701,6 +701,33 @@ public final class OrchestrationManager implements OrchestrationService {
         }
 
         return cores;
+    }
+
+    /**
+     * Parse the collected CPU statistics and report the CPU core that
+     * exhibits the least load.
+     *
+     * @param cpuStats the CPU statistics to be parsed
+     * @return the ID of the least overloaded core
+     */
+    private int getLeastOverloadedCore(Collection<CpuStatistics> cpuStats) {
+        int minCore = -1;
+        float minLoad = (float) 1.0;
+        for (CpuStatistics cs : cpuStats) {
+            int coreId = cs.id();
+            float coreLoad = cs.load();
+
+            if (coreLoad == 0) {
+                return coreId;
+            }
+
+            if (coreLoad < minLoad) {
+                minCore = coreId;
+                minLoad = coreLoad;
+            }
+        }
+
+        return minCore;
     }
 
     /**
