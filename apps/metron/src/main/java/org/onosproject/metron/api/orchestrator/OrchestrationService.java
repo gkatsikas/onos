@@ -77,7 +77,7 @@ public interface OrchestrationService {
      * @param tcId the ID of the overloaded traffic class
      * @param deviceId the ID of the device where the overload occured
      * @param overLoadedCpu the CPU core that exhibits overload
-     * @param maxCpus the new maximum number of CPUs you can currently have
+     * @param maxCpus the maximum number of CPUs you can have
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               increase the number of queues)
@@ -100,7 +100,7 @@ public interface OrchestrationService {
      * @param tcId the ID of the overloaded traffic class
      * @param deviceId the ID of the device where the overload occured
      * @param underLoadedCpu the CPU core that exhibits underload
-     * @param maxCpus the new maximum number of CPUs you can currently have
+     * @param maxCpus the maximum number of CPUs you can have
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               decrease the number of queues)
