@@ -9,7 +9,7 @@
                         "networkId"  : 1,
                         "cpuCores"   : 1,
                         "maxCpuCores": 16,
-                        "scale"      : true,
+                        "scale"      : false,
                         "autoScale"  : false,
                         "scope"      : "server-rules",
                         "components" : [
