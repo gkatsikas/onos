@@ -1644,13 +1644,15 @@ public final class DeploymentManager implements DeploymentService {
             return;
         }
 
+        Set<FlowRule> rules = Sets.<FlowRule>newConcurrentHashSet();
+
         for (NfvDataplaneTreeInterface dpTree : dpTrees.values()) {
             // Get the set of OpenFlow rules that comprise the hardware configuration
-            Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
-
-            // Remove these rules from the switch
-            this.removeRules(scId, rules);
+            rules.addAll(dpTree.hardwareConfigurationToSet());
         }
+
+        // Remove these rules
+        this.removeRules(scId, rules);
     }
 
     /**
