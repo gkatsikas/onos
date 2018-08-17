@@ -26,20 +26,12 @@ import org.onosproject.protocol.rest.RestSBDevice;
 
 import java.net.URI;
 import java.util.Set;
-import java.util.Map;
 
 /**
  * Service that prescribes the communication between
  * the ONOS controller and a Metron server.
  */
 public interface ServerService {
-
-    /**
-     * Returns the available devices.
-     *
-     * @return map of device IDs to devices
-     */
-    Map<DeviceId, RestSBDevice> discoverDevices();
 
     /**
      * Returns whether a device ID belongs to
@@ -57,14 +49,6 @@ public interface ServerService {
      * @return a RestSBDevice device or null
      */
     RestSBDevice getDevice(DeviceId deviceId);
-
-    /**
-     * Queries the device about their available features.
-     *
-     * @param deviceId the device ID to be discovered
-     * @return NfvDeviceDescription object with NFV device features
-     */
-    RestSBDevice discoverDeviceFeatures(DeviceId deviceId);
 
     /**
      * Instructs the device to deploy a traffic class of a service chain.
