@@ -36,12 +36,8 @@ import org.onosproject.drivers.server.stats.MonitoringStatistics;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.device.DeviceEvent;
-import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.flow.FlowRuleService;
-import org.onosproject.net.Host;
-import org.onosproject.net.host.HostService;
 import org.onosproject.net.Link;
-import org.onosproject.net.link.LinkEvent;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.Path;
 import org.onosproject.net.topology.HopCountLinkWeigher;
@@ -49,8 +45,6 @@ import org.onosproject.net.topology.LinkWeigher;
 import org.onosproject.net.topology.TopologyCluster;
 import org.onosproject.net.topology.TopologyGraph;
 import org.onosproject.net.topology.TopologyVertex;
-import org.onosproject.net.topology.TopologyEvent;
-import org.onosproject.net.topology.TopologyListener;
 import org.onosproject.net.topology.TopologyService;
 import org.onosproject.protocol.rest.RestSBDevice;
 
@@ -124,16 +118,6 @@ public class NfvTopologyManager implements NfvTopologyService {
      */
     private Set<TopologyCluster> topologyClusters = null;
 
-    /**
-     * A map of device IDs to their objects.
-     */
-    Map<DeviceId, RestSBDevice> deviceMap = null;
-
-    /**
-     * Listen to events dispatched by the ONOS Topology Service.
-     */
-    private final TopologyListener topologyListener = new InternalTopologyListener();
-
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
 
@@ -141,42 +125,22 @@ public class NfvTopologyManager implements NfvTopologyService {
     protected TopologyService topologyService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected DeviceService deviceService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected HostService hostService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected LinkService linkService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected FlowRuleService flowRuleService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ServerService serverService;
 
     public NfvTopologyManager() {
-        this.deviceMap = new ConcurrentHashMap<DeviceId, RestSBDevice>();
     }
 
     @Activate
     public void activate() {
         this.appId = coreService.registerApplication(APP_NAME);
-
-        // Catch events coming from the topology
-        topologyService.addListener(topologyListener);
-
-        // Start the discovery immediately
-        this.discoverDeviceFeatures();
-
         log.info("[{}] Started", label());
     }
 
     @Deactivate
     public void deactivate() {
-        // Remove the listener for the events coming from the topology
-        topologyService.removeListener(topologyListener);
-
         log.info("[{}] Stopped", label());
     }
 
@@ -187,9 +151,7 @@ public class NfvTopologyManager implements NfvTopologyService {
         }
 
         // Fetch a fresh view of the topology
-        TopologyGraph newTopologyGraph = topologyService.getGraph(
-            topologyService.currentTopology()
-        );
+        TopologyGraph newTopologyGraph = topologyService.getGraph(topologyService.currentTopology());
 
         // First occurence
         if (this.topologyGraph == null) {
@@ -224,22 +186,6 @@ public class NfvTopologyManager implements NfvTopologyService {
         }
 
         return this.topologyGraph.getVertexes().size() > 0;
-    }
-
-    @Override
-    public Set<DeviceId> devices() {
-        Set<DeviceId> devices = Sets.<DeviceId>newConcurrentHashSet();
-
-        for (TopologyVertex v : this.topologyGraph.getVertexes()) {
-            devices.add(v.deviceId());
-        }
-
-        return devices;
-    }
-
-    @Override
-    public Iterable<Host> hosts() {
-        return hostService.getHosts();
     }
 
     @Override
@@ -358,33 +304,28 @@ public class NfvTopologyManager implements NfvTopologyService {
 
     @Override
     public Set<Path> getKShortestPathsBasedOnHopCount(DeviceId src, DeviceId dst, int maxPaths) {
-        checkNotNull(
-            src,
-            "[" + label() + "] Unable to compute shortest paths; Source network element is NULL."
-        );
+        checkNotNull(src,
+            "[" + label() + "] Unable to compute shortest paths; Source network element is NULL");
 
-        checkNotNull(
-            dst,
-            "[" + label() + "] Unable to compute shortest paths; Destination network element is NULL."
-        );
+        checkNotNull(dst,
+            "[" + label() + "] Unable to compute shortest paths; Destination network element is NULL");
 
-        checkArgument(
-            maxPaths > 0,
-            "[" + label() + "] Number of shortest paths requested is non-positive: " + maxPaths
-        );
+        checkArgument(maxPaths > 0,
+            "[" + label() + "] Number of shortest paths requested is non-positive: " + maxPaths);
 
         return topologyService.getKShortestPaths(
-            topologyService.currentTopology(), src, dst, HOP_COUNT_LINK_WEIGHER, maxPaths
-        );
+            topologyService.currentTopology(), src, dst, HOP_COUNT_LINK_WEIGHER, maxPaths);
     }
 
     @Override
-    public Map<DeviceId, RestSBDevice> discoverDeviceFeatures() {
+    public Map<DeviceId, RestSBDevice> getServers() {
+        Map<DeviceId, RestSBDevice> deviceMap = new ConcurrentHashMap<DeviceId, RestSBDevice>();
+
         for (TopologyVertex topoVertex : this.topologyGraph().getVertexes()) {
             DeviceId deviceId = topoVertex.deviceId();
 
             // Already here, skip
-            if (this.deviceMap.containsKey(deviceId)) {
+            if (deviceMap.containsKey(deviceId)) {
                 continue;
             }
 
@@ -393,39 +334,30 @@ public class NfvTopologyManager implements NfvTopologyService {
                 continue;
             }
 
-            log.info("[{}] NFV device detected: {}", label(), deviceId);
-
             // Here we discover NFV servers
-            RestServerSBDevice deviceDesc = (RestServerSBDevice) serverService.discoverDeviceFeatures(deviceId);
-            if (deviceDesc != null) {
-                this.deviceMap.put(deviceId, deviceDesc);
+            RestServerSBDevice device = (RestServerSBDevice) serverService.getDevice(deviceId);
+            if (device != null) {
+                deviceMap.put(deviceId, device);
             }
         }
 
-        return this.deviceMap;
+        return deviceMap;
     }
 
     @Override
     public RestSBDevice getLeastOverloadedServerPowerOfTwoChoices(int numberOfCores, int numberOfNics) {
-        checkArgument(
-            numberOfCores > 0,
+        checkArgument(numberOfCores > 0,
             "[" + label() + "] Invalid request for the least overloaded server. " +
-            "The requested number of cores is invalid: " + numberOfCores
-        );
+            "The requested number of cores is invalid: " + numberOfCores);
 
-        checkArgument(
-            numberOfNics > 0,
+        checkArgument(numberOfNics > 0,
             "[" + label() + "] Invalid request for the least overloaded server. " +
-            "The requested number of NICs is invalid: " + numberOfNics
-        );
+            "The requested number of NICs is invalid: " + numberOfNics);
 
-        if ((this.deviceMap == null) || (this.deviceMap.size() == 0)) {
-            this.discoverDeviceFeatures();
-        }
+        Map<DeviceId, RestSBDevice> deviceMap = this.getServers();
 
-        // Number of devices available
-        int availableServers = this.deviceMap.size();
-        if (availableServers == 0) {
+        // No devices available
+        if (deviceMap.size() == 0) {
             return null;
         }
 
@@ -433,8 +365,8 @@ public class NfvTopologyManager implements NfvTopologyService {
          * To reduce the number of queries to different servers,
          * pick a random key from the device map.
          */
-        List<DeviceId> origDeviceIds = new ArrayList<DeviceId>(this.deviceMap.keySet());
-        List<DeviceId> currDeviceIds = new ArrayList<DeviceId>(this.deviceMap.keySet());
+        List<DeviceId> origDeviceIds = new ArrayList<DeviceId>(deviceMap.keySet());
+        List<DeviceId> currDeviceIds = new ArrayList<DeviceId>(deviceMap.keySet());
 
         // Here we will shortly store the target server.
         RestServerSBDevice selectedDev = null;
@@ -475,7 +407,7 @@ public class NfvTopologyManager implements NfvTopologyService {
             }
 
             DeviceId bestDevId = bestChoice.getKey();
-            RestServerSBDevice bestDev = (RestServerSBDevice) this.deviceMap.get(bestDevId);
+            RestServerSBDevice bestDev = (RestServerSBDevice) deviceMap.get(bestDevId);
             MonitoringStatistics bestStats = bestChoice.getValue();
 
             // Fetch the CPU cores' stata of this device
@@ -509,10 +441,8 @@ public class NfvTopologyManager implements NfvTopologyService {
                 if (firstChoice == secondChoice) {
                     log.info("[{}] \t Bad random choice of server {}", label(), firstDevId);
                 } else {
-                    log.info(
-                        "[{}] \t Bad random choice of servers {} and {}",
-                        label(), firstDevId, secondDevId
-                    );
+                    log.info("[{}] \t Bad random choice of servers {} and {}",
+                        label(), firstDevId, secondDevId);
 
                     // The second index must be also nullified
                     currDeviceIds.set(currDeviceIds.indexOf(secondDevId), null);
@@ -523,7 +453,7 @@ public class NfvTopologyManager implements NfvTopologyService {
         }
 
         if (selectedDev == null) {
-            log.error("[{}] No server is available to provide {} CPU cores.", label(), numberOfCores);
+            log.error("[{}] No server is available to provide {} CPU cores", label(), numberOfCores);
             return null;
         }
 
@@ -645,29 +575,6 @@ public class NfvTopologyManager implements NfvTopologyService {
         return false;
     }
 
-    @Override
-    public void printTopology() {
-        TopologyGraph currentTopoGraph = this.topologyGraph();
-        for (TopologyVertex topoVertex : currentTopoGraph.getVertexes()) {
-            log.info(
-                "[{}] Topology vertex with device ID: {}",
-                label(),
-                topoVertex.deviceId().toString()
-            );
-        }
-
-        log.info("");
-
-        // And the end hosts of the toplogy
-        for (Host host : this.hosts()) {
-            log.info(
-                "[{}] Host with ID: {}",
-                label(),
-                host.id().toString()
-            );
-        }
-    }
-
     /***************************** Relayed Services to ServerManager. **************************/
 
     @Override
@@ -775,42 +682,6 @@ public class NfvTopologyManager implements NfvTopologyService {
      */
     private static String label() {
         return COMPONET_LABEL;
-    }
-
-    /**
-     * Handles events related to the underlying network topology.
-     */
-    private class InternalTopologyListener implements TopologyListener {
-        @Override
-        public void event(TopologyEvent event) {
-            List<Event> reasons = event.reasons();
-            if (reasons != null) {
-                reasons.forEach(re -> {
-                    /**
-                     * The NfvLinkProvider has already caught this.
-                     * Just update the topology graph to capture the
-                     * changes.
-                     */
-                    if (re instanceof LinkEvent) {
-                        topologyGraph();
-                    // The number of devices has changed
-                    } else if (re instanceof DeviceEvent) {
-                        DeviceEvent deviceEvent = (DeviceEvent) re;
-                        if ((deviceEvent.type() == DeviceEvent.Type.DEVICE_ADDED) ||
-                            (deviceEvent.type() == DeviceEvent.Type.DEVICE_UPDATED)) {
-                            // This method will discover the new device
-                            discoverDeviceFeatures();
-                        // On leave, purge the rules of this device
-                        } else if (deviceEvent.type() == DeviceEvent.Type.DEVICE_REMOVED) {
-                            Device dev = deviceEvent.subject();
-                            flowRuleService.purgeFlowRules(dev.id());
-                        }
-                    } else if (re instanceof TopologyEvent) {
-                        topologyGraph();
-                    }
-                });
-            }
-        }
     }
 
 }

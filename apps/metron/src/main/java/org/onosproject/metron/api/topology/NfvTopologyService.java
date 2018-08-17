@@ -23,7 +23,6 @@ import org.onosproject.metron.api.servicechain.ServiceChainScope;
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
 
 import org.onosproject.net.DeviceId;
-import org.onosproject.net.Host;
 import org.onosproject.net.Link;
 import org.onosproject.net.Path;
 import org.onosproject.net.topology.TopologyCluster;
@@ -52,20 +51,6 @@ public interface NfvTopologyService {
      * @return set of topology clusters
      */
     Set<TopologyCluster> topologyClusters();
-
-    /**
-     * Returns the set of device IDs of the topology.
-     *
-     * @return set of device IDs
-     */
-    Set<DeviceId> devices();
-
-    /**
-     * Returns the set of hosts connected to the topology.
-     *
-     * @return set of hosts
-     */
-    Iterable<Host> hosts();
 
     /**
      * Checks whether the underlying topology exists or not.
@@ -186,11 +171,11 @@ public interface NfvTopologyService {
     );
 
     /**
-     * Returns a map between the input device IDs and their features.
+     * Returns a map between the input server device IDs and their objects.
      *
-     * @return map with device descriptions
+     * @return map with server devices
      */
-    Map<DeviceId, RestSBDevice> discoverDeviceFeatures();
+    Map<DeviceId, RestSBDevice> getServers();
 
     /**
      * Returns the least overloaded device out of two random choices.
@@ -224,11 +209,6 @@ public interface NfvTopologyService {
      * @return boolean identity (NFV or not)
      */
     boolean isServer(DeviceId deviceId);
-
-    /**
-     * Print the topology.
-     */
-    void printTopology();
 
     /***************************** Relayed Services to ServerManager. **************************/
 

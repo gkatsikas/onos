@@ -245,6 +245,7 @@ public final class DeploymentManager implements DeploymentService {
         this.serviceChainsToDeploy.clear();
         this.deployedServiceChains.clear();
         this.runtimeInfo.clear();
+        this.serverToNetworkRules.clear();
 
         log.info("[{}] Stopped", label());
     }
@@ -909,6 +910,9 @@ public final class DeploymentManager implements DeploymentService {
         // Remove this service chain from the list of deployed service chains
         if (scIterator != null) {
             scIterator.remove();
+        } else {
+            // Called by external module, remove without iterator
+            this.deployedServiceChains.remove(sc.id());
         }
     }
 
@@ -1094,13 +1098,6 @@ public final class DeploymentManager implements DeploymentService {
      */
     private boolean topologyExists() {
         return topologyService.exists();
-    }
-
-    /**
-     * Print the topology returned by the Topology Manager.
-     */
-    private void printTopology() {
-        topologyService.printTopology();
     }
 
     /************************** End of Relayed Services to TopologyManager. **********************/
@@ -1587,19 +1584,21 @@ public final class DeploymentManager implements DeploymentService {
      * @param sc the service chain to be undeployed
      */
     private void tearDownServiceChain(ServiceChainInterface sc) {
+        ServiceChainId scId = sc.id();
+
         // Remove any rules, potentially installed by this service chain
-        this.removeRulesOfServiceChain(sc.id());
+        this.removeRulesOfServiceChain(scId);
 
         // Go through the traffic classes of this service chain
         Set<TrafficClassRuntimeInfo> tcSetInfo =
-            serviceChainService.runtimeInformationForServiceChain(sc.id());
+            serviceChainService.runtimeInformationForServiceChain(scId);
         if (tcSetInfo == null) {
             return;
         }
 
         Iterator<TrafficClassRuntimeInfo> tcIterator = tcSetInfo.iterator();
         if (tcIterator == null) {
-            log.error("[{}] Failed to delete service chain {}", label(), sc.id());
+            log.error("[{}] Failed to delete service chain {}", label(), scId);
             return;
         }
 
@@ -1618,14 +1617,16 @@ public final class DeploymentManager implements DeploymentService {
                 }
 
                 // Ask the Metron agent to delete it
-                if (!topologyService.deleteTrafficClassOfServiceChain(deviceId, sc.id(), tcId)) {
+                if (!topologyService.deleteTrafficClassOfServiceChain(deviceId, scId, tcId)) {
                     log.error("[{}] Failed to delete traffic class {} of service chain {}",
-                        label(), tcId, sc.id());
-                    continue;
+                        label(), tcId, scId);
+                } else {
+                    log.info("[{}] Successfully deleted traffic class {} of service chain {}",
+                        label(), tcId, scId);
+                    tcIterator.remove();
+                    serviceChainService.deleteRuntimeInformationForTrafficClassOfServiceChain(scId, tcInfo);
+                    break;
                 }
-
-                log.info("[{}] Successfully deleted traffic class {} of service chain {}",
-                    label(), tcId, sc.id());
             }
         }
     }

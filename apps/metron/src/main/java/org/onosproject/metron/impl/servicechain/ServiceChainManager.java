@@ -129,8 +129,7 @@ public final class ServiceChainManager
 
         if (!status) {
             throw new ServiceChainException(
-                "[" + label() + "] Cannot create service chain with ID " + sc.id()
-            );
+                "[" + label() + "] Cannot create service chain with ID " + sc.id());
         }
     }
 
@@ -141,8 +140,7 @@ public final class ServiceChainManager
 
         if (!status) {
             throw new ServiceChainException(
-                "[" + label() + "] Cannot update service chain with ID " + sc.id()
-            );
+                "[" + label() + "] Cannot update service chain with ID " + sc.id());
         }
     }
 
@@ -170,14 +168,13 @@ public final class ServiceChainManager
 
         if (!status) {
             throw new ServiceChainException(
-                "[" + label() + "] Cannot remove service chain with ID " + sc.id()
-            );
+                "[" + label() + "] Cannot remove service chain with ID " + sc.id());
         }
     }
 
     @Override
-    public ServiceChainInterface serviceChain(ServiceChainId chainId) {
-        return serviceChainStore.serviceChain(chainId);
+    public ServiceChainInterface serviceChain(ServiceChainId scId) {
+        return serviceChainStore.serviceChain(scId);
     }
 
     @Override
@@ -191,14 +188,13 @@ public final class ServiceChainManager
     }
 
     @Override
-    public Set<NetworkFunctionInterface> serviceChainNFs(ServiceChainId chainId) {
-        return serviceChainStore.serviceChainNFs(chainId);
+    public Set<NetworkFunctionInterface> serviceChainNFs(ServiceChainId scId) {
+        return serviceChainStore.serviceChainNFs(scId);
     }
 
     @Override
-    public void updateServiceChainNFs(
-            ServiceChainId chainId, Set<NetworkFunctionInterface> nfs) {
-        serviceChainStore.updateServiceChainNFs(chainId, nfs);
+    public void updateServiceChainNFs(ServiceChainId scId, Set<NetworkFunctionInterface> nfs) {
+        serviceChainStore.updateServiceChainNFs(scId, nfs);
     }
 
     @Override
@@ -269,97 +265,91 @@ public final class ServiceChainManager
 
     @Override
     public boolean addRunnableServiceChain(
-            ServiceChainId chainId, String iface, NfvDataplaneTreeInterface tree) {
-        return serviceChainStore.addRunnableServiceChain(chainId, iface, tree);
+            ServiceChainId scId, String iface, NfvDataplaneTreeInterface tree) {
+        return serviceChainStore.addRunnableServiceChain(scId, iface, tree);
     }
 
     @Override
     public boolean updateRunnableServiceChain(
-            ServiceChainId chainId, String iface, NfvDataplaneTreeInterface tree) {
-        return serviceChainStore.updateRunnableServiceChain(chainId, iface, tree);
+            ServiceChainId scId, String iface, NfvDataplaneTreeInterface tree) {
+        return serviceChainStore.updateRunnableServiceChain(scId, iface, tree);
     }
 
     @Override
-    public boolean deleteRunnableServiceChain(ServiceChainId chainId) {
-        return serviceChainStore.deleteRunnableServiceChain(chainId);
+    public boolean deleteRunnableServiceChain(ServiceChainId scId) {
+        return serviceChainStore.deleteRunnableServiceChain(scId);
     }
 
     @Override
-    public NfvDataplaneTreeInterface runnableServiceChainOfIface(ServiceChainId chainId, String iface) {
-        return serviceChainStore.runnableServiceChainOfIface(chainId, iface);
+    public NfvDataplaneTreeInterface runnableServiceChainOfIface(ServiceChainId scId, String iface) {
+        return serviceChainStore.runnableServiceChainOfIface(scId, iface);
     }
 
     @Override
-    public NfvDataplaneTreeInterface runnableServiceChainWithTrafficClass(ServiceChainId chainId, URI tcId) {
-        return serviceChainStore.runnableServiceChainWithTrafficClass(chainId, tcId);
+    public NfvDataplaneTreeInterface runnableServiceChainWithTrafficClass(ServiceChainId scId, URI tcId) {
+        return serviceChainStore.runnableServiceChainWithTrafficClass(scId, tcId);
     }
 
     @Override
-    public Map<String, NfvDataplaneTreeInterface> runnableServiceChains(ServiceChainId chainId) {
-        return serviceChainStore.runnableServiceChains(chainId);
+    public Map<String, NfvDataplaneTreeInterface> runnableServiceChains(ServiceChainId scId) {
+        return serviceChainStore.runnableServiceChains(scId);
     }
 
     @Override
-    public void printRunnableServiceChainById(ServiceChainId chainId) {
-        serviceChainStore.printRunnableServiceChainById(chainId);
+    public void printRunnableServiceChainById(ServiceChainId scId) {
+        serviceChainStore.printRunnableServiceChainById(scId);
     }
 
     /***************************** Services for Runtime Information. **************************/
 
     @Override
     public boolean addRuntimeInformationToServiceChain(
-            ServiceChainId chainId, Set<TrafficClassRuntimeInfo> scInfo) {
+            ServiceChainId scId, Set<TrafficClassRuntimeInfo> scInfo) {
         return serviceChainStore.addRuntimeInformationToServiceChain(
-            chainId, scInfo
-        );
+            scId, scInfo);
     }
 
     @Override
     public boolean addRuntimeInformationForTrafficClassOfServiceChain(
-            ServiceChainId chainId, TrafficClassRuntimeInfo tcInfo) {
+            ServiceChainId scId, TrafficClassRuntimeInfo tcInfo) {
         return serviceChainStore.addRuntimeInformationForTrafficClassOfServiceChain(
-            chainId, tcInfo
-        );
+            scId, tcInfo);
     }
 
     @Override
     public boolean updateRuntimeInformationForTrafficClassOfServiceChain(
-            ServiceChainId chainId, TrafficClassRuntimeInfo tcInfo) {
+            ServiceChainId scId, TrafficClassRuntimeInfo tcInfo) {
         return serviceChainStore.updateRuntimeInformationForTrafficClassOfServiceChain(
-            chainId, tcInfo
-        );
+            scId, tcInfo);
     }
 
     @Override
-    public boolean deleteRuntimeInformationForServiceChain(ServiceChainId chainId) {
-        return serviceChainStore.deleteRuntimeInformationForServiceChain(chainId);
+    public boolean deleteRuntimeInformationForServiceChain(ServiceChainId scId) {
+        return serviceChainStore.deleteRuntimeInformationForServiceChain(scId);
     }
 
     @Override
     public boolean deleteRuntimeInformationForTrafficClassOfServiceChain(
-            ServiceChainId chainId, TrafficClassRuntimeInfo tcInfo) {
+            ServiceChainId scId, TrafficClassRuntimeInfo tcInfo) {
         return serviceChainStore.deleteRuntimeInformationForTrafficClassOfServiceChain(
-            chainId, tcInfo
-        );
+            scId, tcInfo);
     }
 
     @Override
     public Set<TrafficClassRuntimeInfo> runtimeInformationForServiceChain(
-            ServiceChainId chainId) {
-        return serviceChainStore.runtimeInformationForServiceChain(chainId);
+            ServiceChainId scId) {
+        return serviceChainStore.runtimeInformationForServiceChain(scId);
     }
 
     @Override
     public TrafficClassRuntimeInfo runtimeInformationForTrafficClassOfServiceChain(
-            ServiceChainId chainId, URI trafficClassId) {
-        return serviceChainStore.runtimeInformationForTrafficClassOfServiceChain(
-            chainId, trafficClassId
-        );
+            ServiceChainId scId, URI tcId) {
+        return serviceChainStore.runtimeInformationForTrafficClassOfServiceChain(scId, tcId);
     }
 
     @Override
-    public void printRuntimeInformationForServiceChain(ServiceChainId chainId) {
-        serviceChainStore.printRuntimeInformationForServiceChain(chainId);
+    public void printRuntimeInformationForServiceChain(ServiceChainId scId) {
+        serviceChainStore.printRuntimeInformationForServiceChain(scId);
     }
 
     /************************************ Internal methods. ***********************************/
@@ -367,10 +357,10 @@ public final class ServiceChainManager
     /**
      * Performs a state transition for a service chain.
      */
-    private void setServiceChainState(
-            ServiceChainInterface sc,
-            ServiceChainState newScState) {
-        if (sc.state() != newScState) {
+    private void setServiceChainState(ServiceChainInterface sc, ServiceChainState newScState) {
+        ServiceChainState currState = sc.state();
+
+        if (currState != newScState) {
             /**
              * Update the state of this service chain's
              * network functions.
@@ -382,18 +372,14 @@ public final class ServiceChainManager
              * service chain itself.
              */
             sc.setState(newScState);
-            ServiceChainState updatedState = sc.state();
+            ServiceChainState updatedState = newScState;
             updatedState.process(this, sc);
 
             // Store the updated service chain
-            serviceChainStore.updateServiceChain(
-                sc.id(),
-                sc
-            );
+            serviceChainStore.updateServiceChain(sc.id(), sc);
         } else {
             log.debug("[{}] Current state {} is the same as the new state {}",
-                label(), sc.state(), newScState
-            );
+                label(), currState, newScState);
         }
     }
 
@@ -408,9 +394,7 @@ public final class ServiceChainManager
             NetworkFunctionInterface nf = scV.networkFunction();
 
             if (nf == null) {
-                log.info(
-                    "[{}] Network function is NULL", label()
-                );
+                log.info("[{}] Network function is NULL", label());
                 continue;
             }
 
@@ -419,14 +403,8 @@ public final class ServiceChainManager
 
             if (curNfState != newNfState) {
                 nf.setState(newNfState);
-                log.info(
-                    "[{}] Service chain {}: Network function {} state transition {} --> {}",
-                    label(),
-                    sc.name(),
-                    nf.name(),
-                    curNfState,
-                    newNfState
-                );
+                log.info("[{}] Service chain {}: Network function {} state transition {} --> {}",
+                    label(), sc.name(), nf.name(), curNfState, newNfState);
             }
         }
     }
@@ -455,8 +433,7 @@ public final class ServiceChainManager
      * @return a new ServiceChainProviderService
      */
     @Override
-    protected ServiceChainProviderService createProviderService(
-            ServiceChainProvider provider) {
+    protected ServiceChainProviderService createProviderService(ServiceChainProvider provider) {
         return new InternalServiceChainProviderService(provider);
     }
 
@@ -475,11 +452,7 @@ public final class ServiceChainManager
 
         @Override
         public void serviceChainRegistered(ServiceChainId serviceChainId) {
-            checkNotNull(
-                serviceChainId,
-                "[" + label() + "] " +
-                "Service Chain ID is NULL"
-            );
+            checkNotNull(serviceChainId, "[" + label() + "] " + "Service Chain ID is NULL");
         }
 
     }
@@ -498,10 +471,8 @@ public final class ServiceChainManager
             // Post this event, such that it can be caught by the interested listeners.
             post(event);
 
-            log.debug(
-                "[{}] Service Chain Event: Service chain with ID {} is in state {}",
-                label(), sc.id(), state
-            );
+            log.debug("[{}] Service Chain Event: Service chain with ID {} is in state {}",
+                label(), sc.id(), state);
         }
 
     }

@@ -89,8 +89,7 @@ import static org.onosproject.metron.impl.server.DefaultTrafficClassRuntimeInfo.
  */
 @Component(immediate = true)
 @Service
-public class ServerManager
-        implements ServerService {
+public class ServerManager implements ServerService {
 
     private static final Logger log = getLogger(ServerManager.class);
 
@@ -107,6 +106,7 @@ public class ServerManager
     private static final String SERVICE_CHAINS_DEPLOY_URL       = BasicServerDriver.BASE_URL + "/chains";
     private static final String SERVICE_CHAINS_RUNTIME_INFO_URL = SERVICE_CHAINS_DEPLOY_URL; // + /ID
     private static final String SERVICE_CHAINS_DELETE_URL       = SERVICE_CHAINS_DEPLOY_URL; // + /ID
+    private static final String SLASH = "/";
 
     /**
      * Resources to be asked/passed from/to the NFV agent.
@@ -130,8 +130,6 @@ public class ServerManager
     private static final String NIC_PARAM_RX_METHOD_FLOW   = "flow";
     private static final String NIC_PARAM_RX_METHOD_RSS    = "rss";
 
-    private Set<RestSBDevice> devices;
-
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
 
@@ -145,24 +143,17 @@ public class ServerManager
     protected MonitorService monitoringService;
 
     public ServerManager() {
-        this.devices = Sets.<RestSBDevice>newConcurrentHashSet();
     }
 
     @Activate
     public void activate() {
         this.appId = coreService.registerApplication(APP_NAME);
-
         log.info("[{}] Started", label());
     }
 
     @Deactivate
     public void deactivate() {
         log.info("[{}] Stopped", label());
-    }
-
-    @Override
-    public Map<DeviceId, RestSBDevice> discoverDevices() {
-        return controller.getDevices();
     }
 
     @Override
@@ -173,35 +164,6 @@ public class ServerManager
     @Override
     public RestSBDevice getDevice(DeviceId deviceId) {
         return controller.getDevice(deviceId);
-    }
-
-    @Override
-    public RestSBDevice discoverDeviceFeatures(DeviceId deviceId) {
-        /**
-         * Get the device object from the controller.
-         * The device details must be already detected at the driver level.
-         */
-        checkNotNull(deviceId, "[" + label() + "] NULL device ID.");
-
-        RestServerSBDevice device = null;
-        try {
-            device = (RestServerSBDevice) controller.getDevice(deviceId);
-        } catch (ClassCastException ccEx) {
-            return null;
-        }
-
-        if (device == null) {
-            log.error(
-                "[{}] Failed to discover the resources of device {}",
-                label(), deviceId
-            );
-            return null;
-        }
-
-        // Cache the device locally
-        this.devices.add(device);
-
-        return device;
     }
 
     @Override
@@ -219,21 +181,14 @@ public class ServerManager
         checkNotNull(deviceId, "[" + label() + "] NULL device ID.");
         checkNotNull(scId,     "[" + label() + "] NULL service chain ID.");
         checkNotNull(tcId,     "[" + label() + "] NULL traffic class ID.");
-        checkArgument(
-            !Strings.isNullOrEmpty(configuration),
-            "[" + label() + "] Configuration is NULL or empty."
-        );
-        checkArgument(
-            numberOfCores > 0,
-            "[" + label() + "] Number of cores must be positive"
-        );
-        checkArgument(
-            (maxNumberOfCores > 0) && (numberOfCores <= maxNumberOfCores),
+        checkArgument(!Strings.isNullOrEmpty(configuration),
+            "[" + label() + "] Configuration is NULL or empty");
+        checkArgument(numberOfCores > 0,
+            "[" + label() + "] Number of cores must be positive");
+        checkArgument((maxNumberOfCores > 0) && (numberOfCores <= maxNumberOfCores),
             "[" + label() + "] Maximum number of cores must be positive");
-        checkNotNull(
-            nicIds,
-            "[" + label() + "] Cannot deploy traffic class without NICs."
-        );
+        checkNotNull(nicIds,
+            "[" + label() + "] Cannot deploy traffic class without NICs.");
 
         log.info("[{}] ================================================================", label());
         log.info("[{}] Deploy", label());
@@ -381,8 +336,7 @@ public class ServerManager
         if (!BasicServerDriver.checkStatusCode(response)) {
             log.error(
                 "[{}] \t Failed to deploy traffic class {} of service chain {} on device {} with status {}",
-                label(), tcId, scId, deviceId, response
-            );
+                label(), tcId, scId, deviceId, response);
             return null;
         }
 
@@ -452,7 +406,7 @@ public class ServerManager
         }
 
         // Post the service chain
-        String url = SERVICE_CHAINS_DEPLOY_URL + "/" + tcId.toString();
+        String url = SERVICE_CHAINS_DEPLOY_URL + SLASH + tcId.toString();
 
         int response = controller.put(
             deviceId, url,
@@ -498,7 +452,7 @@ public class ServerManager
             return null;
         }
 
-        String scUrl = SERVICE_CHAINS_RUNTIME_INFO_URL + "/" + tcId.toString();
+        String scUrl = SERVICE_CHAINS_RUNTIME_INFO_URL + SLASH + tcId.toString();
 
         // Hit the path that provides the resources for this service chain
         InputStream response = null;
@@ -791,12 +745,10 @@ public class ServerManager
             return false;
         }
 
-        String scUrl = SERVICE_CHAINS_DELETE_URL + "/" + tcId.toString();
+        String scUrl = SERVICE_CHAINS_DELETE_URL + SLASH + tcId.toString();
 
         // Delete this traffic class
-        int response = controller.delete(
-            deviceId, scUrl, null, BasicServerDriver.JSON
-        );
+        int response = controller.delete(deviceId, scUrl, null, BasicServerDriver.JSON);
 
         if (!BasicServerDriver.checkStatusCode(response)) {
             log.error("[{}] \t Failed to delete traffic class {} of service chain {} on device {} with status {}",
@@ -902,13 +854,7 @@ public class ServerManager
      * @return device object or null
      */
     private Device findDeviceById(DeviceId deviceId) {
-        for (Device device : deviceService.getDevices()) {
-            if (device.id().equals(deviceId)) {
-                return device;
-            }
-        }
-
-        return null;
+        return deviceService.getDevice(deviceId);
     }
 
     /**

@@ -164,10 +164,10 @@ public final class OrchestrationManager implements OrchestrationService {
 
     // The CPU utilization threshold to perform scale down
     private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
-    private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.35;
+    private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.25;
     @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
              label = "Configure the amount of CPU load to trigger scale down events; " +
-                    "default is 35% CPU core utilization")
+                    "default is 25% CPU core utilization")
     private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
 
     // The CPU utilization threshold to perform scale up
@@ -180,10 +180,10 @@ public final class OrchestrationManager implements OrchestrationService {
 
     // The frequency of the Orchestrator's monitoring in milliseconds
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
-    private static final int DEFAULT_MONITORING_PERIOD_MS = 300;
+    private static final int DEFAULT_MONITORING_PERIOD_MS = 100;
     @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
              label = "Configure the data plane monitoring frequency (in milliseconds); " +
-                    "default is 300 ms")
+                    "default is 100 ms")
     private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
 
     public OrchestrationManager() {
@@ -257,11 +257,14 @@ public final class OrchestrationManager implements OrchestrationService {
             ServiceChainInterface sc, Iterator<ServiceChainInterface> scIterator) {
         checkNotNull(sc, "[" + label() + "] NULL service chain cannot be marked as undeployed");
 
-        // Notify the deployer
-        deployerService.markServiceChainAsUndeployed(sc, null);
+        // Not already undeployed
+        if (!this.suspendedServiceChains.contains(sc)) {
+            // ...and add it to the set of suspended service chains
+            this.suspendedServiceChains.add(sc);
 
-        // ...and add it to the set of suspended service chains
-        this.suspendedServiceChains.add(sc);
+            // Notify the deployer
+            deployerService.markServiceChainAsUndeployed(sc, null);
+        }
 
         // Remove this service chain from the list of active service chains
         if (scIterator != null) {
@@ -290,12 +293,15 @@ public final class OrchestrationManager implements OrchestrationService {
             }
 
             MonitoringStatistics previousStats = null;
+            AtomicBoolean quit = new AtomicBoolean(false);
 
             // Go though the active chain, monitor them, and make load balancing decisions
             Iterator<ServiceChainInterface> scIterator = this.activeServiceChains.iterator();
             while (scIterator.hasNext()) {
                 ServiceChainInterface sc = scIterator.next();
                 ServiceChainId scId = sc.id();
+
+                quit.set(false);
 
                 log.debug("[{}] Managing active service chain {}", label(), scId);
 
@@ -335,9 +341,13 @@ public final class OrchestrationManager implements OrchestrationService {
                     }
 
                     for (DeviceId deviceId : tcInfo.devices()) {
-
                         if (!topologyService.isServer(deviceId)) {
                             continue;
+                        }
+
+                        if (!topologyService.getDevice(deviceId).isActive()) {
+                            quit.set(true);
+                            break;
                         }
 
                         // Get monitoring statistics from this service chain
@@ -345,11 +355,8 @@ public final class OrchestrationManager implements OrchestrationService {
 
                         // This device seems to be down or a problem suddenly occured
                         if (stats == null) {
-                            // There is something wrong with this service chain, tear it down
-                            if (previousStats == null) {
-                                this.markServiceChainAsUndeployed(sc, scIterator);
-                            }
-                            continue;
+                            quit.set(true);
+                            break;
                         } else {
                             previousStats = stats;
                         }
@@ -360,6 +367,15 @@ public final class OrchestrationManager implements OrchestrationService {
                         // Check for potential load imbalance
                         this.checkForLoadImbalance(sc, tcId, deviceId, stats, maxCpus, previousLoadTc, isRebalancedTc);
                     }
+
+                    // Most likely a dead agent
+                    if (quit.get()) {
+                        break;
+                    }
+                }
+
+                if (quit.get()) {
+                    this.markServiceChainAsUndeployed(sc, scIterator);
                 }
             }
 
@@ -392,6 +408,11 @@ public final class OrchestrationManager implements OrchestrationService {
             int                    maxCpus,
             AtomicReference<Float> previousLoad,
             AtomicBoolean          isRebalanced) {
+        // Service chain object might be deleted anytime due to e.g., dead agent
+        if ((sc == null) || (stats == null)) {
+            return;
+        }
+
         // Skip the check and reset the flag
         if (isRebalanced.get()) {
             log.debug("[{}] \t Skipping rebalance check for traffic class {}", label(), tcId);

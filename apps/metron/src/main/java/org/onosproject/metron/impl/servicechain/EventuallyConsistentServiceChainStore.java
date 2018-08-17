@@ -470,10 +470,8 @@ public class EventuallyConsistentServiceChainStore
         }
 
         if (this.serviceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] Unable to create service chain with ID {}, as it is already created",
-                label(), scId
-            );
+            log.debug("[{}] Unable to create service chain with ID {}, as it is already created",
+                label(), scId);
             return true;
         }
 
@@ -491,10 +489,8 @@ public class EventuallyConsistentServiceChainStore
         }
 
         if (!this.serviceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] Unable to update service chain with ID {}, as it does not exist",
-                label(), scId
-            );
+            log.debug("[{}] Unable to update service chain with ID {}, as it does not exist",
+                label(), scId);
             return false;
         }
 
@@ -541,10 +537,8 @@ public class EventuallyConsistentServiceChainStore
 
         // Key does not exist in the map
         if (!this.serviceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] Unable to retrieve the service chain with ID {}, as it does not exist.",
-                label(), scId
-            );
+            log.debug("[{}] Unable to retrieve the service chain with ID {}, as it does not exist.",
+                label(), scId);
             return null;
         }
 
@@ -583,10 +577,8 @@ public class EventuallyConsistentServiceChainStore
         ServiceChainInterface sc = this.serviceChain(scId);
 
         if (sc == null) {
-            log.warn(
-                "[{}] Unable to retrieve the network functions of the service chain with ID {}.",
-                label(), scId
-            );
+            log.warn("[{}] Unable to retrieve the network functions of the service chain with ID {}.",
+                label(), scId);
             return null;
         }
 
@@ -594,18 +586,12 @@ public class EventuallyConsistentServiceChainStore
 
         for (ServiceChainVertexInterface scV : sc.serviceChainGraph().getVertexes()) {
             NetworkFunctionInterface nf = scV.networkFunction();
-            checkNotNull(
-                nf,
-                "[" + label() + "] " +
-                "Network function of service chain " + sc.name() + " is NULL"
-            );
+            checkNotNull(nf, "[" + label() + "] " +
+                "Network function of service chain " + sc.name() + " is NULL");
             nfs.add(nf);
         }
 
-        log.debug(
-            "[{}] Service Chain with {} NFs is returned",
-            label(), nfs.size()
-        );
+        log.debug("[{}] Service Chain with {} NFs is returned", label(), nfs.size());
 
         return nfs;
     }
@@ -616,10 +602,8 @@ public class EventuallyConsistentServiceChainStore
         ServiceChainInterface sc = this.serviceChain(scId);
 
         if (sc == null) {
-            log.warn(
-                "[{}] Unable to retrieve the network functions of the service chain with ID {}.",
-                label(), scId
-            );
+            log.warn("[{}] Unable to retrieve the network functions of the service chain with ID {}",
+                label(), scId);
             return;
         }
 
@@ -641,10 +625,8 @@ public class EventuallyConsistentServiceChainStore
 
             // No NF was found with the same name and ID. This is a inconsistency.
             if (!updated) {
-                throw new ServiceChainException(
-                    "[" + label() + "] " +
-                    "Inconsistency in service chain store"
-                );
+                throw new ServiceChainException("[" + label() + "] " +
+                    "Inconsistency in service chain store");
             }
         }
 
@@ -658,10 +640,8 @@ public class EventuallyConsistentServiceChainStore
         ServiceChainInterface sc = this.serviceChain(scId);
 
         if ((sc == null) || (scGraph == null)) {
-            log.warn(
-                "[{}] Unable to retrieve the graph of the service chain with ID {}.",
-                label(), scId
-            );
+            log.warn("[{}] Unable to retrieve the graph of the service chain with ID {}",
+                label(), scId);
             return;
         }
 
@@ -769,40 +749,27 @@ public class EventuallyConsistentServiceChainStore
                 // Fetch the peering NF (if any)
                 NetworkFunctionInterface peer = nf.peersWithNF(dev);
                 if (peer != null) {
-                    log.info(
-                        "[{}] \tDevice {} peers with NF {} and interface {}",
-                        label(), dev.name(), peer.id(), nf.peersWithInterface(dev)
-                    );
+                    log.info("[{}] \tDevice {} peers with NF {} and interface {}",
+                        label(), dev.name(), peer.id(), nf.peersWithInterface(dev));
                 } else {
-                    log.info(
-                        "[{}] \tDevice {} is an end point",
-                        label(), dev.name()
-                    );
+                    log.info("[{}] \tDevice {} is an end point", label(), dev.name());
                 }
             }
 
             for (NetworkFunctionDeviceInterface dev : nf.entryDevices()) {
-                log.info(
-                    "[{}] \tDevice {} is an entry point",
-                    label(), dev.name()
-                );
+                log.info("[{}] \tDevice {} is an entry point", label(), dev.name());
             }
 
             for (NetworkFunctionDeviceInterface dev : nf.exitDevices()) {
-                log.info(
-                    "[{}] \tDevice {} is an exit point",
-                    label(), dev.name()
-                );
+                log.info("[{}] \tDevice {} is an exit point", label(), dev.name());
             }
 
             // Retrieve the end point blocks of this NF
             Set<ProcessingBlockInterface> endBlocks = nf.endPointProcessingBlocks();
             if (endBlocks != null) {
                 for (ProcessingBlockInterface endBlock : endBlocks) {
-                    log.info(
-                        "[{}] \tBlock {} of type {} is an END point",
-                        label(), endBlock.id(), endBlock.processingBlockType()
-                    );
+                    log.info("[{}] \tBlock {} of type {} is an END point",
+                        label(), endBlock.id(), endBlock.processingBlockType());
                 }
             }
 
@@ -810,10 +777,8 @@ public class EventuallyConsistentServiceChainStore
             Set<ProcessingBlockInterface> entryBlocks = nf.entryPointProcessingBlocks();
             if (entryBlocks != null) {
                 for (ProcessingBlockInterface entryBlock : entryBlocks) {
-                    log.info(
-                        "[{}] \tBlock {} of type {} is an ENTRY ppoint",
-                        label(), entryBlock.id(), entryBlock.processingBlockType()
-                    );
+                    log.info("[{}] \tBlock {} of type {} is an ENTRY ppoint",
+                        label(), entryBlock.id(), entryBlock.processingBlockType());
                 }
             }
 
@@ -821,10 +786,8 @@ public class EventuallyConsistentServiceChainStore
             Set<ProcessingBlockInterface> exitBlocks = nf.exitPointProcessingBlocks();
             if (exitBlocks != null) {
                 for (ProcessingBlockInterface exitBlock : exitBlocks) {
-                    log.info(
-                        "[{}] \tBlock {} of type {} is an EXIT point",
-                        label(), exitBlock.id(), exitBlock.processingBlockType()
-                    );
+                    log.info("[{}] \tBlock {} of type {} is an EXIT point",
+                        label(), exitBlock.id(), exitBlock.processingBlockType());
                 }
             }
 
@@ -847,10 +810,7 @@ public class EventuallyConsistentServiceChainStore
                 if (pb == null) {
                     continue;
                 }
-                log.info(
-                    "[{}] \tProcessing block {} with type {}",
-                    label(), pb.id(), pb.processingBlockType()
-                );
+                log.info("[{}] \tProcessing block {} with type {}", label(), pb.id(), pb.processingBlockType());
 
                 // Classifier has rule configurations
                 if (pb.processingBlockType() == ProcessingBlockType.BLOCK_TYPE_CLASSIFIER) {
@@ -898,9 +858,7 @@ public class EventuallyConsistentServiceChainStore
         if (!this.serviceChainMap.containsKey(scId)) {
             log.error(
                 "[{}] Unable to create a  dataplane service chain with ID {}; " +
-                "This service chain is not registered",
-                label(), scId
-            );
+                "This service chain is not registered", label(), scId);
             return false;
         }
 
@@ -930,8 +888,7 @@ public class EventuallyConsistentServiceChainStore
         if (trees.containsKey(iface)) {
             log.debug(
                 "[{}] Unable to create dataplane service chain with ID {} for interface {}, as it is already created",
-                label(), scId, iface
-            );
+                label(), scId, iface);
             return true;
         }
 
@@ -944,10 +901,7 @@ public class EventuallyConsistentServiceChainStore
 
         this.localRunnableServiceChainMap.put(scId, trees);
 
-        log.debug(
-            "[{}] Dataplane service chain for interface {} with ID {} is created",
-            label(), iface, scId
-        );
+        log.debug("[{}] Dataplane service chain for interface {} with ID {} is created", label(), iface, scId);
 
         return true;
     }
@@ -961,10 +915,7 @@ public class EventuallyConsistentServiceChainStore
 
         if (!this.runnableServiceChainMap.containsKey(scId) &&
             !this.localRunnableServiceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runnable service chain with ID {} to update",
-                label(), scId
-            );
+            log.debug("[{}] There is no runnable service chain with ID {} to update", label(), scId);
             return false;
         }
 
@@ -990,10 +941,7 @@ public class EventuallyConsistentServiceChainStore
 
         if (!this.runnableServiceChainMap.containsKey(scId) &&
             !this.localRunnableServiceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runnable service chain with ID {} to delete",
-                label(), scId
-            );
+            log.debug("[{}] There is no runnable service chain with ID {} to delete", label(), scId);
             return true;
         }
 
@@ -1019,10 +967,7 @@ public class EventuallyConsistentServiceChainStore
         // Key does not exist in the map
         if (!this.runnableServiceChainMap.containsKey(scId) &&
             !this.localRunnableServiceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runnable service chain with ID {}.",
-                label(), scId
-            );
+            log.debug("[{}] There is no runnable service chain with ID {}", label(), scId);
             return null;
         }
 
@@ -1045,10 +990,7 @@ public class EventuallyConsistentServiceChainStore
         // Key does not exist in the map
         if (!this.runnableServiceChainMap.containsKey(scId) &&
             !this.localRunnableServiceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runnable service chain with ID {}.",
-                label(), scId
-            );
+            log.debug("[{}] There is no runnable service chain with ID {}", label(), scId);
             return null;
         }
 
@@ -1079,10 +1021,7 @@ public class EventuallyConsistentServiceChainStore
         // Key does not exist in the map
         if (!this.runnableServiceChainMap.containsKey(scId) &&
             !this.localRunnableServiceChainMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runnable service chain with ID {}.",
-                label(), scId
-            );
+            log.debug("[{}] There is no runnable service chain with ID {}", label(), scId);
             return null;
         }
 
@@ -1137,28 +1076,21 @@ public class EventuallyConsistentServiceChainStore
          * if the primary map does not contain the service chain.
          */
         if (!this.serviceChainMap.containsKey(scId)) {
-            log.error(
-                "[{}] Unable to create runtime information for service chain with ID {}; " +
-                "This service chain is not registered",
-                label(), scId
-            );
+            log.error("[{}] Unable to create runtime information for service chain with ID {}; " +
+                "This service chain is not registered", label(), scId);
             return false;
         }
 
         if (this.runtimeServiceChainInfoMap.containsKey(scId)) {
             log.warn(
                 "[{}] Unable to create runtime information for service chain with ID {}, as it is already created",
-                label(), scId
-            );
+                label(), scId);
             return true;
         }
 
         this.runtimeServiceChainInfoMap.put(scId, scInfo);
 
-        log.info(
-            "[{}] Runtime information for service chain with ID {} is added",
-            label(), scId
-        );
+        log.info("[{}] Runtime information for service chain with ID {} is added", label(), scId);
 
         return true;
     }
@@ -1177,17 +1109,14 @@ public class EventuallyConsistentServiceChainStore
         if (!this.serviceChainMap.containsKey(scId)) {
             log.error(
                 "[{}] Unable to create runtime information for service chain with ID {}; " +
-                "This service chain is not registered",
-                label(), scId
-            );
+                "This service chain is not registered", label(), scId);
             return false;
         }
 
         if (this.runtimeServiceChainInfoMap.containsKey(scId)) {
             log.warn(
                 "[{}] Unable to create runtime information for service chain with ID {}, as it is already created",
-                label(), scId
-            );
+                label(), scId);
             return true;
         }
 
@@ -1197,10 +1126,8 @@ public class EventuallyConsistentServiceChainStore
 
         this.runtimeServiceChainInfoMap.get(scId).add(tcInfo);
 
-        log.info(
-            "[{}] Runtime information for traffic class {} of service chain {} is added",
-            label(), scId
-        );
+        log.info("[{}] Runtime information for traffic class {} of service chain {} is added",
+            label(), scId);
 
         return true;
     }
@@ -1213,10 +1140,8 @@ public class EventuallyConsistentServiceChainStore
         }
 
         if (!this.runtimeServiceChainInfoMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runtime information for service chain with ID {} to update",
-                label(), scId
-            );
+            log.debug("[{}] There is no runtime information for service chain with ID {} to update",
+                label(), scId);
             return false;
         }
 
@@ -1254,19 +1179,14 @@ public class EventuallyConsistentServiceChainStore
         }
 
         if (!this.runtimeServiceChainInfoMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runtime information for service chain with ID {} to delete",
-                label(), scId
-            );
+            log.debug("[{}] There is no runtime information for service chain with ID {} to delete",
+                label(), scId);
             return true;
         }
 
         this.runtimeServiceChainInfoMap.remove(scId);
 
-        log.info(
-            "[{}] Runtime information for service chain {} is deleted",
-            label(), scId
-        );
+        log.info("[{}] Runtime information for service chain {} is deleted", label(), scId);
 
         return true;
     }
@@ -1279,10 +1199,8 @@ public class EventuallyConsistentServiceChainStore
         }
 
         if (!this.runtimeServiceChainInfoMap.containsKey(scId)) {
-            log.debug(
-                "[{}] There is no runtime information for service chain with ID {} to delete",
-                label(), scId
-            );
+            log.debug("[{}] There is no runtime information for service chain with ID {} to delete",
+                label(), scId);
             return true;
         }
 
@@ -1301,10 +1219,8 @@ public class EventuallyConsistentServiceChainStore
             }
         }
 
-        log.info(
-            "[{}] Runtime information for traffic class {} of service chain {} is deleted",
-            label(), tcInfo.trafficClassId(), scId
-        );
+        log.info("[{}] Runtime information for traffic class {} of service chain {} is deleted",
+            label(), tcInfo.trafficClassId(), scId);
 
         return true;
     }

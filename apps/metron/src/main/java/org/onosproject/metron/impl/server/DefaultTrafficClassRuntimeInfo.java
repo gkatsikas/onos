@@ -485,6 +485,7 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
             return false;
         }
 
+        this.configurationType.get(deviceId).remove(core);
         if (this.configuration.get(deviceId).remove(core) != null) {
             return true;
         }
