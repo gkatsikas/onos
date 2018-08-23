@@ -3,7 +3,7 @@ REQUIRED_APPS = [
 ]
 
 BUNDLES = [
-  '//apps/metron:onos-apps-metron',
+    '//apps/metron:onos-apps-metron',
 ]
 
 COMPILE_DEPS = [
@@ -45,7 +45,7 @@ onos_app(
     category = 'Traffic Processing &amp; Steering',
     origin = 'KTH Royal Institute of Technology &amp; RISE SICS',
     url = 'https://bitbucket.org/nslab/onos/src/metron-ctrl/',
-    description = 'Metron realizes NFV service chains at the speed of the underlying hardware.',
+    description = 'Metron realizes NFV service chains at the speed of the underlying hardware',
     included_bundles = BUNDLES,
     required_apps = REQUIRED_APPS,
 )
