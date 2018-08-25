@@ -517,7 +517,9 @@ public final class ServiceChainAddConfig
 
             // TODO: Can this be more explicit?
             if (scScale) {
-                log.warn("Currently, setting scale=true means that the number of CPU cores ranges in [1, " + scMaxCores + "]");
+                log.warn(
+                    "Currently, setting scale=true means that the number of CPU cores ranges in [1, "
+                    + scMaxCores + "]");
                 scCores = 1;
             }
 
