@@ -912,7 +912,7 @@ public final class DeploymentManager implements DeploymentService {
             scIterator.remove();
         } else {
             // Called by external module, remove without iterator
-            this.deployedServiceChains.remove(sc.id());
+            this.deployedServiceChains.remove(sc);
         }
     }
 
