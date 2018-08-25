@@ -29,14 +29,10 @@ import org.onosproject.metron.api.structures.Pair;
 // ONOS libraries
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.event.Event;
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
 import org.onosproject.drivers.server.stats.CpuStatistics;
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
-import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
-import org.onosproject.net.device.DeviceEvent;
-import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.Link;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.Path;
