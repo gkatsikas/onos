@@ -17,6 +17,7 @@
 package org.onosproject.metron.impl.gui;
 
 import org.onosproject.metron.api.config.TrafficPoint;
+import org.onosproject.metron.api.common.Common;
 import org.onosproject.metron.api.networkfunction.NetworkFunctionInterface;
 import org.onosproject.metron.api.graphs.ServiceChainGraphInterface;
 import org.onosproject.metron.api.graphs.ServiceChainVertexInterface;
@@ -160,15 +161,26 @@ public class ServiceChainInfoViewMessageHandler extends UiMessageHandler {
                 log.error("Unavailable packet processing graph for service chain: {}", scId);
                 return nfChainStr;
             }
-            if (scGraph.getVertexes().size() == 0) {
+
+            int nfsNumber = scGraph.getVertexes().size();
+            if (nfsNumber == 0) {
                 log.warn("Empty packet processing graph for service chain: {}", scId);
                 return nfChainStr;
             }
 
             // Traverse the graph and log the types of the network functions
-            for (ServiceChainVertexInterface scVertex : scGraph.getVertexes()) {
-                NetworkFunctionInterface nf = scVertex.networkFunction();
-                nfChainStr += nf.nfClass().toString().toUpperCase() + " -> ";
+            int nfIndex = 1;
+            while (nfIndex <= nfsNumber) {
+                for (ServiceChainVertexInterface scVertex : scGraph.getVertexes()) {
+                    NetworkFunctionInterface nf = scVertex.networkFunction();
+                    int index = Common.findFirstNotOf(nf.name(), "nf", 0);
+                    int nfNumber = Integer.parseInt(nf.name().substring(index));
+                    if (nfNumber == nfIndex) {
+                        nfChainStr += nf.nfClass().toString().toUpperCase() + " -> ";
+                        nfIndex++;
+                        break;
+                    }
+                }
             }
 
             // Remove the last ' -> '
