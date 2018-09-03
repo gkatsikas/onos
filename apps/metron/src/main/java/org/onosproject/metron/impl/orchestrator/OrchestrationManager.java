@@ -899,7 +899,8 @@ public final class OrchestrationManager implements OrchestrationService {
 
         Dictionary<?, ?> properties = context.getProperties();
 
-        if (Tools.isPropertyEnabled(properties, SCALE_UP_LOAD_THRESHOLD)) {
+        if (Tools.get(properties, SCALE_UP_LOAD_THRESHOLD) != null) {
+
             float previousScaleUpLoadThreshold = scaleUpLoadThreshold;
             scaleUpLoadThreshold = Tools.getFloatProperty(properties, SCALE_UP_LOAD_THRESHOLD);
 
@@ -914,7 +915,7 @@ public final class OrchestrationManager implements OrchestrationService {
             }
         }
 
-        if (Tools.isPropertyEnabled(properties, SCALE_DOWN_LOAD_THRESHOLD)) {
+        if (Tools.get(properties, SCALE_DOWN_LOAD_THRESHOLD) != null) {
             float previousScaleDownLoadThreshold = scaleDownLoadThreshold;
             scaleDownLoadThreshold = Tools.getFloatProperty(properties, SCALE_DOWN_LOAD_THRESHOLD);
 
@@ -929,7 +930,7 @@ public final class OrchestrationManager implements OrchestrationService {
             }
         }
 
-        if (Tools.isPropertyEnabled(properties, MONITORING_PERIOD_MS)) {
+        if (Tools.get(properties, MONITORING_PERIOD_MS) != null) {
             int previousMonitoringPeriodMilli = monitoringPeriodMilli;
             monitoringPeriodMilli = Tools.getIntegerProperty(
                 properties, MONITORING_PERIOD_MS, DEFAULT_MONITORING_PERIOD_MS);
