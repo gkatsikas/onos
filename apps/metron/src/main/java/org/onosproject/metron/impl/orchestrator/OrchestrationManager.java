@@ -899,8 +899,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
         Dictionary<?, ?> properties = context.getProperties();
 
-        if (Tools.get(properties, SCALE_UP_LOAD_THRESHOLD) != null) {
-
+        if (Tools.isPropertyEnabled(properties, SCALE_UP_LOAD_THRESHOLD) != null) {
             float previousScaleUpLoadThreshold = scaleUpLoadThreshold;
             scaleUpLoadThreshold = Tools.getFloatProperty(properties, SCALE_UP_LOAD_THRESHOLD);
 
@@ -910,12 +909,14 @@ public final class OrchestrationManager implements OrchestrationService {
                 log.info(
                     "Not configured due to invalid range. CPU load to trigger scale up remains {}%",
                     scaleUpLoadThreshold * 100);
-            } else {
+            } else if (scaleUpLoadThreshold != previousScaleUpLoadThreshold) {
                 log.info("Configured. CPU load to trigger scale up is now {}%", scaleUpLoadThreshold * 100);
+            } else {
+                log.info("CPU load to trigger scale up remains {}%", scaleUpLoadThreshold * 100);
             }
         }
 
-        if (Tools.get(properties, SCALE_DOWN_LOAD_THRESHOLD) != null) {
+        if (Tools.isPropertyEnabled(properties, SCALE_DOWN_LOAD_THRESHOLD) != null) {
             float previousScaleDownLoadThreshold = scaleDownLoadThreshold;
             scaleDownLoadThreshold = Tools.getFloatProperty(properties, SCALE_DOWN_LOAD_THRESHOLD);
 
@@ -925,12 +926,14 @@ public final class OrchestrationManager implements OrchestrationService {
                 log.info(
                     "Not configured due to invalid range. CPU load to trigger scale down remains {}%",
                     scaleDownLoadThreshold * 100);
-            } else {
+            } else if (scaleDownLoadThreshold != previousScaleDownLoadThreshold) {
                 log.info("Configured. CPU load to trigger scale down is now {}%", scaleDownLoadThreshold * 100);
+            } else {
+                log.info("CPU load to trigger scale down remains {}%", scaleDownLoadThreshold * 100);
             }
         }
 
-        if (Tools.get(properties, MONITORING_PERIOD_MS) != null) {
+        if (Tools.isPropertyEnabled(properties, MONITORING_PERIOD_MS) != null) {
             int previousMonitoringPeriodMilli = monitoringPeriodMilli;
             monitoringPeriodMilli = Tools.getIntegerProperty(
                 properties, MONITORING_PERIOD_MS, DEFAULT_MONITORING_PERIOD_MS);
@@ -939,8 +942,11 @@ public final class OrchestrationManager implements OrchestrationService {
                 monitoringPeriodMilli = previousMonitoringPeriodMilli;
                 log.info(
                     "Not configured due to invalid value. Monitoring frequency remains {} ms", monitoringPeriodMilli);
-            } else {
+            } else if (monitoringPeriodMilli != previousMonitoringPeriodMilli) {
                 log.info("Configured. Monitoring frequency is now {} ms", monitoringPeriodMilli);
+            }
+            else {
+                log.info("Monitoring frequency remains {} ms", monitoringPeriodMilli);
             }
         }
     }
