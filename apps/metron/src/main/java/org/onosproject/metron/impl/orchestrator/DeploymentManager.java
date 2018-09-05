@@ -151,7 +151,7 @@ public final class DeploymentManager implements DeploymentService {
     private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
     private static final boolean DEF_HW_OFFLOADING = true;
     @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
-             label = "Enable the HW offloading features of Metron; default is true")
+             label = "Enable the hardware offloading features of Metron; default is true")
     private boolean enableHwOffloading = DEF_HW_OFFLOADING;
 
     /**
@@ -1724,33 +1724,28 @@ public final class DeploymentManager implements DeploymentService {
 
         Dictionary<?, ?> properties = context.getProperties();
 
-        // Read the new value
-        Boolean newEnableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING);
+        // Property for hardware offloading is given
+        if (Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING) != null) {
+            boolean previousEnableHwOffloading = this.enableHwOffloading;
+            this.enableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING, DEF_HW_OFFLOADING);
 
-        // Not actually given, fall back to default
-        if (newEnableHwOffloading == null) {
-            this.enableHwOffloading = DEF_HW_OFFLOADING;
-            log.info("[{}] Not configured. Hardware offloading remains: {}",
-                label(), this.enableHwOffloading ? "enabled" : "disabled");
-        } else {
-            this.enableHwOffloading = newEnableHwOffloading;
-            log.info("[{}] Configured! Hardware offloading is now: {}",
-                label(), this.enableHwOffloading ? "enabled" : "disabled");
+            if (this.enableHwOffloading != previousEnableHwOffloading) {
+                log.info("Configured! Hardware offloading is now {}", this.enableHwOffloading ? "enabled" : "disabled");
+            } else {
+                log.info("Hardware offloading remains {}", this.enableHwOffloading ? "enabled" : "disabled");
+            }
         }
 
-        // Read the new value
-        Boolean newEnableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE);
+        // Property for autoscale is given
+        if (Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE) != null) {
+            boolean previousEnableAutoScale = this.enableAutoScale;
+            this.enableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE, DEF_AUTOSCALE);
 
-        // Not actually given, fall back to default
-        if (newEnableAutoScale == null) {
-            this.enableHwOffloading = DEF_AUTOSCALE;
-            log.info("[{}] Not configured. Autoscale remains: {}",
-                label(), this.enableAutoScale ? "enabled" : "disabled");
-        } else {
-            this.enableAutoScale = newEnableAutoScale;
-            log.info("[{}] Configured! Autoscale is now {}",
-                label(), this.enableAutoScale ? "enabled" : "disabled"
-            );
+            if (this.enableAutoScale != previousEnableAutoScale) {
+                log.info("Configured! Autoscale is now {}", this.enableAutoScale ? "enabled" : "disabled");
+            } else {
+                log.info("Autoscale remains {}", this.enableAutoScale ? "enabled" : "disabled");
+            }
         }
     }
 

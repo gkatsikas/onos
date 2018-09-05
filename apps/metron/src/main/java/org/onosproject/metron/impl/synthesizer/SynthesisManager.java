@@ -136,11 +136,13 @@ public final class SynthesisManager
      * service chain will be translated into a highly optimized
      * equivalent, before it becomes READY.
      */
+    private static final String ENABLE_SYNTHESIZER = "enableSynthesizer";
+    private static final boolean DEF_ENABLE_SYNTHESIZER = true;
     @Property(
-        name = "enableSynthesizer", boolValue = true,
-        label = "Enable the synthesizer component; default is true"
+        name = ENABLE_SYNTHESIZER, boolValue = DEF_ENABLE_SYNTHESIZER,
+        label = "Enable Metron's synthesizer component (i.e., SNF); default is true"
     )
-    private boolean enableSynthesizer = true;
+    private boolean enableSynthesizer = DEF_ENABLE_SYNTHESIZER;
 
     /**
      * The Metron Synthesizer requires the ONOS core service to register
@@ -765,23 +767,16 @@ public final class SynthesisManager
         // Before the change
         boolean previousState = this.enableSynthesizer;
 
-        // Read the given value
-        Boolean enableSynthesizerGiven =
-                Tools.isPropertyEnabled(properties, "enableSynthesizer");
-
-        // Not actually given
-        if (enableSynthesizerGiven == null) {
-            log.info(
-                "Synthesizer is not configured; " +
-                 "using current value of {}", this.enableSynthesizer
-            );
-        } else {
-            checkArgument(enableSynthesizerGiven, "Synthesizer cannot be currently disabled!");
-            this.enableSynthesizer = enableSynthesizerGiven;
-            log.info(
-                "Configured! Synthesizer state is {}",
-                this.enableSynthesizer ? "enabled" : "disabled"
-            );
+        // Property for synthesizer is given
+        if (Tools.isPropertyEnabled(properties, ENABLE_SYNTHESIZER) != null) {
+            this.enableSynthesizer = Tools.isPropertyEnabled(properties, ENABLE_SYNTHESIZER, DEF_ENABLE_SYNTHESIZER);
+            // TODO: Allow the user to disable it!
+            checkArgument(this.enableSynthesizer, "Synthesizer cannot be currently disabled. Sorry!");
+            if (this.enableSynthesizer != previousState) {
+                log.info("Configured! Synthesizer state is {}", this.enableSynthesizer ? "enabled" : "disabled");
+            } else {
+                log.info("Synthesizer state remains {}", this.enableSynthesizer ? "enabled" : "disabled");
+            }
         }
 
         // After the change (if any)
