@@ -103,14 +103,35 @@
                 $scope.labels = labels;
                 $scope.data = data;
 
-                // Auto-scale y-axis
                 $scope.options = {
-                    scaleOverride : true,
-                    scaleSteps : 10,
-                    scaleStepWidth : ceil(max) / 10,
-                    scaleStartValue : 0,
-                    scaleFontSize : 18
+                    scales: {
+                        yAxes: [{
+                            type: 'linear',
+                            position: 'left',
+                            id: 'y-axis-sc-stats-latency',
+                            ticks: {
+                                beginAtZero: true,
+                                fontSize: 28,
+                            },
+                            scaleLabel: {
+                                display: true,
+                                labelString: 'Latency (ms)',
+                                fontSize: 28,
+                            }
+                        }],
+                        xAxes: [{
+                            id: 'x-axis-servers-sc-stats',
+                            ticks: {
+                                fontSize: 28,
+                            },
+                            scaleLabel: {
+                                display: true,
+                                fontSize: 28,
+                            }
+                        }]
+                    }
                 };
+
                 $scope.onClick = function (points, evt) {
                     var label = labels[points[0]._index];
                     if (label) {
@@ -129,7 +150,7 @@
             });
 
             $scope.series = [
-                'Synthesis (us)',  'Deployment (us)', 'Monitoring (us)', 'Reconfiguration (us)'
+                'Synthesis',  'Deployment', 'Monitoring', 'Reconfiguration'
             ];
             $scope.labels = labels;
             $scope.data = data;
@@ -140,8 +161,6 @@
                 '#46BFBD',
                 '#97BBCD',
                 '#FDB45C'
-                // '#4D5360',
-                // '#8c4f9f'
             ];
             Chart.defaults.global.colours = $scope.chartColors;
 
