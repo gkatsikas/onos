@@ -66,8 +66,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
     private static final String SERVICE_CHAIN_IDS = "serviceChainIds";
 
     // Conversions
-    private static final float NS_TO_US = (float) Math.pow(10, 3);
-    private static final float MS_TO_US = (float) Math.pow(10, 3);
+    private static final float NS_TO_MS = (float) Math.pow(10, 6);
 
     // Data series
     private static final int NUM_OF_DATA_POINTS = 30;
@@ -78,9 +77,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
 
     @Override
     protected Collection<RequestHandler> createRequestHandlers() {
-        return ImmutableSet.of(
-                new ControlMessageRequest()
-        );
+        return ImmutableSet.of(new ControlMessageRequest());
     }
 
     private final class ControlMessageRequest extends ChartRequestHandler {
@@ -145,7 +142,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
                     // Memory where the data will be stored
                     Map<String, Object> local = Maps.newHashMap();
 
-                    // Report the time statistics
+                    // Report the time statistics in milliseconds
                     local.put(StringUtils.lowerCase(SYNTHESIS_TIME.name()),  new Float(synthesisTime));
                     local.put(StringUtils.lowerCase(DEPLOYMENT_TIME.name()), new Float(deploymentTime));
                     local.put(StringUtils.lowerCase(MONITORING_TIME.name()), new Float(monitoringTime));
@@ -173,8 +170,8 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
             // Consistency check
             checkArgument(synthesisTime > 0, "Invalid synthesis time for service chain: " + scId);
 
-            // Converted to microseconds
-            return synthesisTime / NS_TO_US;
+            // Converted to milliseconds
+            return synthesisTime / NS_TO_MS;
         }
 
         /**
@@ -205,8 +202,8 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
             // Consistency check
             checkArgument(deploymentTime > 0, "Invalid deployment time for service chain: " + scId);
 
-            // Total delay coverted to microseconds
-            return deploymentTime / NS_TO_US;
+            // Total delay coverted to milliseconds
+            return deploymentTime / NS_TO_MS;
         }
 
         /**
@@ -227,14 +224,13 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
                 return monitoringTime;
             }
 
-            // This delay is reported in milliseconds
+            // This delay is already reported in milliseconds
             monitoringTime += this.getListDelayAverageAcrossTrafficClasses(tcMonTime, (float) 1);
 
             // Consistency check
             checkArgument(monitoringTime > 0, "Invalid monitoring time for service chain: " + scId);
 
-            // Converted to microseconds
-            return monitoringTime * MS_TO_US;
+            return monitoringTime;
         }
 
         /**
@@ -261,8 +257,8 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
             // Consistency check. This time can be zero if no load balancing decision has been made
             checkArgument(reconfigurationTime >= 0, "Invalid reconfiguration time for service chain: " + scId);
 
-            // Total delay coverted to microseconds
-            return reconfigurationTime / NS_TO_US;
+            // Total delay coverted to milliseconds
+            return reconfigurationTime / NS_TO_MS;
         }
 
         /**
@@ -292,7 +288,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
             // Monitoring time
             Map<URI, LruCache<Float>> tcMonTime =
                 monitoringService.monitoringDelayOfServiceChain(scId);
-            float[] monDelays = this.getDelayArrayAcrossTrafficClasses(tcMonTime, NUM_OF_DATA_POINTS, MS_TO_US);
+            float[] monDelays = this.getDelayArrayAcrossTrafficClasses(tcMonTime, NUM_OF_DATA_POINTS, 1);
             float[] filledMonDelays = fillData(monDelays, NUM_OF_DATA_POINTS);
             data.put(MONITORING_TIME, ArrayUtils.toObject(filledMonDelays));
 
@@ -304,7 +300,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
                 List<Float> tcEntries = tcGlobalReconfTime.getLastValues(NUM_OF_DATA_POINTS);
                 int index = NUM_OF_DATA_POINTS - 1;
                 for (int i = tcEntries.size() - 1; i >= 0; i--) {
-                    globReconfDelays[index] = tcEntries.get(i).floatValue() / NS_TO_US;
+                    globReconfDelays[index] = tcEntries.get(i).floatValue() / NS_TO_MS;
                     index--;
                 }
             }
@@ -315,7 +311,7 @@ public class ServiceChainStatsViewMessageHandler extends UiMessageHandler {
                 monitoringService.enforcementDelayOfServiceChain(scId);
             if (tcEnforcTime != null) {
                 float[] tcEnfDelays = this.getDelayArrayAcrossTrafficClasses(
-                    tcEnforcTime, NUM_OF_DATA_POINTS, 1 / NS_TO_US
+                    tcEnforcTime, NUM_OF_DATA_POINTS, 1
                 );
                 enfDelays = fillData(tcEnfDelays, NUM_OF_DATA_POINTS);
             } else {

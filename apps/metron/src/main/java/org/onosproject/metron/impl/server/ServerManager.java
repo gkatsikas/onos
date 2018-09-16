@@ -662,7 +662,7 @@ public class ServerManager implements ServerService {
         monitoringService.updateAgentReconfigurationDelayOfTrafficClass(
             scId,
             tcId,
-            (float) trafficClassStats.timingStatistics().autoscaleTime()
+            (float) trafficClassStats.timingStatistics().autoScaleTime()
         );
 
         log.debug("[{}] {}", label(), trafficClassStats.toString());
