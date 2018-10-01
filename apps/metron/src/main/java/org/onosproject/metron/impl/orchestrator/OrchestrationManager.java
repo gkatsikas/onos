@@ -944,8 +944,7 @@ public final class OrchestrationManager implements OrchestrationService {
                     "Not configured due to invalid value. Monitoring frequency remains {} ms", monitoringPeriodMilli);
             } else if (monitoringPeriodMilli != previousMonitoringPeriodMilli) {
                 log.info("Configured. Monitoring frequency is now {} ms", monitoringPeriodMilli);
-            }
-            else {
+            } else {
                 log.info("Monitoring frequency remains {} ms", monitoringPeriodMilli);
             }
         }
