@@ -193,10 +193,10 @@ public final class OrchestrationManager implements OrchestrationService {
 
     @Activate
     protected void activate() {
-        // Register the Metron Orchestrator with the core.
+        // Register the Metron Orchestrator with the core
         this.appId = coreService.registerApplication(APP_NAME);
 
-        // Catch events coming from the service chain manager.
+        // Catch events coming from the service chain manager
         serviceChainService.addListener(serviceChainListener);
 
         // Configuration service is up
@@ -212,7 +212,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
     @Deactivate
     protected void deactivate() {
-        // Remove the listener for the events coming from the service chain manager.
+        // Remove the listener for the events coming from the service chain manager
         serviceChainService.removeListener(serviceChainListener);
 
         // Disable configuration service
@@ -423,9 +423,6 @@ public final class OrchestrationManager implements OrchestrationService {
         ServiceChainId scId = sc.id();
         boolean autoScale = deployerService.hasAutoScale(scId, sc.autoScale());
         boolean withLimitedReconfiguration = sc.isSoftwareBased() ? true : false;
-
-        // Fetch the dataplane tree of this service chain
-        NfvDataplaneTreeInterface tree = serviceChainService.runnableServiceChainWithTrafficClass(scId, tcId);
 
         // Get the list of CPU cores with non-zero load
         Collection<CpuStatistics> cpuStats = stats.cpuStatisticsAll();

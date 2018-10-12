@@ -212,13 +212,13 @@ public final class DeploymentManager implements DeploymentService {
 
     @Activate
     protected void activate(ComponentContext context) {
-        // Register the Metron Deployer with the core.
+        // Register the Metron Deployer with the core
         this.appId = coreService.registerApplication(APP_NAME);
 
         // Register the component configuration
         cfgService.registerProperties(getClass());
 
-        // Catch events coming from the service chain manager.
+        // Catch events coming from the service chain manager
         serviceChainService.addListener(serviceChainListener);
 
         log.info("[{}] Started", label());
@@ -229,7 +229,7 @@ public final class DeploymentManager implements DeploymentService {
         // Unregister the component configuration
         cfgService.unregisterProperties(getClass(), false);
 
-        // Remove the listener for the events coming from the service chain manager.
+        // Remove the listener for the events coming from the service chain manager
         serviceChainService.removeListener(serviceChainListener);
 
         // Take care of the thread pool

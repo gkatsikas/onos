@@ -88,7 +88,7 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
      */
     private Map<DeviceId, Map<Integer, String>> configuration;
     /**
-     * Per-device per NIC Rx filter methods (MAC, VLAN, MPLS, etc.).
+     * Per-device per NIC Rx filter methods (Rule-based, MAC, VLAN, MPLS, etc.).
      */
     private Map<DeviceId, Map<String, RxFilter>> rxFilterMethodsMap;
     /**
