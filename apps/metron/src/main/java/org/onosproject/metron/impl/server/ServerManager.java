@@ -111,7 +111,7 @@ public class ServerManager implements ServerService {
     /**
      * Resources to be asked/passed from/to the NFV agent.
      */
-    private static final String PARAM_TITLE                = "servicechains";
+    private static final String PARAM_TITLE                = "serviceChains";
 
     private static final String PARAM_MAX_CPUS             = "maxCpus";
     private static final String PARAM_AUTOSCALE            = "autoScale";

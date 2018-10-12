@@ -102,7 +102,8 @@ public final class TagManager implements TagService {
     private ApplicationId appId = null;
 
     /**
-     * Associates each group of traffic classes with a tagging mechanism (e.g., MPLS, VLAN, or MAC).
+     * Associates each group of traffic classes with a tagging mechanism
+     * (e.g., Rule-based, MPLS, VLAN, or MAC).
      */
     private Map<URI, RxFilter> taggingMechanisms = null;
 
@@ -139,7 +140,7 @@ public final class TagManager implements TagService {
 
     @Activate
     protected void activate() {
-        // Register the Tag Manager with the core.
+        // Register the Tag Manager with the core
         this.appId = coreService.registerApplication(APP_NAME);
 
         log.info("[{}] Started", this.label());
