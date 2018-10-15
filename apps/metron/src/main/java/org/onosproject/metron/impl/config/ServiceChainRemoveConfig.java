@@ -51,7 +51,7 @@ public final class ServiceChainRemoveConfig
     /**
      * A service chain is defined using this attribute.
      */
-    private static final String SC_TITLE = "servicechains";
+    private static final String SC_TITLE = "serviceChains";
 
     /**
      * Each service chain should have

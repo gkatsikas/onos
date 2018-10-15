@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"       : "metron-srv-rss-singleport-fw-3rules-napt",
                         "type"       : "generic",

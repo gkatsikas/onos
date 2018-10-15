@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"       : "fw-napt",
                         "type"       : "generic",

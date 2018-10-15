@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"       : "metron-srv-flowdir-singleport-fw-3rules-snort",
                         "type"       : "generic",
