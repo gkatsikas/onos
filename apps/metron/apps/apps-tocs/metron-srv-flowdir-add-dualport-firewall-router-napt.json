@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"       : "metron-srv-flowdir-dualport-firewall-router-napt",
                         "type"       : "generic",

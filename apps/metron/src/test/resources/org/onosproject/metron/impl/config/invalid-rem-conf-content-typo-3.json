@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "remove" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"     : "fw-10rules-hw",
                         "type"     : "generic",

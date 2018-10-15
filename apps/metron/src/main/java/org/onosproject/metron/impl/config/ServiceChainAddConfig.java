@@ -104,7 +104,7 @@ public final class ServiceChainAddConfig
     /**
      * A service chain is defined using this attribute.
      */
-    private static final String SC_TITLE      = "servicechains";
+    private static final String SC_TITLE      = "serviceChains";
 
     /**
      * Each service chain should have

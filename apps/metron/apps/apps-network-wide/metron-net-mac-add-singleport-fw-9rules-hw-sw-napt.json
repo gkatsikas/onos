@@ -2,7 +2,7 @@
     "apps" : {
         "org.onosproject.metron.apps" : {
             "add" : {
-                "servicechains" : [
+                "serviceChains" : [
                     {
                         "name"       : "metron-net-mac-singleport-fw-9rules-hw-sw-napt",
                         "type"       : "generic",
