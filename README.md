@@ -55,7 +55,7 @@ Service Chain Specification
 Metron service chains are encoded as JSON files that can be sent to the Metron controller using ONOS's northbound REST API.
 Metron parses the input JSON configuration and translates it to packet processing blocks.
 Depending on the operator's needs, Metron allows the following deployment types:
-  
+
   * Network-wide deployment, where ONOS uses a combination of programmable switches and servers. In this case Metron offloads traffic classification into OpenFlow switches and tags packets in a way that a server's programmable NICs can understand, thus dispatch to the correct CPU core for further stateful processing.
 Example network-wide applications can be found [here][metron-net-apps].
 
