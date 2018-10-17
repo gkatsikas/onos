@@ -13,14 +13,22 @@ These drivers are now part of the [official ONOS distribution][onos-master] (sin
 This repository (mirrors [ONOS master][onos-master]) provides the source code of ONOS extended with Metron controller's drivers for commodity servers.
 
 
-Setup
+Setup ONOS
 ----
 Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 
-Build & Deploy
+Build ONOS with Bazel
 ----
-To build and deploy ONOS, do:
+To build ONOS, do:
+```bash
+cd $ONOS_ROOT
+bazel build onos
+```
+
+
+Deploy ONOS with Bazel
+----
 ```bash
 $ bazel run onos-local [-- [clean] [debug]]
 ```
