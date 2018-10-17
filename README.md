@@ -216,12 +216,11 @@ The ONOS README is available [here][onos-readme].
 [onos]: https://onosproject.org/
 [metron-driver]: https://github.com/opennetworkinglab/onos/tree/master/drivers/server
 [metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
-[metron-apps]: apps/metron/apps/
-[metron-server-apps]: apps/metron/apps/apps-server-level/
-[metron-net-apps]: apps/metron/apps/apps-network-wide/
-[metron-example-ipclassifier]: apps/metron/apps/firewall/3rules-flow-dir.json
+[metron-server-apps]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/apps-server-level/
+[metron-net-apps]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/apps-network-wide/
+[metron-example-ipclassifier]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/firewall/3rules-flow-dir.json
 [onos-master]: https://github.com/opennetworkinglab/onos
 [fastclick]: https://github.com/tbarbette/fastclick
 [dpdk]: https://dpdk.org/
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
-[onos-readme]: README.onos.md
+[onos-readme]: https://bitbucket.org/nslab/onos/src/metron-ctrl/README.onos.md
