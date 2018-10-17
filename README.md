@@ -57,7 +57,6 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 	numpages     = {16},
 	url          = {https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf},
 	address      = {Renton, WA},
-	acmid        = {},
 	publisher    = {USENIX Association}
 }
 ```
@@ -65,7 +64,7 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 
 Getting help
 ----
-Contact georgios.katsikas at ri.se if you encounter any problems with Metron.
+Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
 
 The ONOS README is available [here][onos-readme].
 
