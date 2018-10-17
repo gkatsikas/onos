@@ -13,7 +13,7 @@ These drivers are now part of the [official ONOS distribution][onos-master] (sin
 This repository provides the source code of ONOS extended with the Metron controller as an overlay application.
 
 
-Setup
+Setup ONOS
 ----
 Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
@@ -178,7 +178,8 @@ To remove all runnning service chains, use the simple JSON configuration below:
 
 Deploy a Metron service chain
 ----
-To deploy an example server-level Firewall --> NAPT service chain do:
+Once an instance of the ONOS controller has been deployed, the Metron controller application has started, and a Metron agent has been launched, we can deploy a service chain.
+For example, to deploy a server-level Firewall->NAPT service chain do:
 ```bash
 vi $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json.json according to your needs (e.g., topology is important to change)
 onos-netcfg <ONOS CTRL IP> $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json.json
