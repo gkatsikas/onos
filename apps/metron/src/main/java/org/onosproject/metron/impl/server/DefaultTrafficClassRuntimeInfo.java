@@ -29,6 +29,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
+import org.onosproject.store.service.WallClockTimestamp;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,11 +75,12 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
     /**
      * Per-device CPU cores occupied by the traffic class.
      */
-    private Map<DeviceId, Integer> cores;
+    private Map<DeviceId, Set<Integer>> cores;
     /**
      * Per-device set of NIC IDs used by the traffic class.
      */
     private Map<DeviceId, Set<String>> nics;
+
     /**
      * Per-device, per-core running configuration type of this traffic class.
      */
@@ -95,6 +97,8 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
      * Per-device set of Rx filter values (i.e., tags).
      */
     private Map<DeviceId, Map<String, Set<RxFilterValue>>> rxFiltersMap;
+
+    private WallClockTimestamp lastImbalanceCheck = new WallClockTimestamp();
 
     public DefaultTrafficClassRuntimeInfo(ServiceChainId scId, URI tcId, String nic, int maxCpus) {
         Preconditions.checkNotNull(
@@ -115,7 +119,7 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
         this.primaryNic         = nic;
         this.maxNumberOfCpus    = maxCpus;
         this.devices            = Sets.<DeviceId>newConcurrentHashSet();
-        this.cores              = new ConcurrentHashMap<DeviceId, Integer>();
+        this.cores              = new ConcurrentHashMap<DeviceId, Set<Integer>>();
         this.nics               = new ConcurrentHashMap<DeviceId, Set<String>>();
         this.configurationType  = new ConcurrentHashMap<DeviceId, Map<Integer, String>>();
         this.configuration      = new ConcurrentHashMap<DeviceId, Map<Integer, String>>();
@@ -146,7 +150,7 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
         this.primaryNic         = nic;
         this.maxNumberOfCpus    = maxCpus;
         this.devices            = devices;
-        this.cores              = new ConcurrentHashMap<DeviceId, Integer>();
+        this.cores              = new ConcurrentHashMap<DeviceId, Set<Integer>>();
         this.nics               = new ConcurrentHashMap<DeviceId, Set<String>>();
         this.configurationType  = new ConcurrentHashMap<DeviceId, Map<Integer, String>>();
         this.configuration      = new ConcurrentHashMap<DeviceId, Map<Integer, String>>();
@@ -165,7 +169,7 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
             String         nic,
             int            maxCpus,
             Set<DeviceId>  devices,
-            Map<DeviceId, Integer> cores,
+            Map<DeviceId, Set<Integer>> cores,
             Map<DeviceId, Set<String>> nics,
             Map<DeviceId, Map<Integer, String>> configurationType,
             Map<DeviceId, Map<Integer, String>> configuration,
@@ -188,6 +192,9 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
         );
         Preconditions.checkNotNull(
             cores, "The number of cores of traffic class " + tcId + " cannot be NULL"
+        );
+        Preconditions.checkArgument(
+                cores.size() > 0, "The number of cores of traffic class " + tcId + " cannot be NULL"
         );
         Preconditions.checkNotNull(
             nics, "The set of NICs of traffic class " + tcId + " cannot be NULL"
@@ -260,28 +267,21 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
     }
 
     @Override
-    public Map<DeviceId, Integer> cores() {
-        return this.cores;
-    }
-
-    @Override
-    public int coresOfDevice(DeviceId deviceId) {
+    public Set<Integer> coresOfDevice(DeviceId deviceId) {
         Preconditions.checkNotNull(
             deviceId, "Cannot get the number of cores of a NULL device for traffic class " + this.trafficClassId
         );
 
-        return this.cores.get(deviceId).intValue();
+        return this.cores.get(deviceId);
     }
 
     @Override
-    public void setCoresOfDevice(DeviceId deviceId, int cpus) {
+    public void setCoresOfDevice(DeviceId deviceId, Set<Integer> cpusMap) {
         Preconditions.checkNotNull(
             deviceId, "Cannot set the number of cores of a NULL device for traffic class " + this.trafficClassId
         );
 
-        Preconditions.checkArgument(cpus >= 0, "Number of CPU cores must not be negative");
-
-        this.cores.put(deviceId, cpus);
+        this.cores.put(deviceId, cpusMap);
     }
 
     @Override
@@ -629,8 +629,16 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
             deviceId, "Cannot query the CPUs of a NULL device of traffic class " + this.trafficClassId
         );
 
-        return this.coresOfDevice(deviceId);
+        return this.coresOfDevice(deviceId).size();
     }
+
+
+    @Override
+    public Map<DeviceId, Set<Integer>> cores() {
+        return this.cores;
+    }
+
+
 
     @Override
     public TrafficClassRuntimeInfo update(TrafficClassRuntimeInfo other) {
@@ -643,11 +651,11 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
         }
 
         // Update CPU cores
-        for (Map.Entry<DeviceId, Integer> coreMap : other.cores().entrySet()) {
+        for (Map.Entry<DeviceId, Set<Integer>> coreMap : other.cores().entrySet()) {
             DeviceId dev = coreMap.getKey();
-            int cores = coreMap.getValue().intValue();
+            Set<Integer> cores = coreMap.getValue();
 
-            if (this.coresOfDevice(dev) < other.coresOfDevice(dev)) {
+            if (this.coresOfDevice(dev) != other.coresOfDevice(dev)) {
                 this.setCoresOfDevice(dev, cores);
                 log.info("Cores number {} updated", cores);
             }
@@ -717,6 +725,16 @@ public class DefaultTrafficClassRuntimeInfo implements TrafficClassRuntimeInfo {
         }
 
         return this;
+    }
+
+    @Override
+    public WallClockTimestamp lastImbalanceCheck() {
+        return lastImbalanceCheck;
+    }
+
+    @Override
+    public void imbalanceCheckDone() {
+        lastImbalanceCheck = new WallClockTimestamp();
     }
 
     @Override

@@ -872,26 +872,32 @@ public class TrafficClass implements TrafficClassInterface {
         // Ethernet configuration
         } else if (blockClass == ProcessingBlockClass.ETHER_ENCAP) {
             EtherEncap etherEncapBlock = (EtherEncap) block.processor();
-            this.ethernetEncapConfiguration = etherEncapBlock.fullConfiguration();
+            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherEncapBlock.srcMacStr() +
+                                                         ", DST " + etherEncapBlock.dstMacStr() + ")";
         } else if (blockClass == ProcessingBlockClass.STORE_ETHER_ADDRESS) {
             StoreEtherAddress storeEtherAddrBlock = (StoreEtherAddress) block.processor();
-            this.ethernetEncapConfiguration = storeEtherAddrBlock.fullConfiguration();
+            this.ethernetEncapConfiguration = "StoreEtherAddress(" + storeEtherAddrBlock.macStr() + ", " +
+                                                                     storeEtherAddrBlock.offset() + ")";
         } else if (blockClass == ProcessingBlockClass.ETHER_MIRROR) {
-            EtherMirror etherMirrorBlock = (EtherMirror) block.processor();
-            this.ethernetEncapConfiguration = etherMirrorBlock.fullConfiguration();
+            this.ethernetEncapConfiguration = "EtherMirror()";
         } else if (blockClass == ProcessingBlockClass.ETHER_REWRITE) {
             EtherRewrite etherRwBlock = (EtherRewrite) block.processor();
-            this.ethernetEncapConfiguration = etherRwBlock.fullConfiguration();
+            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherRwBlock.srcMacStr() +
+                                                         ", DST " + etherRwBlock.dstMacStr() + ")";
         // Support for Blackbox NFs
         } else if (blockClass == ProcessingBlockClass.TO_BLACKBOX_DEVICE) {
             ToBlackboxDevice toBlackboxBlock = (ToBlackboxDevice) block.processor();
             FromBlackboxDevice fromBlackboxBlock = toBlackboxBlock.peerDevice();
-            this.blackboxConfiguration = fromBlackboxBlock.fullConfiguration();
-        // Snort is specific Blackbox device
+            this.blackboxConfiguration = FromBlackboxDevice.EXEC + " " + fromBlackboxBlock.executable() + ", " +
+                                         FromBlackboxDevice.ARGS + " " + fromBlackboxBlock.arguments()  + "";
         } else if (blockClass == ProcessingBlockClass.TO_SNORT_DEVICE) {
             ToSnortDevice toSnortBlock = (ToSnortDevice) block.processor();
             FromSnortDevice fromSnortBlock = (FromSnortDevice) toSnortBlock.peerDevice();
-            this.blackboxConfiguration = fromSnortBlock.fullConfiguration();
+            this.blackboxConfiguration = FromSnortDevice.EXEC + " " + fromSnortBlock.executable() + ", " +
+                                         FromSnortDevice.ARGS + " " + fromSnortBlock.arguments()  + ", " +
+                                         FromSnortDevice.FROM_RING + " " + fromSnortBlock.fromRing() + ", " +
+                                         FromSnortDevice.TO_RING   + " " + fromSnortBlock.toRing()   + ", " +
+                                         FromSnortDevice.TO_REVERSE_RING + " " + fromSnortBlock.toReverseRing();
         }
 
         // Last element of the chain -> no children
@@ -1517,7 +1523,7 @@ public class TrafficClass implements TrafficClassInterface {
 
             long cpuCoreId = queueIndex;
             if (rxFilter == RxFilter.FLOW) {
-                cpuCoreId = ((FlowRxFilterValue) rxFilterValue).value();
+                cpuCoreId = rxFilterValue.cpuId();
             }
 
             String nicName = this.inputInterface();

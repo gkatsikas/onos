@@ -17,6 +17,7 @@
 package org.onosproject.metron.impl.dataplane;
 
 // Metron libraries
+
 import org.onosproject.metron.api.common.Constants;
 import org.onosproject.metron.api.classification.trafficclass.TrafficClassInterface;
 import org.onosproject.metron.api.dataplane.TagService;
@@ -57,11 +58,6 @@ import java.util.concurrent.ConcurrentSkipListMap;
 
 import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.onosproject.metron.api.dataplane.TagService.LB_OK;
-import static org.onosproject.metron.api.dataplane.TagService.LB_INVALID_GROUP;
-import static org.onosproject.metron.api.dataplane.TagService.LB_NO_GROUP_CAN_BE_SPLIT;
-import static org.onosproject.metron.api.dataplane.TagService.LB_NO_GROUPS_CAN_BE_MERGED;
-import static org.onosproject.metron.api.dataplane.TagService.LB_NO_AVAILABLE_TAG;
 
 /**
  * Manages the runtime association of traffic classes to tags
@@ -73,15 +69,15 @@ public final class TagManager implements TagService {
     private static final Logger log = getLogger(TagManager.class);
 
     public static final Map<Integer, String> LB_STATUS_MAP = Collections.unmodifiableMap(
-        new ConcurrentHashMap<Integer, String>() {
-            {
-                put(new Integer(LB_OK), "Successful load balancing for group of traffic classes");
-                put(new Integer(LB_INVALID_GROUP), "No tags for group of traffic classes");
-                put(new Integer(LB_NO_GROUP_CAN_BE_SPLIT), "No splittable group of traffic classes");
-                put(new Integer(LB_NO_GROUPS_CAN_BE_MERGED), "No traffic classes subgroups to merge");
-                put(new Integer(LB_NO_AVAILABLE_TAG), "Failed to allocate a new tag for traffic class group");
+            new ConcurrentHashMap<Integer, String>() {
+                {
+                    put(new Integer(LB_OK), "Successful load balancing for group of traffic classes");
+                    put(new Integer(LB_INVALID_GROUP), "No tags for group of traffic classes");
+                    put(new Integer(LB_NO_GROUP_CAN_BE_SPLIT), "No splittable group of traffic classes");
+                    put(new Integer(LB_NO_GROUPS_CAN_BE_MERGED), "No traffic classes subgroups to merge");
+                    put(new Integer(LB_NO_AVAILABLE_TAG), "Failed to allocate a new tag for traffic class group");
+                }
             }
-        }
     );
 
     // Currently static de/inflation factors are supported
@@ -141,7 +137,7 @@ public final class TagManager implements TagService {
         // Register the Tag Manager with the core
         this.appId = coreService.registerApplication(APP_NAME);
 
-        log.info("[{}] Started", this.label());
+        log.info("[{}] Started", label());
     }
 
     @Deactivate
@@ -152,7 +148,7 @@ public final class TagManager implements TagService {
         this.tagMap.clear();
         this.lbStatus.clear();
 
-        log.info("[{}] Stopped", this.label());
+        log.info("[{}] Stopped", label());
     }
 
     /********************************** Tagging Mechanisms. ********************************/
@@ -319,10 +315,10 @@ public final class TagManager implements TagService {
 
     @Override
     public void establishTaggingForTrafficClassGroup(
-        URI                        tcGroupId,
-        Set<TrafficClassInterface> tcGroup,
-        RxFilter                   rxFilter,
-        Set<RxFilterValue>         rxFilterValues) {
+            URI tcGroupId,
+            Set<TrafficClassInterface> tcGroup,
+            RxFilter rxFilter,
+            Set<RxFilterValue> rxFilterValues) {
         // Inform the tag manager about the the tagging mechanism of this group of traffic classes
         this.setTaggingMechanismOfTrafficClassGroup(tcGroupId, rxFilter);
 
@@ -332,8 +328,8 @@ public final class TagManager implements TagService {
         // Allocate a tag for this group of traffic classes
         RxFilterValue tag = this.getFirstUnusedTagOfTrafficClassGroup(tcGroupId);
         checkNotNull(
-            tag,
-            "[" + this.label() + "] Failed to allocate a new tag for traffic class group: " + tcGroupId
+                tag,
+                "[" + label() + "] Failed to allocate a new tag for traffic class group: " + tcGroupId
         );
 
         // Map this group of traffic classes to this tag
@@ -343,12 +339,12 @@ public final class TagManager implements TagService {
     /*********************************** Load Balancing. ***********************************/
 
     @Override
-    public Pair<RxFilterValue, Set<TrafficClassInterface>> deflateTrafficClassGroup(URI tcGroupId) {
+    public Pair<RxFilterValue, Set<TrafficClassInterface>> deflateTrafficClassGroup(URI tcGroupId, int overloadedCore) {
         Map<RxFilterValue, Set<TrafficClassInterface>> groupTagMap = this.tagMapOfTrafficClassGroup(tcGroupId);
         if (groupTagMap == null) {
             this.setLbStatusOfTrafficClassGroup(
-                tcGroupId,
-                this.getLoadBalancingReport(tcGroupId, LB_INVALID_GROUP)
+                    tcGroupId,
+                    this.getLoadBalancingReport(tcGroupId, LB_INVALID_GROUP)
             );
             return null;
         }
@@ -359,33 +355,34 @@ public final class TagManager implements TagService {
         int tcGroupSize = -1;
 
         for (Map.Entry<RxFilterValue, Set<TrafficClassInterface>> entry : groupTagMap.entrySet()) {
+            if (entry.getKey().cpuId() != overloadedCore)
+                continue;
+
             tcGroupSize = entry.getValue().size();
 
             // It is important to find a splittable group that has more than one traffic classes
             if (tcGroupSize < MIN_GROUP_SIZE_TO_DEFLATE) {
-                log.info("[{}] \t Not enough traffic classes to perform deflation", this.label());
+                log.info("[{}] \t Not enough traffic classes to perform deflation", label());
                 continue;
             }
 
             tag = entry.getKey();
             tcGroup = entry.getValue();
 
-            log.info("[{}] \t Deflating group {} with {} TCs", this.label(), tcGroupId, tcGroupSize);
-
-            break;
+            log.info("[{}] \t Deflating group {} with {} TCs", label(), tcGroupId, tcGroupSize);
         }
 
         // Problem
         if ((tcGroup == null) || (tag == null)) {
             this.setLbStatusOfTrafficClassGroup(
-                tcGroupId,
-                this.getLoadBalancingReport(tcGroupId, LB_NO_GROUP_CAN_BE_SPLIT)
+                    tcGroupId,
+                    this.getLoadBalancingReport(tcGroupId, LB_NO_GROUP_CAN_BE_SPLIT)
             );
             return null;
         }
 
         // Here we will store the new group of traffic classes
-        Set<TrafficClassInterface> newTcGroup = Sets.<TrafficClassInterface>newConcurrentHashSet();
+        Set<TrafficClassInterface> newTcGroup = Sets.newConcurrentHashSet();
 
         int i = 0;
         Iterator<TrafficClassInterface> tcIterator = tcGroup.iterator();
@@ -418,14 +415,14 @@ public final class TagManager implements TagService {
 
         // Update the size of the initial group
         tcGroupSize = tcGroup.size();
-        int newTcGroupSize =  newTcGroup.size();
+        int newTcGroupSize = newTcGroup.size();
 
         // Give me a new available tag for this new group of traffic classes.
         RxFilterValue newTag = this.getFirstUnusedTagOfTrafficClassGroup(tcGroupId);
         if (newTag == null) {
             this.setLbStatusOfTrafficClassGroup(
-                tcGroupId,
-                this.getLoadBalancingReport(tcGroupId, LB_NO_AVAILABLE_TAG)
+                    tcGroupId,
+                    this.getLoadBalancingReport(tcGroupId, LB_NO_AVAILABLE_TAG)
             );
             return null;
         }
@@ -433,13 +430,13 @@ public final class TagManager implements TagService {
         // Map this new group of traffic classes to the new tag
         this.mapTagToTrafficClassSubgroup(tcGroupId, newTcGroup, newTag);
 
-        log.info("[{}] \t 1st group with {} TCs and tag: {}", this.label(), tcGroupSize,    tag);
-        log.info("[{}] \t 2nd group with {} TCs and tag: {}", this.label(), newTcGroupSize, newTag);
+        log.info("[{}] \t 1st group with {} TCs and tag: {} (CPU {})", label(), tcGroupSize, tag, tag.cpuId());
+        log.info("[{}] \t 2nd group with {} TCs and tag: {} (CPU {})", label(), newTcGroupSize, newTag, newTag.cpuId());
 
         // Successful load balancing
         this.setLbStatusOfTrafficClassGroup(
-            tcGroupId,
-            this.getLoadBalancingReport(tcGroupId, LB_OK)
+                tcGroupId,
+                this.getLoadBalancingReport(tcGroupId, LB_OK)
         );
 
         // Return the affected traffic classes along with their tag
@@ -447,70 +444,68 @@ public final class TagManager implements TagService {
     }
 
     @Override
-    public Pair<RxFilterValue, Set<TrafficClassInterface>> inflateTrafficClassGroup(URI tcGroupId) {
+    public Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(URI tcGroupId, int underloadedCore, Set<Integer> inflateCandidates) {
         Map<RxFilterValue, Set<TrafficClassInterface>> groupTagMap = this.tagMapOfTrafficClassGroup(tcGroupId);
         if (groupTagMap == null) {
+            log.error("No traffic class group !");
             this.setLbStatusOfTrafficClassGroup(
-                tcGroupId,
-                this.getLoadBalancingReport(tcGroupId, LB_INVALID_GROUP)
+                    tcGroupId,
+                    this.getLoadBalancingReport(tcGroupId, LB_INVALID_GROUP)
             );
             return null;
         }
 
-        /**
-         * We merge the 2 smallest groups to minimize the impact
-         * on the number of flows being modified.
-         */
-        Map<Integer, RxFilterValue> smallest = this.getTwoSmallestSubgroups(tcGroupId);
+        Pair<RxFilterValue, RxFilterValue> tags = this.getSmallestSubgroups(tcGroupId, underloadedCore, inflateCandidates);
 
-        RxFilterValue smallestTag    = smallest.get(new Integer(0));
-        RxFilterValue secSmallestTag = smallest.get(new Integer(1));
+        RxFilterValue smallestTag = tags.getKey();
+        RxFilterValue coreTag = tags.getValue();
 
-        if ((smallestTag == null) || (secSmallestTag == null)) {
+        if (smallestTag == null || coreTag == null) {
+            log.error("Could not find smaller tag {} or core tag {} !", smallestTag, coreTag);
             this.setLbStatusOfTrafficClassGroup(
-                tcGroupId,
-                this.getLoadBalancingReport(tcGroupId, LB_NO_GROUPS_CAN_BE_MERGED)
+                    tcGroupId,
+                    this.getLoadBalancingReport(tcGroupId, LB_NO_GROUPS_CAN_BE_MERGED)
             );
             return null;
         }
 
         // Get the subgroups
         Set<TrafficClassInterface> smallestTcEntries = groupTagMap.get(smallestTag);
-        Set<TrafficClassInterface> secSmallestTcEntries = groupTagMap.get(secSmallestTag);
+        Set<TrafficClassInterface> coreTcEntries = groupTagMap.get(coreTag);
 
         log.info(
-            "[{}] \t 1st smallest group with {} TCs and tag {}",
-            this.label(), smallestTcEntries.size(), smallestTag
+                "[{}] \t 1st inflated group with {} TCs and tag {} for core {}",
+                label(), smallestTcEntries.size(), smallestTag, smallestTag.cpuId()
         );
         log.info(
-            "[{}] \t 2nd smallest group with {} TCs and tag {}",
-            this.label(), secSmallestTcEntries.size(), secSmallestTag
+                "[{}] \t 2nd inflated group with {} TCs and tag {} for core {}",
+                label(), coreTcEntries.size(), coreTag, coreTag.cpuId()
         );
 
         // Merge the smallest with the second smallest
         Set<TrafficClassInterface> copyOfSmallestTcEntries =
-                Sets.<TrafficClassInterface>newConcurrentHashSet(smallestTcEntries);
-        secSmallestTcEntries.addAll(copyOfSmallestTcEntries);
+                Sets.newConcurrentHashSet(smallestTcEntries);
+        coreTcEntries.addAll(copyOfSmallestTcEntries);
 
         // Remove the smallest to minimize the migration impact
         this.removeTagOfTrafficClassSubgroup(tcGroupId, smallestTag);
 
         log.info(
-            "[{}] \t Both groups are merged into a group with {} TCs and tag {}",
-            this.label(), secSmallestTcEntries.size(), secSmallestTag
+                "[{}] \t Both groups are merged into a group with {} TCs and tag {}",
+                label(), coreTcEntries.size(), coreTag
         );
 
         // Successful load balancing
         this.setLbStatusOfTrafficClassGroup(
-            tcGroupId,
-            this.getLoadBalancingReport(tcGroupId, LB_OK)
+                tcGroupId,
+                this.getLoadBalancingReport(tcGroupId, LB_OK)
         );
 
         /**
          * Return the affected traffic classes along with their tag.
          * ATTENTION: The opposite tag has to be used here! Think of it ;)
          */
-        return new Pair<RxFilterValue, Set<TrafficClassInterface>>(secSmallestTag, copyOfSmallestTcEntries);
+        return new Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>>(new Pair<>(coreTag, smallestTag), copyOfSmallestTcEntries);
     }
 
     @Override
@@ -523,7 +518,7 @@ public final class TagManager implements TagService {
      * of a particular group of traffic classes.
      *
      * @param tcGroupId the ID of group of traffic classes
-     * @param message the load balancing status
+     * @param message   the load balancing status
      */
     private void setLbStatusOfTrafficClassGroup(URI tcGroupId, String message) {
         this.lbStatus.put(tcGroupId, message + ": Traffic class ID " + tcGroupId);
@@ -536,9 +531,9 @@ public final class TagManager implements TagService {
      */
     private void init() {
         this.taggingMechanisms = new ConcurrentHashMap<URI, RxFilter>();
-        this.availableTags     = new ConcurrentHashMap<URI, Set<RxFilterValue>>();
-        this.tagMap            = new ConcurrentHashMap<URI, Map<RxFilterValue, Set<TrafficClassInterface>>>();
-        this.lbStatus          = new ConcurrentHashMap<URI, String>();
+        this.availableTags = new ConcurrentHashMap<URI, Set<RxFilterValue>>();
+        this.tagMap = new ConcurrentHashMap<URI, Map<RxFilterValue, Set<TrafficClassInterface>>>();
+        this.lbStatus = new ConcurrentHashMap<URI, String>();
     }
 
     /**
@@ -546,7 +541,7 @@ public final class TagManager implements TagService {
      * methods above, get a more descriptive message of what actually happened.
      *
      * @param tcGroupId the ID of group of traffic classes
-     * @param status load balancing status report
+     * @param status    load balancing status report
      * @return load balancing message
      */
     private String getLoadBalancingReport(URI tcGroupId, int status) {
@@ -559,58 +554,39 @@ public final class TagManager implements TagService {
      * we prefer to merge the two smallest subgroups in order to reduce the number of rules
      * to be updated. This methods returns these 2 smallest subgroups.
      *
-     * @param tcGroupId the ID of group of traffic classes
+     * @param tcGroupId         the ID of group of traffic classes
+     * @param inflateCandidates
      * @return the tags of the 2 smallest subgroups in a group of traffic classes
      */
-    private Map<Integer, RxFilterValue> getTwoSmallestSubgroups(URI tcGroupId) {
-        Map<Integer, RxFilterValue> outGroups = new ConcurrentHashMap<Integer, RxFilterValue>();
-
+    private Pair<RxFilterValue, RxFilterValue> getSmallestSubgroups(URI tcGroupId, int excludeCore, Set<Integer> inflateCandidates) {
         // Get the set of subgroups of this group of traffic classes
         Map<RxFilterValue, Set<TrafficClassInterface>> groupTagMap = this.tagMapOfTrafficClassGroup(tcGroupId);
 
         int smallestGroupSize = -1;
-        int secSmallestGroupSize = -1;
 
         RxFilterValue smallestTag = null;
-        RxFilterValue secSmallestTag = null;
+        RxFilterValue coreTag = null;
 
         for (Map.Entry<RxFilterValue, Set<TrafficClassInterface>> entry : groupTagMap.entrySet()) {
             RxFilterValue tag = entry.getKey();
+            if (tag.cpuId() == excludeCore) {
+                coreTag = tag;
+                continue;
+            }
+            if (!inflateCandidates.contains(tag.cpuId()))
+                continue;
             Set<TrafficClassInterface> tcGroup = entry.getValue();
             int tcGroupSize = tcGroup.size();
 
             if (smallestGroupSize < 0) {
                 smallestTag = tag;
                 smallestGroupSize = tcGroupSize;
-            } else if (secSmallestGroupSize < 0) {
-                if (smallestGroupSize > tcGroupSize) {
-                    secSmallestTag = smallestTag;
-                    secSmallestGroupSize = smallestGroupSize;
-
-                    smallestTag = tag;
-                    smallestGroupSize = tcGroupSize;
-                } else {
-                    secSmallestTag = tag;
-                    secSmallestGroupSize = tcGroupSize;
-                }
-            } else {
-                if (smallestGroupSize > tcGroupSize) {
-                    secSmallestTag = smallestTag;
-                    secSmallestGroupSize = smallestGroupSize;
-
-                    smallestTag = tag;
-                    smallestGroupSize = tcGroupSize;
-                } else if (secSmallestGroupSize > tcGroupSize) {
-                    secSmallestTag = tag;
-                    secSmallestGroupSize = tcGroupSize;
-                }
+            } else if (tcGroupSize < smallestGroupSize) {
+                smallestTag = tag;
+                smallestGroupSize = tcGroupSize;
             }
         }
-
-        outGroups.put(new Integer(0), smallestTag);
-        outGroups.put(new Integer(1), secSmallestTag);
-
-        return outGroups;
+        return new Pair<>(smallestTag, coreTag);
     }
 
     /**
@@ -624,13 +600,13 @@ public final class TagManager implements TagService {
             return;
         }
 
-        log.info("[{}] Group of traffic classes with ID: {}", this.label(), tcGroupId);
+        log.info("[{}] Group of traffic classes with ID: {}", label(), tcGroupId);
 
         for (Map.Entry<RxFilterValue, Set<TrafficClassInterface>> entry : groupTagMap.entrySet()) {
             RxFilterValue tag = entry.getKey();
             Set<TrafficClassInterface> tcGroup = entry.getValue();
 
-            log.info("[{}] \t Tag {} --> {} traffic classes", this.label(), tag, tcGroup.size());
+            log.info("[{}] \t Tag {} --> {} traffic classes", label(), tag, tcGroup.size());
         }
     }
 
@@ -642,15 +618,15 @@ public final class TagManager implements TagService {
     private void printTag(RxFilterValue tag) {
         if (tag instanceof MacRxFilterValue) {
             MacRxFilterValue mt = (MacRxFilterValue) tag;
-            log.info("[{}] TAG {}", this.label(), mt.toString());
+            log.info("[{}] TAG {}", label(), mt.toString());
         } else if (tag instanceof VlanRxFilterValue) {
             VlanRxFilterValue vt = (VlanRxFilterValue) tag;
-            log.info("[{}] TAG {}", this.label(), vt.toString());
+            log.info("[{}] TAG {}", label(), vt.toString());
         } else if (tag instanceof MplsRxFilterValue) {
             MplsRxFilterValue mt = (MplsRxFilterValue) tag;
-            log.info("[{}] TAG {}", this.label(), mt.toString());
+            log.info("[{}] TAG {}", label(), mt.toString());
         } else {
-            log.error("[{}] Unknown tag: {}", this.label(), tag);
+            log.error("[{}] Unknown tag: {}", label(), tag);
         }
     }
 

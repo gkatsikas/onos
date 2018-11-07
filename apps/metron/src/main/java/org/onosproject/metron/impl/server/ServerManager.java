@@ -172,7 +172,7 @@ public class ServerManager implements ServerService {
             ServiceChainScope scScope,
             String            configurationType,
             String            configuration,
-            int               numberOfCores,
+            Set<Integer>      newCpuSet,
             int               maxNumberOfCores,
             Set<String>       nicIds,
             boolean           autoscale) {
@@ -181,9 +181,9 @@ public class ServerManager implements ServerService {
         checkNotNull(tcId,     "[" + label() + "] NULL traffic class ID.");
         checkArgument(!Strings.isNullOrEmpty(configuration),
             "[" + label() + "] Configuration is NULL or empty");
-        checkArgument(numberOfCores > 0,
+        checkArgument(newCpuSet.size() > 0,
             "[" + label() + "] Number of cores must be positive");
-        checkArgument((maxNumberOfCores > 0) && (numberOfCores <= maxNumberOfCores),
+        checkArgument((maxNumberOfCores > 0) && (newCpuSet.size() <= maxNumberOfCores),
             "[" + label() + "] Maximum number of cores must be positive");
         checkNotNull(nicIds,
             "[" + label() + "] Cannot deploy traffic class without NICs.");
@@ -196,7 +196,7 @@ public class ServerManager implements ServerService {
         log.info("[{}] \t server {}", label(), deviceId);
         log.info("[{}] \t with configuration type {}", label(), configurationType);
         log.info("[{}] \t with configuration {}", label(), configuration);
-        log.info("[{}] \t using {} CPU cores", label(), numberOfCores);
+        log.info("[{}] \t using {} CPU cores", label(), newCpuSet.size());
         log.info("[{}] \t with  {} maximum CPU cores", label(), maxNumberOfCores);
         log.info("[{}] \t using {} NICs", label(), nicIds.size());
         log.info("[{}] \t with auto-scale {}", label(), autoscale ? "true" : "false");
@@ -306,8 +306,11 @@ public class ServerManager implements ServerService {
         // Add the service chain's configuration
         chainObjNode.put(PARAM_CONFIG, configuration);
 
-        // Add the number of CPUs to be used for this service chain
-        chainObjNode.put(BasicServerDriver.PARAM_CPUS, Integer.toString(numberOfCores));
+        // Add the list of CPUs
+        ArrayNode cpuArrayNode = chainObjNode.putArray(BasicServerDriver.PARAM_CPUS);
+        for (Integer cpu : newCpuSet) {
+            cpuArrayNode.add(cpu);
+        }
 
         // Add an estimation of the maximum the number of CPUs you might need
         chainObjNode.put(PARAM_MAX_CPUS, Integer.toString(maxNumberOfCores));
@@ -341,8 +344,7 @@ public class ServerManager implements ServerService {
         // Proceed to construct a runtime information object for this service chain
         return this.buildRuntimeInformation(
             deviceId, scId, tcId, primaryNic,
-            configurationType, configuration,
-            numberOfCores, maxNumberOfCores,
+            configurationType, configuration, newCpuSet, maxNumberOfCores,
             nicIds, rxFilterMethodStr
         );
     }
@@ -354,7 +356,7 @@ public class ServerManager implements ServerService {
             URI            tcId,
             String         configurationType,
             String         configuration,
-            int            numberOfCores,
+            Set<Integer>   newCpuMap,
             int            maxNumberOfCores) {
         checkNotNull(deviceId, "[" + label() + "] NULL device ID.");
         checkNotNull(scId,     "[" + label() + "] NULL service chain ID.");
@@ -371,7 +373,7 @@ public class ServerManager implements ServerService {
             label(), configuration == null ? "the same" : configuration
         );
         log.info("[{}] \t\t using {} CPU cores",
-            label(), numberOfCores < 0 ? "the same" : numberOfCores
+            label(), newCpuMap.size()
         );
         log.info("[{}] \t\t with {} maximum CPU cores",
             label(), maxNumberOfCores < 0 ? "the same" : maxNumberOfCores
@@ -393,12 +395,13 @@ public class ServerManager implements ServerService {
             sendObjNode.put(PARAM_CONFIG, configuration);
         }
 
-        // Add the new number of CPUs. Negative means that it has not changed.
-        if (numberOfCores > 0) {
-            sendObjNode.put(BasicServerDriver.PARAM_CPUS, Integer.toString(numberOfCores));
+        // Add the list of CPUs
+        ArrayNode cpuArrayNode = sendObjNode.putArray(BasicServerDriver.PARAM_CPUS);
+        for (Integer cpu : newCpuMap) {
+            cpuArrayNode.add(cpu);
         }
 
-        // Add a new estimation of the maximum the number of CPUs. Negative means that it has not changed.
+            // Add a new estimation of the maximum the number of CPUs. Negative means that it has not changed.
         if (maxNumberOfCores > 0) {
             sendObjNode.put(PARAM_MAX_CPUS, Integer.toString(maxNumberOfCores));
         }
@@ -518,6 +521,7 @@ public class ServerManager implements ServerService {
 
             // Add the tags for this NIC
             addTag(deviceId, scId, tcId, tcInfo, nicName, tagMethod, rxFilterValuesStr);
+
         }
 
         String    configType = BasicServerDriver.get(jsonNode, PARAM_CONFIG_TYPE);
@@ -765,7 +769,7 @@ public class ServerManager implements ServerService {
             String         primaryNic,
             String         configurationType,
             String         configuration,
-            int            numberOfCores,
+            Set<Integer>   newCpuSet,
             int            maxNumberOfCores,
             Set<String>    nicIds,
             String         rxFilterMethodStr) {
@@ -779,7 +783,7 @@ public class ServerManager implements ServerService {
         );
 
         // Add cores
-        rtInfo.setCoresOfDevice(deviceId, numberOfCores);
+        rtInfo.setCoresOfDevice(deviceId, newCpuSet);
 
         // Add NICs
         rtInfo.setNicsOfDevice(deviceId, nicIds);
@@ -816,6 +820,7 @@ public class ServerManager implements ServerService {
     private void addTag(
             DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
             String nicName, String tagMethod, Set<String> rxFilterValuesStr) {
+        int coreId = 0;
         for (String tagValue : rxFilterValuesStr) {
             if (Strings.isNullOrEmpty(tagValue)) {
                 continue;
@@ -823,25 +828,26 @@ public class ServerManager implements ServerService {
 
             if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
                 MacAddress mac = MacAddress.valueOf(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MacRxFilterValue(mac));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MacRxFilterValue(mac, coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_MPLS)) {
                 MplsLabel mplsLabel = MplsLabel.mplsLabel(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MplsRxFilterValue(mplsLabel));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MplsRxFilterValue(mplsLabel, coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
                 VlanId vlanId = VlanId.vlanId(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new VlanRxFilterValue(vlanId));
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new VlanRxFilterValue(vlanId, coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
-                long coreId = Long.parseLong(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new FlowRxFilterValue(coreId));
+                long physCoreId = Long.parseLong(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new FlowRxFilterValue(physCoreId, coreId));
             } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
-                int coreId = Integer.parseInt(tagValue);
-                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue(coreId));
+                int physCoreId = Integer.parseInt(tagValue);
+                tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue(physCoreId, coreId));
             } else {
                 throw new ProtocolException("[" + label() + "] Unsupported Rx filter method for traffic class " +
                     tcId + " of service chain " + scId + ".");
             }
 
-            log.info("[{}] \t NIC {} - Tag {}", label(), nicName, tagValue);
+            log.info("[{}] \t NIC {} - Tag {} Core {}", label(), nicName, tagValue, coreId);
+            coreId ++;
         }
     }
 

@@ -138,6 +138,11 @@ public final class DefaultCpuStatistics implements CpuStatistics {
     }
 
     @Override
+    public int busySince() {
+        return this.busySince;
+    }
+
+    @Override
     public Optional<MonitoringUnit> throughputUnit() {
         return this.throughputUnit;
     }

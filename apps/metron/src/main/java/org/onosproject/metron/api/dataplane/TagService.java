@@ -190,11 +190,13 @@ public interface TagService {
      * 2 subgroups. Serves for load balancing purposes.
      *
      * @param tcGroupId the ID of group of traffic classes
+     * @param overLoadedCpu The id of the CPU to deflate
      * @return returns the set of traffic classes that require tag modification
      *         alogn with the actual tag
      */
     Pair<RxFilterValue, Set<TrafficClassInterface>> deflateTrafficClassGroup(
-        URI tcGroupId
+        URI tcGroupId,
+        int overLoadedCpu
     );
 
     /**
@@ -203,12 +205,15 @@ public interface TagService {
      * larger groups. Serves for load balancing purposes.
      *
      * @param tcGroupId the ID of group of traffic classes
+     * @param underloadedCpu the index of the underloaded CPU core to inflate
+     * @param inflateCandidates a set of candidate CPU cores to use for inflation
      * @return returns the set of traffic classes that require tag modification
-     *         alogn with the actual tag
+     *         along with the two tags invovled in the inflation
      */
-    Pair<RxFilterValue, Set<TrafficClassInterface>> inflateTrafficClassGroup(
-        URI tcGroupId
-    );
+    Pair<Pair<RxFilterValue,RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(
+            URI tcGroupId,
+            int underloadedCpu,
+            Set<Integer> inflateCandidates);
 
     /**
      * Given a load balancing action taken by the inflate/deflate

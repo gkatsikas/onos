@@ -16,12 +16,12 @@
 
 package org.onosproject.metron.api.orchestrator;
 
+import org.onosproject.metron.api.server.TrafficClassRuntimeInfo;
 import org.onosproject.metron.api.servicechain.ServiceChainId;
 import org.onosproject.metron.api.servicechain.ServiceChainInterface;
 
 import org.onosproject.net.DeviceId;
 
-import java.net.URI;
 import java.util.Set;
 import java.util.Iterator;
 
@@ -73,19 +73,19 @@ public interface OrchestrationService {
      * When a "deployed" service chain exhbits high load,
      * react by balancing the load.
      *
-     * @param scId the ID of the overloaded service chain
-     * @param tcId the ID of the overloaded traffic class
+     * @param sc the overloaded service chain
+     * @param tc the overloaded traffic class
      * @param deviceId the ID of the device where the overload occured
      * @param overLoadedCpu the CPU core that exhibits overload
      * @param maxCpus the maximum number of CPUs you can have
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               increase the number of queues)
-     * @return boolean deflation status
+     * @return int the CPU the traffic class was deflated upon
      */
-    boolean deflateLoad(
-        ServiceChainId scId,
-        URI            tcId,
+    int deflateLoad(
+        ServiceChainInterface   sc,
+        TrafficClassRuntimeInfo tc,
         DeviceId       deviceId,
         int            overLoadedCpu,
         int            maxCpus,
@@ -96,23 +96,24 @@ public interface OrchestrationService {
      * When a "deployed" service chain exhbits low load,
      * react by balancing the load.
      *
-     * @param scId the ID of the overloaded service chain
-     * @param tcId the ID of the overloaded traffic class
+     * @param sc the overloaded service chain
+     * @param tc the overloaded traffic class
      * @param deviceId the ID of the device where the overload occured
      * @param underLoadedCpu the CPU core that exhibits underload
      * @param maxCpus the maximum number of CPUs you can have
      * @param limitedReconfiguration the device to reconfigure has limited
               reconfiguration abilities (e.g., RSS mode requires to simply
               decrease the number of queues)
-     * @return boolean inflation status
+     * @param inflateCandidates set of candidate CPU cores to use for inflation
+     * @return int the CPU the traffic class was inflated with, it will be one of the candidates
      */
-    boolean inflateLoad(
-        ServiceChainId scId,
-        URI            tcId,
-        DeviceId       deviceId,
-        int            underLoadedCpu,
-        int            maxCpus,
-        boolean        limitedReconfiguration
-    );
+    int inflateLoad(
+            ServiceChainInterface sc,
+            TrafficClassRuntimeInfo tc,
+            DeviceId deviceId,
+            int underLoadedCpu,
+            int maxCpus,
+            boolean limitedReconfiguration,
+            Set<Integer> inflateCandidates);
 
 }

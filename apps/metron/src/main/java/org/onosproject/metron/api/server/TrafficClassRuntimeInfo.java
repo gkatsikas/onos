@@ -22,10 +22,13 @@ import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
 import org.onosproject.net.DeviceId;
+import org.onosproject.store.service.WallClockTimestamp;
 
 import java.net.URI;
 import java.util.Set;
 import java.util.Map;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Runtime information for a traffic class.
@@ -84,31 +87,30 @@ public interface TrafficClassRuntimeInfo {
     void removeDevice(DeviceId deviceId);
 
     /**
-     * Returns the number of CPU cores allocated per
+     * Returns the set of CPU cores to be allocated per
      * device for this traffic class.
      *
-     * @return traffic class's number of CPU cores
-     *         mapped to devices
+     * @return traffic class's set of CPU cores
      */
-    Map<DeviceId, Integer> cores();
+    Map<DeviceId, Set<Integer>> cores();
 
     /**
-     * Returns the number of CPU cores allocated on a
+     * Returns the set of CPU cores allocated on a
      * particular device for this traffic class.
      *
      * @param deviceId the NFV device to be queried
-     * @return traffic class's number of CPU cores on a device
+     * @return traffic class's set of allocated CPUs
      */
-    int coresOfDevice(DeviceId deviceId);
+    Set<Integer> coresOfDevice(DeviceId deviceId);
 
     /**
-     * Sets the number of CPU cores allocated per
+     * Sets the CPU cores to be allocated per the
      * device for this traffic class.
      *
      * @param deviceId the NFV device to be configured
-     * @param cpus     the number of CPU cores to be allocated
+     * @param cpus     the set of CPU cores to be allocated
      */
-    void setCoresOfDevice(DeviceId deviceId, int cpus);
+    void setCoresOfDevice(DeviceId deviceId, Set<Integer> cpus);
 
     /**
      * Returns the set of NIC IDs per device for this traffic class.
@@ -342,5 +344,19 @@ public interface TrafficClassRuntimeInfo {
      * @return updated TrafficClassRuntimeInfo
      */
     TrafficClassRuntimeInfo update(TrafficClassRuntimeInfo other);
+
+    /* Lock to be acquired when re-balancing this traffic class */
+    Lock lock = new ReentrantLock();
+
+    /**
+     * Returns a timestamp of the moment when the last imbalance check was done
+     * @return WallClockTimestamp Time of the last imbalance checking
+     */
+    WallClockTimestamp lastImbalanceCheck();
+
+    /**
+     * Inform a re-balancing of this traffic class has just been done
+     */
+    void imbalanceCheckDone();
 
 }
