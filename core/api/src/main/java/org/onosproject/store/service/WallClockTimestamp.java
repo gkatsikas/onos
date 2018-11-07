@@ -80,4 +80,8 @@ public class WallClockTimestamp implements Timestamp {
     public long unixTimestamp() {
         return unixTimestamp;
     }
+
+    public long msSince(WallClockTimestamp other) {
+        return unixTimestamp - other.unixTimestamp;
+    }
 }

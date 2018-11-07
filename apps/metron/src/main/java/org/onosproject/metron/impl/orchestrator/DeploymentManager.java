@@ -78,13 +78,7 @@ import org.slf4j.Logger;
 
 // Java libraries
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Dictionary;
-import java.util.Iterator;
-import java.util.Objects;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
@@ -761,10 +755,14 @@ public final class DeploymentManager implements DeploymentService {
             // Fetch the ID of the (grouped) traffic class of this service chain
             URI tcId = dpTree.groupTrafficClassIdOnCore(core);
 
+            Set<Integer> cpuCoreSet = new HashSet<>();
+            for (int i = 0; i < cores; i++)
+                cpuCoreSet.add(i);
+
             // Ask from the topology manager to deploy this traffic class
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.deployTrafficClassOfServiceChain(
-                    deviceId, scId, tcId, sc.scope(), confType, conf, cores, maxCores, nics, autoScale);
+                    deviceId, scId, tcId, sc.scope(), confType, conf, cpuCoreSet, maxCores, nics, autoScale);
 
             if (tcRuntimeInfo == null) {
                 throw new DeploymentException("[" + label() + "] Failed to deploy traffic class " + tcId +
@@ -1269,7 +1267,7 @@ public final class DeploymentManager implements DeploymentService {
             // Ask from the topology manager to deploy this traffic class
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.buildRuntimeInformation(
-                    deviceId, scId, tcId, "", "", "", 0, 0, new ConcurrentSkipListSet<String>(), ""
+                    deviceId, scId, tcId, "", "", "", new HashSet<Integer>(), 0, new ConcurrentSkipListSet<String>(), ""
                 );
 
             if (tcRuntimeInfo == null) {

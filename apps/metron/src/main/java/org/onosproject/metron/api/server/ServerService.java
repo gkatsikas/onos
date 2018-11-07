@@ -60,7 +60,7 @@ public interface ServerService {
      * @param configurationType the type of the target packet processing element
      *        Can be Click-based (click) or a blackbox NF (standalone)
      * @param configuration the packet processing instructions as a string
-     * @param numberOfCores the number of CPU cores to be used for this traffic class
+     * @param newCpuSet the set of CPU cores to be used for this traffic class
      * @param maxNumberOfCores estimation of the maximum the number of CPUs you might need
      * @param nicIds the IDs of the NICs that participate in the processing
      * @param autoscale allows the agent to handle load imbalances autonomously
@@ -74,7 +74,7 @@ public interface ServerService {
         ServiceChainScope scScope,
         String            configurationType,
         String            configuration,
-        int               numberOfCores,
+        Set<Integer>      newCpuSet,
         int               maxNumberOfCores,
         Set<String>       nicIds,
         boolean           autoscale
@@ -89,7 +89,7 @@ public interface ServerService {
      * @param configurationType the type of the target packet processing element
      *        Can be Click-based (click) or a blackbox NF (standalone)
      * @param configuration the packet processing instructions as a string
-     * @param numberOfCores the new number of CPU cores to be used for this traffic class
+     * @param newCpuSet the set of CPU cores to be used for this traffic class
      * @param maxNumberOfCores the new maximum number of CPUs you need
      * @return boolean reconfiguration status
      */
@@ -99,7 +99,7 @@ public interface ServerService {
         URI            tcId,
         String         configurationType,
         String         configuration,
-        int            numberOfCores,
+        Set<Integer>   newCpuSet,
         int            maxNumberOfCores
     );
 
@@ -187,7 +187,7 @@ public interface ServerService {
      * @param configurationType the type of the target packet processing element
      *        Can be Click-based (click) or a blackbox NF (standalone)
      * @param configuration the packet processing instructions as a string
-     * @param numberOfCores the number of CPU cores to be used for this traffic class
+     * @param newCpuSet the set of CPU cores to be used for this traffic class
      * @param maxNumberOfCores estimation of the maximum the number of CPUs you might need
      * @param nicIds the IDs of the NICs that participate in the processing
      * @param rxFilterMethodStr tagging method supported by the NIC of this service chain
@@ -201,7 +201,7 @@ public interface ServerService {
             String         primaryNic,
             String         configurationType,
             String         configuration,
-            int            numberOfCores,
+            Set<Integer>   newCpuSet,
             int            maxNumberOfCores,
             Set<String>    nicIds,
             String         rxFilterMethodStr

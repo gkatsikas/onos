@@ -581,14 +581,13 @@ public class NfvTopologyManager implements NfvTopologyService {
             ServiceChainScope scScope,
             String            configurationType,
             String            configuration,
-            int               numberOfCores,
+            Set<Integer>      newCpuSet,
             int               maxNumberOfCores,
             Set<String>       nicIds,
             boolean           autoscale) {
         return serverService.deployTrafficClassOfServiceChain(
             deviceId, scId, tcId, scScope,
-            configurationType, configuration,
-            numberOfCores, maxNumberOfCores,
+            configurationType, configuration, newCpuSet, maxNumberOfCores,
             nicIds, autoscale
         );
     }
@@ -600,12 +599,12 @@ public class NfvTopologyManager implements NfvTopologyService {
             URI            tcId,
             String         configurationType,
             String         configuration,
-            int            numberOfCores,
+            Set<Integer>   newCpuSet,
             int            maxNumberOfCores) {
         return serverService.reconfigureTrafficClassOfServiceChain(
             deviceId, scId, tcId,
             configurationType, configuration,
-            numberOfCores, maxNumberOfCores
+                newCpuSet, maxNumberOfCores
         );
     }
 
@@ -656,14 +655,14 @@ public class NfvTopologyManager implements NfvTopologyService {
             String         primaryNic,
             String         configurationType,
             String         configuration,
-            int            numberOfCores,
+            Set<Integer>   newCpuSet,
             int            maxNumberOfCores,
             Set<String>    nicIds,
             String         rxFilterMethodStr) {
         return serverService.buildRuntimeInformation(
             deviceId, scId, tcId, primaryNic,
             configurationType, configuration,
-            numberOfCores, maxNumberOfCores,
+                newCpuSet, maxNumberOfCores,
             nicIds, rxFilterMethodStr
         );
     }
