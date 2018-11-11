@@ -44,13 +44,12 @@ import org.onosproject.net.topology.TopologyVertex;
 import org.onosproject.net.topology.TopologyService;
 import org.onosproject.protocol.rest.RestSBDevice;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other libraries
 import org.slf4j.Logger;
@@ -76,8 +75,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Implementation of Metron's Topology Manager component.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = NfvTopologyService.class)
 public class NfvTopologyManager implements NfvTopologyService {
 
     private static final Logger log = getLogger(NfvTopologyManager.class);
@@ -114,16 +112,16 @@ public class NfvTopologyManager implements NfvTopologyService {
      */
     private Set<TopologyCluster> topologyClusters = null;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected TopologyService topologyService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected LinkService linkService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServerService serverService;
 
     public NfvTopologyManager() {

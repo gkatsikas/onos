@@ -42,13 +42,12 @@ import org.onosproject.net.config.NetworkConfigListener;
 import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.basics.SubjectFactories;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other libraries
 import com.google.common.collect.Sets;
@@ -71,8 +70,7 @@ import static org.onlab.util.Tools.groupedThreads;
  * Metron applications remotely interact with the manager
  * in order to register with the core.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = NfvApplicationService.class)
 public class NfvApplicationManager
         extends ListenerRegistry<ServiceChainEvent, ServiceChainListenerInterface>
         implements NfvApplicationService {
@@ -117,16 +115,16 @@ public class NfvApplicationManager
     /**
      * Services from ONOS.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NetworkConfigService networkConfigService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NetworkConfigRegistry networkConfigRegistry;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServiceChainService serviceChainService;
 
     private final ConfigFactory addConfigFactory =

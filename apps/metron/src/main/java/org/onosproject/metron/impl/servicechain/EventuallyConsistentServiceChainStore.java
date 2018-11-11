@@ -155,13 +155,12 @@ import org.onosproject.store.service.EventuallyConsistentMapListener;
 import org.onosproject.store.service.LogicalClockService;
 import org.onlab.util.KryoNamespace;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.Service;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other libraries
 import org.slf4j.Logger;
@@ -200,8 +199,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Manages the registry of Metron service chains in the ONOS core.
  * Works as an eventually consistent distributed store.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = ServiceChainStoreService.class)
 public class EventuallyConsistentServiceChainStore
         extends AbstractStore<ServiceChainEvent, ServiceChainDelegate>
         implements ServiceChainStoreService {
@@ -212,10 +210,10 @@ public class EventuallyConsistentServiceChainStore
 
     private static final String COMPONET_LABEL = "Distributed Store";
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected LogicalClockService clockService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected StorageService storageService;
 
     /**

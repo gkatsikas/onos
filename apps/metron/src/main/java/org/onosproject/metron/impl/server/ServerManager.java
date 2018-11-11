@@ -48,13 +48,12 @@ import org.onosproject.net.device.DeviceService;
 import org.onosproject.protocol.rest.RestSBController;
 import org.onosproject.protocol.rest.RestSBDevice;
 
-// Apache Libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI Libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other Libraries
 import org.slf4j.Logger;
@@ -87,8 +86,7 @@ import static org.onosproject.metron.impl.server.DefaultTrafficClassRuntimeInfo.
  * between the Metron controller (client-side) and the Metron agents (server-side).
  * The communication is implemented via JSON-based HTTP messages.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = ServerService.class)
 public class ServerManager implements ServerService {
 
     private static final Logger log = getLogger(ServerManager.class);
@@ -130,16 +128,16 @@ public class ServerManager implements ServerService {
     private static final String NIC_PARAM_RX_METHOD_FLOW   = "flow";
     private static final String NIC_PARAM_RX_METHOD_RSS    = "rss";
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected RestSBController controller;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeviceService deviceService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected MonitorService monitoringService;
 
     public ServerManager() {

@@ -51,20 +51,19 @@ import org.onlab.util.Tools;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.cfg.ComponentConfigService;
+
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+// import org.osgi.service.component.annotations.Property;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.ComponentContext;
 
-// Apache libraries
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Modified;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-
 // Other libraries
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 import com.google.common.collect.Sets;
 
@@ -90,10 +89,8 @@ import static org.slf4j.LoggerFactory.getLogger;
  * If this component is disabled, it directly moves a CONSTRUCTED state to
  * the READY state.
  */
-@Component(immediate = true)
-@Service
-public final class SynthesisManager
-        implements SynthesisService {
+@Component(immediate = true, service = SynthesisService.class)
+public final class SynthesisManager implements SynthesisService {
 
     private static final Logger log = getLogger(SynthesisManager.class);
 
@@ -138,10 +135,10 @@ public final class SynthesisManager
      */
     private static final String ENABLE_SYNTHESIZER = "enableSynthesizer";
     private static final boolean DEF_ENABLE_SYNTHESIZER = true;
-    @Property(
-        name = ENABLE_SYNTHESIZER, boolValue = DEF_ENABLE_SYNTHESIZER,
-        label = "Enable Metron's synthesizer component (i.e., SNF); default is true"
-    )
+    // @Property(
+    //     name = ENABLE_SYNTHESIZER, boolValue = DEF_ENABLE_SYNTHESIZER,
+    //     label = "Enable Metron's synthesizer component (i.e., SNF); default is true"
+    // )
     private boolean enableSynthesizer = DEF_ENABLE_SYNTHESIZER;
 
     /**
@@ -152,16 +149,16 @@ public final class SynthesisManager
      * The Metron Synthesizer undertakes to change the state of the CONSTRUCTED
      * service chains to SYNTHESIZED.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServiceChainService serviceChainService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ComponentConfigService cfgService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected MonitorService monitoringService;
 
     public SynthesisManager() {

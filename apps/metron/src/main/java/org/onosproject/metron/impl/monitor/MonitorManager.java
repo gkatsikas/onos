@@ -33,13 +33,12 @@ import org.onosproject.drivers.server.stats.CpuStatistics;
 import org.onlab.util.SharedScheduledExecutors;
 import org.onlab.util.SharedScheduledExecutorService;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other libraries
 import org.slf4j.Logger;
@@ -59,8 +58,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 /**
  * A service that keeps monitoring information about the running service chains.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = MonitorService.class)
 public final class MonitorManager implements MonitorService {
 
     private static final Logger log = getLogger(MonitorManager.class);
@@ -170,10 +168,10 @@ public final class MonitorManager implements MonitorService {
     /**
      * Interact with ONOS core.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeviceService deviceService;
 
     public MonitorManager() {

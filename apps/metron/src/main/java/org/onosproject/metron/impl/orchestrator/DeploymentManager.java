@@ -52,28 +52,27 @@ import org.onosproject.net.flow.FlowRuleOperationsContext;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.topology.TopologyCluster;
 import org.onosproject.net.topology.TopologyVertex;
-import org.osgi.service.component.ComponentContext;
 
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
 import org.onosproject.drivers.server.devices.nic.NicDevice;
 import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
-// Apache libraries
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Modified;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+// import org.osgi.service.component.annotations.Property;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
+import org.osgi.service.component.ComponentContext;
 
 // Guava
 import com.google.common.collect.Sets;
 
 // Other libraries
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 
 // Java libraries
@@ -99,8 +98,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 /**
  * A service that undertakes to deploy Metron service chains.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = DeploymentService.class)
 public final class DeploymentManager implements DeploymentService {
 
     private static final Logger log = getLogger(DeploymentManager.class);
@@ -150,8 +148,8 @@ public final class DeploymentManager implements DeploymentService {
      */
     private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
     private static final boolean DEF_HW_OFFLOADING = true;
-    @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
-             label = "Enable the hardware offloading features of Metron; default is true")
+    // @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
+    //          label = "Enable the hardware offloading features of Metron; default is true")
     private boolean enableHwOffloading = DEF_HW_OFFLOADING;
 
     /**
@@ -161,8 +159,8 @@ public final class DeploymentManager implements DeploymentService {
      */
     private static final String ENABLE_AUTOSCALE = "enableAutoScale";
     public  static final boolean DEF_AUTOSCALE = false;
-    @Property(name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
-             label = "Allow the data plane to undertake scaling in case of load imbalances; default is false")
+    // @Property(name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
+    //          label = "Allow the data plane to undertake scaling in case of load imbalances; default is false")
     private boolean enableAutoScale = DEF_AUTOSCALE;
 
     /**
@@ -182,25 +180,25 @@ public final class DeploymentManager implements DeploymentService {
      * 5) the ONOS flow rule service to interact (install/remove rules) with the network elements.
      * 6) the Monitoring service to update the system's runtime information.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ComponentConfigService cfgService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServiceChainService serviceChainService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NfvTopologyService topologyService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected FlowRuleService flowRuleService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected MonitorService monitoringService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected TagService taggingService;
 
     public DeploymentManager() {

@@ -41,13 +41,12 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.net.provider.AbstractProviderService;
 import org.onosproject.net.provider.AbstractListenerProviderRegistry;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Other libraries
 import org.slf4j.Logger;
@@ -63,8 +62,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Service that manages Metron service chains.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = ServiceChainService.class)
 public final class ServiceChainManager
         extends AbstractListenerProviderRegistry<
             ServiceChainEvent, ServiceChainListenerInterface,
@@ -88,10 +86,10 @@ public final class ServiceChainManager
     /**
      * Services used by the service chain manager.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServiceChainStoreService serviceChainStore;
 
     /**

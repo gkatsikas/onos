@@ -21,17 +21,16 @@ import org.onosproject.ui.UiExtensionService;
 import org.onosproject.ui.UiMessageHandlerFactory;
 import org.onosproject.ui.UiView;
 
-import com.google.common.collect.ImmutableList;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.Service;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 import static org.onosproject.ui.UiView.Category.NETWORK;
@@ -39,8 +38,7 @@ import static org.onosproject.ui.UiView.Category.NETWORK;
 /**
  * Mechanism to stream service chain information to the GUI.
  */
-@Component(immediate = true, enabled = true)
-@Service(value = ServiceChainInfoUI.class)
+@Component(immediate = true, service = ServiceChainInfoUI.class)
 public class ServiceChainInfoUI {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -77,7 +75,7 @@ public class ServiceChainInfoUI {
     /**
      * Interact with ONOS.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected UiExtensionService uiExtensionService;
 
     @Activate

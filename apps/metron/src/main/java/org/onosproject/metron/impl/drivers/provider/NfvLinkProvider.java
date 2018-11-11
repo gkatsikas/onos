@@ -18,11 +18,11 @@ package org.onosproject.metron.impl.drivers.provider;
 
 import org.onosproject.metron.api.common.Constants;
 
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
@@ -50,7 +50,7 @@ import static org.onosproject.net.Link.Type.DIRECT;
  * Ancillary provider to activate/deactivate NFV links as their respective
  * devices go online or offline.
  */
-@Component(immediate = true)
+@Component(immediate = true, service = LinkProvider.class)
 public class NfvLinkProvider extends AbstractProvider implements LinkProvider {
 
     private static final Logger log = LoggerFactory.getLogger(NfvLinkProvider.class);
@@ -61,13 +61,13 @@ public class NfvLinkProvider extends AbstractProvider implements LinkProvider {
     private static final String APP_NAME = Constants.SYSTEM_PREFIX + ".drivers.provider";
     private static final String COMPONET_LABEL = "NFV Link Provider";
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected LinkProviderRegistry linkRegistry;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeviceService deviceService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected LinkService linkService;
 
     private LinkProviderService linkProviderService;

@@ -51,16 +51,14 @@ import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 import org.onosproject.drivers.server.stats.CpuStatistics;
 import org.onosproject.drivers.server.stats.MonitoringStatistics;
 
-// Apache libraries
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Modified;
-import org.apache.felix.scr.annotations.Property;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Modified;
+// import org.osgi.service.component.annotations.Property;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 import org.onlab.util.Tools;
 import org.osgi.service.component.ComponentContext;
@@ -69,6 +67,7 @@ import org.osgi.service.component.ComponentContext;
 import com.google.common.collect.Sets;
 
 // Other libraries
+import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
 
 // Java libraries
@@ -91,8 +90,7 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 /**
  * A service that undertakes to deploy and manage Metron service chains.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = OrchestrationService.class)
 public final class OrchestrationManager implements OrchestrationService {
 
     private static final Logger log = getLogger(OrchestrationManager.class);
@@ -141,49 +139,49 @@ public final class OrchestrationManager implements OrchestrationService {
      * 4) the Monitoring service to update the system's runtime information.
      * 5) the Deployer's services to fetch the list of active Metron service chains.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ComponentConfigService cfgService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected ServiceChainService serviceChainService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NfvTopologyService topologyService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected MonitorService monitoringService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeploymentService deployerService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected TagService taggingService;
 
     // The CPU utilization threshold to perform scale down
     private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
     private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.25;
-    @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
-             label = "Configure the amount of CPU load to trigger scale down events; " +
-                    "default is 25% CPU core utilization")
+    // @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
+    //          label = "Configure the amount of CPU load to trigger scale down events; " +
+    //                 "default is 25% CPU core utilization")
     private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
 
     // The CPU utilization threshold to perform scale up
     private static final String SCALE_UP_LOAD_THRESHOLD = "scaleUpLoadThreshold";
     private static final float DEFAULT_SCALE_UP_LOAD_THRESHOLD = (float) 0.75;
-    @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
-             label = "Configure the amount of CPU load to trigger scale up events; " +
-                    "default is 75% CPU core utilization")
+    // @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
+    //          label = "Configure the amount of CPU load to trigger scale up events; " +
+    //                 "default is 75% CPU core utilization")
     private float scaleUpLoadThreshold = DEFAULT_SCALE_UP_LOAD_THRESHOLD;
 
     // The frequency of the Orchestrator's monitoring in milliseconds
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
     private static final int DEFAULT_MONITORING_PERIOD_MS = 100;
-    @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
-             label = "Configure the data plane monitoring frequency (in milliseconds); " +
-                    "default is 100 ms")
+    // @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
+    //          label = "Configure the data plane monitoring frequency (in milliseconds); " +
+    //                 "default is 100 ms")
     private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
 
     public OrchestrationManager() {

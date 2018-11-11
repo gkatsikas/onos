@@ -33,13 +33,12 @@ import org.onosproject.drivers.server.devices.nic.MplsRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.VlanRxFilterValue;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+// OSGI libraries
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Guava
 import com.google.common.collect.Sets;
@@ -68,8 +67,7 @@ import static org.onosproject.metron.api.dataplane.TagService.LB_NO_AVAILABLE_TA
  * Manages the runtime association of traffic classes to tags
  * and handles load imbalances by manipulating those tags.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = TagService.class)
 public final class TagManager implements TagService {
 
     private static final Logger log = getLogger(TagManager.class);
@@ -128,7 +126,7 @@ public final class TagManager implements TagService {
     /**
      * The Tag Manager requires the ONOS core service to register.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
     /**
