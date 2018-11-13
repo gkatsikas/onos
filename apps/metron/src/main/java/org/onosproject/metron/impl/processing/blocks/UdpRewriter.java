@@ -44,6 +44,12 @@ public class UdpRewriter extends IpRewriter {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new UdpRewriter(
             id,

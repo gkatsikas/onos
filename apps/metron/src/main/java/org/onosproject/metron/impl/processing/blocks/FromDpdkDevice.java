@@ -137,6 +137,12 @@ public class FromDpdkDevice extends DpdkDevice {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new FromDpdkDevice(
             id,

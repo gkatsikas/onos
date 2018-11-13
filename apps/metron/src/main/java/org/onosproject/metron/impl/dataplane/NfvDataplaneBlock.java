@@ -393,8 +393,6 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
             throw new ParseException(this.blockClass + " is totally offloaded to the network.");
         } else if (this.blockClass == ProcessingBlockClass.PAINT_TEE) {
             throw new ParseException(this.blockClass + " is not currently supported.");
-        } else if (this.blockClass == ProcessingBlockClass.ROUND_ROBIN_IP_MAPPER) {
-            this.parseRoundRobinIpMapper();
         } else if (this.blockClass == ProcessingBlockClass.SET_VLAN_ANNO) {
             throw new ParseException(this.blockClass + " is not currently supported.");
         } else if (this.blockClass == ProcessingBlockClass.SIMPLE_ETHERNET_CLASSIFIER) {
@@ -1016,15 +1014,6 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
     private void parseIpFragmenter() {
         // TODO
         // this.addOutputClass(0);
-        return;
-    }
-
-    /**
-     * Parse the configuration of an RoundRobinIPMapper block.
-     * Works in tandem with IPRewriter to provide round-robin rewriting.
-     */
-    private void parseRoundRobinIpMapper() {
-        // TODO
         return;
     }
 

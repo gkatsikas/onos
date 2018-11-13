@@ -122,6 +122,12 @@ public class DecIpTtl extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new DecIpTtl(
             id,

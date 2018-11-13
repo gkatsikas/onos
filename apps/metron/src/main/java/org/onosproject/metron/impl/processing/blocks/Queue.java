@@ -95,6 +95,12 @@ public class Queue extends ShaperBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new Queue(
             id,

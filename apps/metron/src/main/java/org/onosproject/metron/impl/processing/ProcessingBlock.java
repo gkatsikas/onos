@@ -295,10 +295,19 @@ public abstract class ProcessingBlock implements ProcessingBlockInterface {
      * @return the class of this processing block
      */
     public abstract ProcessingBlockClass processingBlockClass();
+
     /**
      * Populates the configuration to the inheriting blocks' members.
      */
     public abstract void populateConfiguration();
+
+    /**
+     * Returns the full configuration of a blocks.
+     *
+     * @return full block configuration
+     */
+    public abstract String fullConfiguration();
+
     /**
      * Spawns a new processing block.
      *

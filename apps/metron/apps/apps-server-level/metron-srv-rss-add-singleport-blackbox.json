@@ -1,0 +1,106 @@
+{
+    "apps" : {
+        "org.onosproject.metron.apps" : {
+            "add" : {
+                "serviceChains" : [
+                    {
+                        "name"       : "metron-srv-rss-singleport-blackbox",
+                        "type"       : "generic",
+                        "networkId"  : 1,
+                        "cpuCores"   : 1,
+                        "maxCpuCores": 16,
+                        "scale"      : true,
+                        "autoScale"  : false,
+                        "scope"      : "server-rss",
+                        "components" : [
+                            {
+                                "name"  : "nf1",
+                                "type"  : "standalone",
+                                "class" : "blackbox",
+                                "id"    : "blackbox-nf1"
+                            }
+                        ],
+                        "processors": [
+                            {
+                                "name"  : "nf1",
+                                "blocks": [
+                                    {
+                                        "block": "FromBlackboxDevice",
+                                        "instance": "nf1_fd1",
+                                        "configArgs": "DEVNAME eno1, EXEC '/usr/local/bin/blackbox', ARGS 'args', UP_CMD 'up', DOWN_CMD 'down'",
+                                        "configFile": ""
+                                    },
+                                    {
+                                        "block": "ToBlackboxDevice",
+                                        "instance": "nf1_td1",
+                                        "configArgs": "DEVNAME eno1",
+                                        "configFile": ""
+                                    }
+                                ],
+                                "graph" : [
+                                    {
+                                        "src": {
+                                            "instance": "nf1_fd1",
+                                            "port": 0
+                                        },
+                                        "dst": {
+                                            "instance": "nf1_td1",
+                                            "port": 0
+                                        }
+                                    }
+                                ]
+                            }
+                        ],
+                        "topology": {
+                            "network": {
+                                "ingressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.169:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 0
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "egressPoints": [
+                                    {
+                                        "deviceId": "rest:192.16.125.169:80",
+                                        "portIds": [
+                                            {
+                                                "portId": 0
+                                            }
+                                        ]
+                                    }
+                                ],
+                                "targetDevice": "rest:192.16.125.169:80"
+                            },
+                            "server": [
+                                {
+                                    "src" : {
+                                        "entity"      : "source",
+                                        "interface"   : "-"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    }
+                                },
+                                {
+                                    "src" : {
+                                        "entity"      : "nf1",
+                                        "interface"   : "eno1"
+                                    },
+                                    "dst" : {
+                                        "entity"      : "destination",
+                                        "interface"   : "-"
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -178,6 +178,11 @@ public class StoreEtherAddress extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        return "StoreEtherAddress(" + this.macStr() + ", " + this.offset() + ")";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new StoreEtherAddress(
             id,

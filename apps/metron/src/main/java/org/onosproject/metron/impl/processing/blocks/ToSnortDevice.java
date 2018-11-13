@@ -56,6 +56,12 @@ public class ToSnortDevice extends ToBlackboxDevice {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new ToSnortDevice(
             id,

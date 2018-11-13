@@ -43,6 +43,12 @@ public class AverageCounter extends Counter {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new AverageCounter(
             id,

@@ -44,6 +44,12 @@ public class IpClassifier extends ClassifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new IpClassifier(
             id,

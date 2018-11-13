@@ -4,11 +4,11 @@
             "add" : {
                 "serviceChains" : [
                     {
-                        "name"       : "metron-srv-flowdir-singleport-fw-3rules-mon-lb",
+                        "name"       : "metron-srv-flowdir-singleport-kista-trace-dispatcher-to-blackbox",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
-                        "maxCpuCores": 3,
+                        "maxCpuCores": 16,
                         "scale"      : true,
                         "autoScale"  : false,
                         "scope"      : "server-rules",
@@ -16,14 +16,14 @@
                             {
                                 "name"  : "nf1",
                                 "type"  : "click",
-                                "class" : "firewall",
-                                "id"    : "kth-firewall-nf1"
+                                "class" : "dispatcher",
+                                "id"    : "kth-dispatcher-nf1"
                             },
                             {
                                 "name"  : "nf2",
-                                "type"  : "click",
-                                "class" : "loadbalancer",
-                                "id"    : "kth-loadbalancer-nf2"
+                                "type"  : "standalone",
+                                "class" : "blackbox",
+                                "id"    : "blackbox-nf2"
                             }
                         ],
                         "processors": [
@@ -140,43 +140,13 @@
                                 "name"  : "nf2",
                                 "blocks": [
                                     {
-                                        "block": "FromDevice",
+                                        "block": "FromBlackboxDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno2",
+                                        "configArgs": "DEVNAME eno2, EXEC '/usr/local/bin/bb', ARGS 'args', UP_CMD 'up', DOWN_CMD 'down'",
                                         "configFile": ""
                                     },
                                     {
-                                        "block": "Strip",
-                                        "instance": "nf2_strip1",
-                                        "configArgs": "LENGTH 14",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "MarkIPHeader",
-                                        "instance": "nf2_mark1",
-                                        "configArgs": "OFFSET 0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "IPRewriter",
-                                        "instance": "nf2_rw1_1",
-                                        "configArgs": "RoundRobinIPMapper(- - 8.4.5.2 - 0 0, - - 8.4.5.3 - 0 0, - - 8.4.5.4 - 0 0, - - 8.4.5.5 - 0 0, - - 8.4.5.6 - 0 0), SET_AGGREGATE true",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "EtherEncap",
-                                        "instance": "nf2_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:ca, DST 50:6b:4b:43:8a:da",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "Queue",
-                                        "instance": "nf2_q1",
-                                        "configArgs": "CAPACITY 1024",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "ToDevice",
+                                        "block": "ToBlackboxDevice",
                                         "instance": "nf2_td1",
                                         "configArgs": "DEVNAME eno1",
                                         "configFile": ""
@@ -186,56 +156,6 @@
                                     {
                                         "src": {
                                             "instance": "nf2_fd1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_strip1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_strip1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_mark1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_mark1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_rw1_1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_rw1_1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_q1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_q1",
                                             "port": 0
                                         },
                                         "dst": {
@@ -250,7 +170,7 @@
                             "network": {
                                 "ingressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.166:80",
+                                        "deviceId": "rest:192.16.125.169:80",
                                         "portIds": [
                                             {
                                                 "portId": 0
@@ -260,7 +180,7 @@
                                 ],
                                 "egressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.166:80",
+                                        "deviceId": "rest:192.16.125.169:80",
                                         "portIds": [
                                             {
                                                 "portId": 0
@@ -268,7 +188,7 @@
                                         ]
                                     }
                                 ],
-                                "targetDevice": "rest:192.16.125.166:80"
+                                "targetDevice": "rest:192.16.125.169:80"
                             },
                             "server": [
                                 {

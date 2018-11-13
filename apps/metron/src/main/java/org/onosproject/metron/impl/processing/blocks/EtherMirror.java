@@ -44,6 +44,11 @@ public class EtherMirror extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        return "EtherMirror()";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new EtherMirror(
             id,
