@@ -24,7 +24,9 @@ public enum NetworkFunctionClass {
     /**
      * Indicative classes of network functions.
      */
+    BLACKBOX("blackbox"),
     DEEP_PACKET_INSPECTION("dpi"),
+    DISPATCHER("dispatcher"),
     FIREWALL("firewall"),
     INTRUSION_DETECTION_SYSTEM("ids"),
     INTRUSION_PREVENTION_SYSTEM("ips"),

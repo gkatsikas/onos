@@ -147,6 +147,11 @@ public class FromSnortDevice extends FromBlackboxDevice {
     }
 
     @Override
+    public String fullConfiguration() {
+        return super.fullConfiguration();
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new FromSnortDevice(
             id,

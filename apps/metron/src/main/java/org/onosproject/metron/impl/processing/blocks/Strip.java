@@ -103,6 +103,12 @@ public class Strip extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new Strip(
             id,

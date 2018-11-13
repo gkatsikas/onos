@@ -43,6 +43,7 @@ import org.onosproject.metron.impl.classification.ClassificationTree;
 import org.onosproject.metron.impl.processing.blocks.CheckIpHeader;
 import org.onosproject.metron.impl.processing.blocks.Device;
 import org.onosproject.metron.impl.processing.blocks.EtherEncap;
+import org.onosproject.metron.impl.processing.blocks.EtherMirror;
 import org.onosproject.metron.impl.processing.blocks.EtherRewrite;
 import org.onosproject.metron.impl.processing.blocks.FromBlackboxDevice;
 import org.onosproject.metron.impl.processing.blocks.FromSnortDevice;
@@ -871,32 +872,26 @@ public class TrafficClass implements TrafficClassInterface {
         // Ethernet configuration
         } else if (blockClass == ProcessingBlockClass.ETHER_ENCAP) {
             EtherEncap etherEncapBlock = (EtherEncap) block.processor();
-            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherEncapBlock.srcMacStr() +
-                                                         ", DST " + etherEncapBlock.dstMacStr() + ")";
+            this.ethernetEncapConfiguration = etherEncapBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.STORE_ETHER_ADDRESS) {
             StoreEtherAddress storeEtherAddrBlock = (StoreEtherAddress) block.processor();
-            this.ethernetEncapConfiguration = "StoreEtherAddress(" + storeEtherAddrBlock.macStr() + ", " +
-                                                                     storeEtherAddrBlock.offset() + ")";
+            this.ethernetEncapConfiguration = storeEtherAddrBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.ETHER_MIRROR) {
-            this.ethernetEncapConfiguration = "EtherMirror()";
+            EtherMirror etherMirrorBlock = (EtherMirror) block.processor();
+            this.ethernetEncapConfiguration = etherMirrorBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.ETHER_REWRITE) {
             EtherRewrite etherRwBlock = (EtherRewrite) block.processor();
-            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherRwBlock.srcMacStr() +
-                                                         ", DST " + etherRwBlock.dstMacStr() + ")";
+            this.ethernetEncapConfiguration = etherRwBlock.fullConfiguration();
         // Support for Blackbox NFs
         } else if (blockClass == ProcessingBlockClass.TO_BLACKBOX_DEVICE) {
             ToBlackboxDevice toBlackboxBlock = (ToBlackboxDevice) block.processor();
             FromBlackboxDevice fromBlackboxBlock = toBlackboxBlock.peerDevice();
-            this.blackboxConfiguration = FromBlackboxDevice.EXEC + " " + fromBlackboxBlock.executable() + ", " +
-                                         FromBlackboxDevice.ARGS + " " + fromBlackboxBlock.arguments()  + "";
+            this.blackboxConfiguration = fromBlackboxBlock.fullConfiguration();
+        // Snort is specific Blackbox device
         } else if (blockClass == ProcessingBlockClass.TO_SNORT_DEVICE) {
             ToSnortDevice toSnortBlock = (ToSnortDevice) block.processor();
             FromSnortDevice fromSnortBlock = (FromSnortDevice) toSnortBlock.peerDevice();
-            this.blackboxConfiguration = FromSnortDevice.EXEC + " " + fromSnortBlock.executable() + ", " +
-                                         FromSnortDevice.ARGS + " " + fromSnortBlock.arguments()  + ", " +
-                                         FromSnortDevice.FROM_RING + " " + fromSnortBlock.fromRing() + ", " +
-                                         FromSnortDevice.TO_RING   + " " + fromSnortBlock.toRing()   + ", " +
-                                         FromSnortDevice.TO_REVERSE_RING + " " + fromSnortBlock.toReverseRing();
+            this.blackboxConfiguration = fromSnortBlock.fullConfiguration();
         }
 
         // Last element of the chain -> no children
@@ -1195,7 +1190,7 @@ public class TrafficClass implements TrafficClassInterface {
             }
         }
 
-        printPacketFilters();
+        // printPacketFilters();
 
         return;
     }

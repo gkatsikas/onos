@@ -133,4 +133,10 @@ public abstract class LinuxDevice extends Device {
         }
     }
 
+    @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
 }

@@ -137,6 +137,12 @@ public class FromDevice extends LinuxDevice {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new FromDevice(
             id,

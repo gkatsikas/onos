@@ -163,6 +163,11 @@ public class EtherRewrite extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        return "EtherRewrite(SRC " + this.srcMacStr() + ", DST " + this.dstMacStr() + ")";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new EtherRewrite(
             id,

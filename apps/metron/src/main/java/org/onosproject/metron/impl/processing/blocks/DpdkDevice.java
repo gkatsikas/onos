@@ -165,4 +165,10 @@ public abstract class DpdkDevice extends Device {
         }
     }
 
+    @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
 }

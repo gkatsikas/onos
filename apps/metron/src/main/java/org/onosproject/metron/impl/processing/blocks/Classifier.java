@@ -45,6 +45,12 @@ public class Classifier extends ClassifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new Classifier(
             id,

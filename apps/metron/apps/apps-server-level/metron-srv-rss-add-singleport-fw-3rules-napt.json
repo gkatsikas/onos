@@ -49,8 +49,8 @@
                                         "configFile": ""
                                     },
                                     {
-                                        "block": "IPClassifier",
-                                        "instance": "nf1_ipCl1",
+                                        "block": "IPFilter",
+                                        "instance": "nf1_ipFilter1",
                                         "configArgs": "FILE",
                                         "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/3rules-flow-dir.json"
                                     },
@@ -100,13 +100,13 @@
                                             "port": 0
                                         },
                                         "dst": {
-                                            "instance": "nf1_ipCl1",
+                                            "instance": "nf1_ipFilter1",
                                             "port": 0
                                         }
                                     },
                                     {
                                         "src": {
-                                            "instance": "nf1_ipCl1",
+                                            "instance": "nf1_ipFilter1",
                                             "port": -1
                                         },
                                         "dst": {

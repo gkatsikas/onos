@@ -72,6 +72,7 @@ public class ToBlackboxDevice extends LinuxDevice {
             this.getClass() + " element peers with a null FromBlackboxDevice element"
         );
         this.peer = peer;
+
         // Update the number of peers of our peer
         peer.incrementNumberOfPeers();
     }
@@ -84,6 +85,12 @@ public class ToBlackboxDevice extends LinuxDevice {
     @Override
     public void populateConfiguration() {
         super.populateConfiguration();
+    }
+
+    @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
     }
 
     @Override

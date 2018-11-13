@@ -145,4 +145,10 @@ public abstract class Device extends TerminalBlock {
         }
     }
 
+    @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
 }

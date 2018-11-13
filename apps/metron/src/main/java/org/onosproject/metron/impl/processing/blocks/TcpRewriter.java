@@ -44,6 +44,12 @@ public class TcpRewriter extends IpRewriter {
     }
 
     @Override
+    public String fullConfiguration() {
+        // TODO
+        return "";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new TcpRewriter(
             id,

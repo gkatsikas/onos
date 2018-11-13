@@ -21,6 +21,8 @@ import org.onosproject.metron.api.processing.TerminalStage;
 
 import org.onosproject.metron.impl.processing.ProcessingBlock;
 
+import java.util.Map;
+
 /**
  * Block for standalone NFs to read packets from a Linux device.
  */
@@ -32,6 +34,7 @@ public class FromBlackboxDevice extends LinuxDevice {
      */
     protected String exec;
     protected String args;
+    protected String extraArgs;
 
     /**
      * Multiple traffic classes might end up in a blackbox NF.
@@ -145,15 +148,39 @@ public class FromBlackboxDevice extends LinuxDevice {
     public void populateConfiguration() {
         super.populateConfiguration();
 
-        Object val = this.configurationMap().get(EXEC);
-        if (val != null) {
-            this.setExecutable(val.toString());
+        String args = "";
+
+        for (Map.Entry<String, Object> entry : this.configurationMap().entrySet()) {
+            String key = entry.getKey();
+            Object val = entry.getValue();
+
+            if (key.equals(EXEC) && (val != null)) {
+                this.setExecutable(val.toString());
+            } else {
+                args += key + " " + val + ", ";
+            }
         }
 
-        val = this.configurationMap().get(ARGS);
-        if (val != null) {
-            this.setArguments(val.toString());
+        if (!args.isEmpty()) {
+            // Strip off the last ', '
+            args = args.substring(0, args.length() - 2);
+            this.setArguments(args);
         }
+    }
+
+    @Override
+    public String fullConfiguration() {
+        String conf = "";
+
+        if (!this.exec.isEmpty()) {
+            conf += EXEC + " " + executable() + ", ";
+        }
+
+        if (!this.args.isEmpty()) {
+            conf += arguments();
+        }
+
+        return conf;
     }
 
     @Override

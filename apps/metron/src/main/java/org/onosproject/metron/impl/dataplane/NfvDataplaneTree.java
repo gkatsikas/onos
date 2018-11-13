@@ -916,7 +916,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             int pos = writeOps.indexOf(";");
             result = writeOps.substring(0, pos + 1) + " " + pipelineInstance + "[0] -> " + writeOps.substring(pos + 2);
         } else {
-            result = pipelineInstance + " -> " + writeOps;
+            result = writeOps.isEmpty() ? pipelineInstance : (pipelineInstance + " -> " + writeOps);
         }
         result += " -> ";
 
@@ -1000,7 +1000,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             // Update the type of the service chain given this current NF
             updateDataplaneTreeType(currentBlock);
 
-            log.info(
+            log.debug(
                 "[{}] \t\t Block {} ({}) with {} output ports and conf {}",
                 label(), currentBlock.blockClass(), currentBlock.name(), currentBlock.portsNumber(),
                 currentBlock.basicConfiguration()

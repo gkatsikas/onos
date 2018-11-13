@@ -227,6 +227,11 @@ public class EtherEncap extends ModifierBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        return "EtherRewrite(SRC " + this.srcMacStr() + ", DST " + this.dstMacStr() + ")";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new EtherEncap(
             id,

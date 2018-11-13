@@ -46,6 +46,11 @@ public class Discard extends TerminalBlock {
     }
 
     @Override
+    public String fullConfiguration() {
+        return "Discard()";
+    }
+
+    @Override
     protected ProcessingBlock spawn(String id) {
         return new Discard(
             id,
