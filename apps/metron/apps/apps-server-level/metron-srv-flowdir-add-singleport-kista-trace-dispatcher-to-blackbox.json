@@ -52,7 +52,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFilter1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/3rules-flow-dir.json"
+                                        "configFile": "/home/katsikas/nfv/metron-testbed/metron-blackbox-metron/rules/kth/metron-rules/20181016-kista-all-nointernal.ip4.anon.ipfilter.json"
                                     },
                                     {
                                         "block": "EtherEncap",
