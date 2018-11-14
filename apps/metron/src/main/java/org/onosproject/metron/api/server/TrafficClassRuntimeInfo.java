@@ -345,17 +345,20 @@ public interface TrafficClassRuntimeInfo {
      */
     TrafficClassRuntimeInfo update(TrafficClassRuntimeInfo other);
 
-    /* Lock to be acquired when re-balancing this traffic class */
-    Lock lock = new ReentrantLock();
+    /**
+     * Lock to be acquired when re-balancing this traffic class.
+     */
+    Lock LOCK = new ReentrantLock();
 
     /**
-     * Returns a timestamp of the moment when the last imbalance check was done
-     * @return WallClockTimestamp Time of the last imbalance checking
+     * Returns a timestamp of the moment when the last imbalance check was done.
+     *
+     * @return WallClockTimestamp time of the last imbalance checking
      */
     WallClockTimestamp lastImbalanceCheck();
 
     /**
-     * Inform a re-balancing of this traffic class has just been done
+     * Inform a re-balancing of this traffic class has just been done.
      */
     void imbalanceCheckDone();
 

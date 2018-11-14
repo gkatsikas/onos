@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package org.onosproject.metron.api.classification.trafficclass;
+package org.onosproject.metron.api.classification.trafficclass.filter;
 
-import org.onosproject.metron.api.classification.trafficclass.filter.Filter;
-import org.onosproject.metron.api.classification.trafficclass.filter.PacketFilter;
+import org.onosproject.metron.api.classification.trafficclass.HeaderField;
 
 import org.junit.Before;
 import org.junit.Test;

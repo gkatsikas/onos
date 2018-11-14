@@ -73,8 +73,15 @@ import org.slf4j.Logger;
 
 // Java libraries
 import java.net.URI;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Dictionary;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
@@ -286,8 +293,8 @@ public final class OrchestrationManager implements OrchestrationService {
         log.debug("Service Chains Orchestrator - Runtime Load Balancing");
         log.debug(Constants.STDOUT_BARS);
 
-        Map<ServiceChainId, Map<URI, Map<Integer,Float>>> previousLoad =
-            new ConcurrentHashMap<ServiceChainId, Map<URI, Map<Integer,Float>>>();
+        Map<ServiceChainId, Map<URI, Map<Integer, Float>>> previousLoad =
+            new ConcurrentHashMap<ServiceChainId, Map<URI, Map<Integer, Float>>>();
 
         Map<ServiceChainId, Map<URI, Map<Integer, CpuRuntimeInfo>>> isRebalanced =
             new ConcurrentHashMap<>();
@@ -312,7 +319,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
                 // Allocate local resources at the service chain level
                 if (!previousLoad.containsKey(scId)) {
-                    previousLoad.put(scId, new ConcurrentHashMap<URI, Map<Integer,Float>>());
+                    previousLoad.put(scId, new ConcurrentHashMap<URI, Map<Integer, Float>>());
                 }
                 if (!isRebalanced.containsKey(scId)) {
                     isRebalanced.put(scId, new ConcurrentHashMap<>());
@@ -332,10 +339,11 @@ public final class OrchestrationManager implements OrchestrationService {
                     TrafficClassRuntimeInfo tcInfo = tcIterator.next();
                     long lastResched = new WallClockTimestamp().msSince(tcInfo.lastImbalanceCheck());
                     if (lastResched < monitoringPeriodMilli) {
-                        sleepTime = Math.min(monitoringPeriodMilli-(int)lastResched, sleepTime);
+                        sleepTime = Math.min(monitoringPeriodMilli - (int) lastResched, sleepTime);
                     }
-                    if (!tcInfo.lock.tryLock())
+                    if (!tcInfo.LOCK.tryLock()) {
                         continue;
+                    }
                     try {
                         // Fetch the ID of the traffic class of this service chain
                         URI tcId = tcInfo.trafficClassId();
@@ -376,10 +384,11 @@ public final class OrchestrationManager implements OrchestrationService {
                             Map<Integer, CpuRuntimeInfo> isRebalancedTc = isRebalanced.get(scId).get(tcId);
 
                             // Check for potential load imbalance
-                            if (this.checkForLoadImbalance(sc, tcInfo, deviceId, stats, maxCpus, previousLoadTc, isRebalancedTc)) {
+                            if (this.checkForLoadImbalance(
+                                    sc, tcInfo, deviceId, stats, maxCpus, previousLoadTc, isRebalancedTc)) {
                                 didSomething = true; //Be sure to reschedule right away
                             } else {
-                                //Remember that we did the check for this TC so it will be done in the timePeriod time again
+                                // Remember that we did the check for this TC; repeat only after some time
                                 tcInfo.imbalanceCheckDone();
                             }
                         }
@@ -389,7 +398,7 @@ public final class OrchestrationManager implements OrchestrationService {
                             break;
                         }
                     } finally {
-                        tcInfo.lock.unlock();
+                        tcInfo.LOCK.unlock();
                     }
                 }
 
@@ -443,12 +452,12 @@ public final class OrchestrationManager implements OrchestrationService {
      * @param isRebalanced indicates that this traffic class is just rebalanced
      */
     private boolean checkForLoadImbalance(
-            ServiceChainInterface   sc,
-            TrafficClassRuntimeInfo tc,
-            DeviceId                deviceId,
-            MonitoringStatistics    stats,
-            int                     maxCpus,
-            Map<Integer,Float> previousLoad,
+            ServiceChainInterface        sc,
+            TrafficClassRuntimeInfo      tc,
+            DeviceId                     deviceId,
+            MonitoringStatistics         stats,
+            int                          maxCpus,
+            Map<Integer, Float>          previousLoad,
             Map<Integer, CpuRuntimeInfo> isRebalanced) {
         // Service chain object might be deleted anytime due to e.g., dead agent
         if ((sc == null) || (stats == null)) {
@@ -462,22 +471,17 @@ public final class OrchestrationManager implements OrchestrationService {
 
         // Get the list of CPU cores with non-zero load
         Collection<CpuStatistics> cpuStats = stats.cpuStatisticsAll();
-
-        //Map<Integer, Float> loadedCores = this.getCoresWithLoadGreaterThan(cpuStats, CPU_LOAD_ZERO);
         Map<Integer, Float> activeCores = this.getActiveCores(cpuStats);
         // Get the number of CPU cores that exhibit some load
-        //int loadedCpusOfThisTc = loadedCores.size();
         int activeCoresOfThisTc = activeCores.size();
 
         // No need to react
         if (activeCoresOfThisTc == 0) {
             // Store it so that we can compare in the future
             monitoringService.updateCpuLoadOfTrafficClass(scId, tcId, CPU_LOAD_ZERO);
-
             log.debug("[{}] \t Traffic class {}: 0 overloaded cores", label(), tcId);
             return false;
         }
-
 
         float totalLoad = 0;
         for (Map.Entry<Integer, Float> entry : activeCores.entrySet()) {
@@ -486,18 +490,18 @@ public final class OrchestrationManager implements OrchestrationService {
         }
 
         float highScaleUpLoadThreshold = (scaleUpLoadThreshold + 1.0f) / 2.0f;
-        Set<Integer> overloaded = new HashSet<>();
-        Set<Integer> underloaded = new HashSet<>();
+        Set<Integer> overloaded = new ConcurrentSkipListSet<Integer>();
+        Set<Integer> underloaded = new ConcurrentSkipListSet<Integer>();
 
         for (Map.Entry<Integer, Float> entry : activeCores.entrySet()) {
             // The physical CPU core number that exhibits some load
             int cpu = entry.getKey();
-
             // The amount of load on this CPU core
             float load = entry.getValue();
 
-            if (!previousLoad.containsKey(cpu))
+            if (!previousLoad.containsKey(cpu)) {
                 previousLoad.put(cpu, CPU_LOAD_ZERO);
+            }
 
             float pastLoad = previousLoad.get(cpu);
 
@@ -505,8 +509,7 @@ public final class OrchestrationManager implements OrchestrationService {
             previousLoad.put(cpu, (float) (pastLoad * 0.67 + 0.33 * load));
 
             float futureLoad = (load - pastLoad) + load;
-
-            float highestLoad = max(max(load,pastLoad),futureLoad);
+            float highestLoad = max(max(load, pastLoad), futureLoad);
 
             CpuStatistics cpuStat = null;
             for (CpuStatistics cs : cpuStats) {
@@ -514,12 +517,16 @@ public final class OrchestrationManager implements OrchestrationService {
                     cpuStat = cs;
                 }
             }
-            if (cpuStat == null)
+            if (cpuStat == null) {
                 continue;
+            }
 
             // Print load only if there is some
             if (load >= CPU_MINIMUM_PRINTABLE_LIMIT) {
-                log.info("[{}] \t Traffic class {}: CPU Core {} ---> Load {}%, previous {}%, future {}%, busy since {}", label(), tcId, cpu, load * 100, pastLoad * 100, futureLoad * 100, cpuStat.busySince());
+                log.info(
+                    "[{}] \t Traffic class {}: CPU Core {} ---> Load {}%, previous {}%, future {}%, busy since {}",
+                    label(), tcId, cpu, load * 100, pastLoad * 100, futureLoad * 100, cpuStat.busySince()
+                );
             }
 
             // Update with the new one
@@ -530,8 +537,8 @@ public final class OrchestrationManager implements OrchestrationService {
                 continue;
             }
 
-
-            // Keep track of when a core has seen a change in activity. We only set the time when the change operates, that is load is seen when active, or load is 0 when inactive
+            // Keep track of when a core has seen a change in activity.
+            // We only set the time when the change occurs.
             if (isRebalanced.containsKey(cpu)) {
                 if (isRebalanced.get(cpu).lastResched == null) {
                     log.info("[{}] \t Uninitialized CPU {} busy {}", label(), cpu, cpuStat.busy());
@@ -541,55 +548,64 @@ public final class OrchestrationManager implements OrchestrationService {
                     }
                     continue;
                 } else {
-                    long diff = new WallClockTimestamp().unixTimestamp() - isRebalanced.get(cpu).lastResched.unixTimestamp();
-
+                    long diff = new WallClockTimestamp().unixTimestamp() -
+                                isRebalanced.get(cpu).lastResched.unixTimestamp();
                     if ((diff < CPU_MIN_RESCHED_MS) && (load < highScaleUpLoadThreshold)) {
-                        log.info("[{}] \t Skipping rebalance check for traffic class {} core {} as delta is {}", label(), tcId, cpu, diff);
+                        log.info(
+                            "[{}] \t Skipping rebalance check for traffic class {} core {} as delta is {}",
+                            label(), tcId, cpu, diff
+                        );
                         continue;
                     } else {
-                        log.info("[{}] \t Doing rebalance check for traffic class {} core {} as delta is {}", label(), tcId, cpu, diff);
+                        log.info(
+                            "[{}] \t Doing rebalance check for traffic class {} core {} as delta is {}",
+                            label(), tcId, cpu, diff
+                        );
                     }
                 }
             } else {
-                isRebalanced.put(cpu, new CpuRuntimeInfo()); //Assume it was just rescheduled
+                isRebalanced.put(cpu, new CpuRuntimeInfo()); // Assume it was just rescheduled
                 continue;
             }
 
             // An overload has been detected for more than one iterations
             if ((load >= scaleUpLoadThreshold) || (futureLoad >= scaleUpLoadThreshold)) {
-
-                //Avoid total overprovision by scaling up only if the total free cpu is smaller than 2 * scaleUp, except if the load of this cpu is getting too high (half the threshold set)
-                if (((float)activeCoresOfThisTc - totalLoad < 3 * scaleUpLoadThreshold || load > highScaleUpLoadThreshold ) && (pastLoad >= scaleUpLoadThreshold)) {
+                // Avoid overprovisioning by scaling up only if the total free cpu is smaller than 2 * scaleUp,
+                // except if the load of this cpu is getting too high (half the threshold set)
+                if ((((float) activeCoresOfThisTc - totalLoad < 3 * scaleUpLoadThreshold) ||
+                    (load > highScaleUpLoadThreshold)) && (pastLoad >= scaleUpLoadThreshold)) {
                     overloaded.add(cpu);
                 }
             // Load has decreased to the desired level for scale down
-            // We will not scale if the scaling itself (assuming the core will take 1.8 times its current load) will provoke a scaleUp directly after
+            // We will not scale if the scaling itself (assuming the core will take 1.8 times its current load)
+            // will cause a scaleUp directly after
             } else if ((highestLoad <= scaleDownLoadThreshold) && ((highestLoad * 1.8) <= scaleUpLoadThreshold)) {
-
-                //Avoid total underprovision by scaling down only if total load is lower than 2 * scaleDown, except if the load of this cpu is getting too low (half the threshold set)
-                if (((totalLoad < (3 * scaleDownLoadThreshold * activeCoresOfThisTc)) || (load < (scaleDownLoadThreshold / 3)))) {
+                // Avoid underprovisioning by scaling down only if total load is lower than 2 * scaleDown,
+                // except if the load of this cpu is getting too low (half the threshold set)
+                if (((totalLoad < (3 * scaleDownLoadThreshold * activeCoresOfThisTc)) ||
+                    (load < (scaleDownLoadThreshold / 3)))) {
                     // Scale down
                     underloaded.add(cpu);
                 }
-
             }
         }
 
         boolean didSomething = false;
 
-        /**
-         * Comparator that allows to select the CPU to inflate first, by order of last rescheduling then per load
-         */
+        // Comparator that allows to select the CPU to inflate first, by order of last rescheduling then per load
         Comparator<Integer> loadComparator = (c1, c2) -> {
             int c;
-            if (isRebalanced.get(c1).lastResched != null) { //c1 ok
-                if (isRebalanced.get(c2).lastResched == null) { //c2 ko
+            if (isRebalanced.get(c1).lastResched != null) {     // c1 ok
+                if (isRebalanced.get(c2).lastResched == null) { // c2 ok
                     return 1; //c1 preferred
                 }
-                c = Comparator.<Long>naturalOrder().compare(isRebalanced.get(c1).lastResched.unixTimestamp() / 1000, isRebalanced.get(c2).lastResched.unixTimestamp() / 1000);
-            } else if (isRebalanced.get(c2).lastResched != null) {//c1 ko, c2 ok //continue
-                return -1; //Prefer c2
-            } else { //c1 ko, c2 ko
+                c = Comparator.<Long>naturalOrder().compare(
+                    isRebalanced.get(c1).lastResched.unixTimestamp() / 1000,
+                    isRebalanced.get(c2).lastResched.unixTimestamp() / 1000
+                );
+            } else if (isRebalanced.get(c2).lastResched != null) { // c1 ok, c2 ok continue
+                return -1; // Prefer c2
+            } else {       // c1 ok, c2 ok
                 c = 0;
             }
             if (c != 0) {
@@ -602,9 +618,9 @@ public final class OrchestrationManager implements OrchestrationService {
         while (overloaded.size() > 0) {
             Integer cpu = Collections.max(overloaded, loadComparator);
             overloaded.remove(cpu);
-            // Scale up
-            int newCpu;
-            if ((newCpu = this.deflateLoad(sc, tc, deviceId, cpu, maxCpus, withLimitedReconfiguration)) >= 0) {
+
+            int newCpu = this.deflateLoad(sc, tc, deviceId, cpu, maxCpus, withLimitedReconfiguration);
+            if (newCpu >= 0) {
                 checkArgument(newCpu != cpu, "deflated to the same core !");
                 if (!isRebalanced.containsKey(newCpu)) {
                     isRebalanced.put(newCpu, new CpuRuntimeInfo());
@@ -624,11 +640,12 @@ public final class OrchestrationManager implements OrchestrationService {
             Integer cpu = Collections.min(underloaded, loadComparator);
             underloaded.remove(cpu);
 
-            int newCpu;
-            if ((newCpu = this.inflateLoad(sc, tc, deviceId, cpu, maxCpus, withLimitedReconfiguration, underloaded)) >= 0) {
+            int newCpu = this.inflateLoad(sc, tc, deviceId, cpu, maxCpus, withLimitedReconfiguration, underloaded);
+            if (newCpu >= 0) {
                 underloaded.remove(cpu);
-                if (underloaded.contains(newCpu))
+                if (underloaded.contains(newCpu)) {
                     underloaded.remove(newCpu);
+                }
                 checkArgument(newCpu != cpu);
                 isRebalanced.get(cpu).lastResched = null;
                 isRebalanced.get(newCpu).lastResched = null;
@@ -654,8 +671,12 @@ public final class OrchestrationManager implements OrchestrationService {
         log.info("[{}] \t Deflate load on traffic class group {}: Core {}", label(), tcId, overLoadedCpu);
 
         int initialCores = taggingService.getNumberOfActiveCoresOfTrafficClassGroup(tcId);
-        //TEMP test
-        checkArgument(initialCores == tc.coresOfDevice(deviceId).size(), "Initial number of cores %d is different than core map size %d!", initialCores, tc.coresOfDevice(deviceId).size());
+        // TEMP test
+        checkArgument(
+            initialCores == tc.coresOfDevice(deviceId).size(),
+            "Initial number of cores %d is different than core map size %d!",
+            initialCores, tc.coresOfDevice(deviceId).size()
+        );
 
         // We want to increase the number of CPU cores by one
         int cpuCoresToAllocate = initialCores + 1;
@@ -684,7 +705,8 @@ public final class OrchestrationManager implements OrchestrationService {
         Set<FlowRule> newRules = null;
 
         // Compute the deflated traffic classes
-        Pair<RxFilterValue, Set<TrafficClassInterface>> changes = taggingService.deflateTrafficClassGroup(tcId, overLoadedCpu);
+        Pair<RxFilterValue, Set<TrafficClassInterface>> changes =
+            taggingService.deflateTrafficClassGroup(tcId, overLoadedCpu);
 
         // Check what is sent back
         int newCpu;
@@ -695,7 +717,7 @@ public final class OrchestrationManager implements OrchestrationService {
             newCpu = changes.getKey().cpuId();
         }
 
-        checkArgument(overLoadedCpu != newCpu,"Scheduling a CPU to itself !");
+        checkArgument(overLoadedCpu != newCpu, "Scheduling a CPU to itself!");
 
         // Proper way of deflating
         if (!limitedReconfiguration) {
@@ -713,10 +735,10 @@ public final class OrchestrationManager implements OrchestrationService {
 
             // Compute the new rules
             newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
-                    changedTcs, tcId, deployerService.applicationId(), offloaderId,
-                    offloaderInPort, (long) cpuCoresToAllocate, offloaderOutPort,
-                    filterMechanism, changedTag, true
-                    );
+                changedTcs, tcId, deployerService.applicationId(), offloaderId,
+                offloaderInPort, (long) cpuCoresToAllocate, offloaderOutPort,
+                filterMechanism, changedTag, true
+            );
         }
 
         // STOP
@@ -730,7 +752,7 @@ public final class OrchestrationManager implements OrchestrationService {
         monitoringService.addActiveCoresToDevice(deviceId, 1);
 
         // Reconfigure the Metron agent and the necessary network elements
-        checkArgument(!tc.coresOfDevice(deviceId).contains(newCpu), "Adding a used CPU !");
+        checkArgument(!tc.coresOfDevice(deviceId).contains(newCpu), "Adding a used CPU!");
         checkArgument(tc.coresOfDevice(deviceId).contains(overLoadedCpu), "The overloaded CPU is not scheduled...?");
         Set<Integer> newMap = tc.coresOfDevice(deviceId);
         newMap.add(newCpu);
@@ -769,7 +791,7 @@ public final class OrchestrationManager implements OrchestrationService {
 
 
         log.info("[{}] \t Initial # of CPU Cores {} --> New # of CPU cores {}",
-            label(), initialCores, initialCores-1);
+            label(), initialCores, initialCores - 1);
 
         /**
          * Measure the time it takes to compute the reconfiguration.
@@ -786,7 +808,8 @@ public final class OrchestrationManager implements OrchestrationService {
         Set<FlowRule> newRules = null;
 
         // Compute the inflated traffic classes
-        Pair<Pair<RxFilterValue,RxFilterValue>, Set<TrafficClassInterface>> changes = taggingService.inflateTrafficClassGroup(tcId, underLoadedCpu, inflateCandidates);
+        Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>> changes =
+            taggingService.inflateTrafficClassGroup(tcId, underLoadedCpu, inflateCandidates);
 
         // Check what is sent back
         int removedCpu;

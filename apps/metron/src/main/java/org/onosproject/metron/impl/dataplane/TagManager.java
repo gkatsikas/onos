@@ -358,8 +358,9 @@ public final class TagManager implements TagService {
         int tcGroupSize = -1;
 
         for (Map.Entry<RxFilterValue, Set<TrafficClassInterface>> entry : groupTagMap.entrySet()) {
-            if (entry.getKey().cpuId() != overloadedCore)
+            if (entry.getKey().cpuId() != overloadedCore) {
                 continue;
+            }
 
             tcGroupSize = entry.getValue().size();
 
@@ -447,7 +448,8 @@ public final class TagManager implements TagService {
     }
 
     @Override
-    public Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(URI tcGroupId, int underloadedCore, Set<Integer> inflateCandidates) {
+    public Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(
+            URI tcGroupId, int underloadedCore, Set<Integer> inflateCandidates) {
         Map<RxFilterValue, Set<TrafficClassInterface>> groupTagMap = this.tagMapOfTrafficClassGroup(tcGroupId);
         if (groupTagMap == null) {
             log.error("No traffic class group !");
@@ -458,7 +460,8 @@ public final class TagManager implements TagService {
             return null;
         }
 
-        Pair<RxFilterValue, RxFilterValue> tags = this.getSmallestSubgroups(tcGroupId, underloadedCore, inflateCandidates);
+        Pair<RxFilterValue, RxFilterValue> tags = this.getSmallestSubgroups(
+            tcGroupId, underloadedCore, inflateCandidates);
 
         RxFilterValue smallestTag = tags.getKey();
         RxFilterValue coreTag = tags.getValue();
@@ -508,7 +511,8 @@ public final class TagManager implements TagService {
          * Return the affected traffic classes along with their tag.
          * ATTENTION: The opposite tag has to be used here! Think of it ;)
          */
-        return new Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>>(new Pair<>(coreTag, smallestTag), copyOfSmallestTcEntries);
+        return new Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>>(
+            new Pair<>(coreTag, smallestTag), copyOfSmallestTcEntries);
     }
 
     @Override
@@ -561,7 +565,8 @@ public final class TagManager implements TagService {
      * @param inflateCandidates
      * @return the tags of the 2 smallest subgroups in a group of traffic classes
      */
-    private Pair<RxFilterValue, RxFilterValue> getSmallestSubgroups(URI tcGroupId, int excludeCore, Set<Integer> inflateCandidates) {
+    private Pair<RxFilterValue, RxFilterValue> getSmallestSubgroups(
+            URI tcGroupId, int excludeCore, Set<Integer> inflateCandidates) {
         // Get the set of subgroups of this group of traffic classes
         Map<RxFilterValue, Set<TrafficClassInterface>> groupTagMap = this.tagMapOfTrafficClassGroup(tcGroupId);
 
@@ -576,8 +581,9 @@ public final class TagManager implements TagService {
                 coreTag = tag;
                 continue;
             }
-            if (!inflateCandidates.contains(tag.cpuId()))
+            if (!inflateCandidates.contains(tag.cpuId())) {
                 continue;
+            }
             Set<TrafficClassInterface> tcGroup = entry.getValue();
             int tcGroupSize = tcGroup.size();
 

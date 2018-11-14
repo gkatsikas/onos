@@ -849,7 +849,7 @@ public class ServerManager implements ServerService {
             }
 
             log.info("[{}] \t NIC {} - Tag {} Core {}", label(), nicName, tagValue, coreId);
-            coreId ++;
+            coreId++;
         }
     }
 

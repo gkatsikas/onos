@@ -15,12 +15,16 @@ REQUIRED_APPS = [
     "org.onosproject.drivers.server",
 ]
 
+TEST_DEPS = TEST_ADAPTERS + [
+    "//utils/osgi:onlab-osgi-tests",
+]
+
 osgi_jar_with_tests(
     api_description = "REST API for interacting with the Metron NFV Controller",
     api_package = "org.onosproject.metron.impl.rest",
     api_title = "Metron NFV Controller REST API",
     api_version = "1.0.0",
-    test_deps = TEST_ADAPTERS,
+    test_deps = TEST_DEPS,
     web_context = "/onos/metron",
     deps = COMPILE_DEPS,
 )
