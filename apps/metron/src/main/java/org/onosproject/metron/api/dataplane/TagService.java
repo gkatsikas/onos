@@ -210,7 +210,7 @@ public interface TagService {
      * @return returns the set of traffic classes that require tag modification
      *         along with the two tags invovled in the inflation
      */
-    Pair<Pair<RxFilterValue,RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(
+    Pair<Pair<RxFilterValue, RxFilterValue>, Set<TrafficClassInterface>> inflateTrafficClassGroup(
             URI tcGroupId,
             int underloadedCpu,
             Set<Integer> inflateCandidates);
