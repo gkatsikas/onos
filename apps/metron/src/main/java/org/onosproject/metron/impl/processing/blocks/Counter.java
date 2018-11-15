@@ -45,8 +45,7 @@ public class Counter extends TransparentBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "CounterMP()";
     }
 
     @Override

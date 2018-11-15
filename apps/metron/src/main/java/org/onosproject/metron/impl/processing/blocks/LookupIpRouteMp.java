@@ -47,8 +47,7 @@ public class LookupIpRouteMp extends ClassifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "LookupIPRouteMP(" + super.fullConfiguration() + ")";
     }
 
     @Override

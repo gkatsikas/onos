@@ -104,8 +104,7 @@ public class Strip extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "Strip(" + length() + ")";
     }
 
     @Override

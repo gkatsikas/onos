@@ -119,18 +119,16 @@ public class FromDevice extends LinuxDevice {
 
         Object val = this.configurationMap().get(SNIFFER);
         if (val != null) {
-            this.setSniffer(
-                Boolean.valueOf(val.toString())
-            );
+            this.setSniffer(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(SNIFFER);
         } else {
             this.setSniffer(DEF_SNIFFER);
         }
 
         val = this.configurationMap().get(PROMISCUOUS);
         if (val != null) {
-            this.setPromisc(
-                Boolean.valueOf(val.toString())
-            );
+            this.setPromisc(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(PROMISCUOUS);
         } else {
             this.setPromisc(DEF_PROMISCUOUS);
         }
@@ -138,8 +136,11 @@ public class FromDevice extends LinuxDevice {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "FromDevice(" +
+                    super.fullConfiguration() + " " +
+                    PROMISCUOUS + " " + (isPromisc() ? "true" : "false") + ", " +
+                    SNIFFER     + " " + (isSniffer() ? "true" : "false") +
+                ")";
     }
 
     @Override

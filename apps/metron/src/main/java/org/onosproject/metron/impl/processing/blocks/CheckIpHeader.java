@@ -83,9 +83,8 @@ public class CheckIpHeader extends MarkIpHeader {
 
         Object val = this.configurationMap().get(CHECKSUM);
         if (val != null) {
-            this.setChecksum(
-                Boolean.valueOf(val.toString())
-            );
+            this.setChecksum(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(CHECKSUM);
         } else {
             this.setChecksum(DEF_CHECKSUM);
         }
@@ -93,8 +92,7 @@ public class CheckIpHeader extends MarkIpHeader {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "CheckIPHeader(" + OFFSET + " " + offset() + ", " + CHECKSUM + " " + (this.checksum() ? "true" : "false") + ")";
     }
 
     @Override

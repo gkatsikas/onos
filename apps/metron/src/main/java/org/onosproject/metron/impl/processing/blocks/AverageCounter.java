@@ -44,8 +44,7 @@ public class AverageCounter extends Counter {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "AverageCounterMP()";
     }
 
     @Override

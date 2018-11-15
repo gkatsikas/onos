@@ -144,6 +144,7 @@ public class EtherRewrite extends ModifierBlock {
         Object val = this.configurationMap().get(SRC_MAC);
         if (val != null) {
             this.setSrcMac(val.toString());
+            this.configurationMap().remove(SRC_MAC);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +
@@ -154,6 +155,7 @@ public class EtherRewrite extends ModifierBlock {
         val = this.configurationMap().get(DST_MAC);
         if (val != null) {
             this.setDstMac(val.toString());
+            this.configurationMap().remove(DST_MAC);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +

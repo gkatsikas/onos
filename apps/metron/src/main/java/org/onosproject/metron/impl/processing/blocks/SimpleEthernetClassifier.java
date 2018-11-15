@@ -45,8 +45,7 @@ public class SimpleEthernetClassifier extends ClassifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "SimpleEthernetClassifier(" + super.fullConfiguration() + ")";
     }
 
     @Override

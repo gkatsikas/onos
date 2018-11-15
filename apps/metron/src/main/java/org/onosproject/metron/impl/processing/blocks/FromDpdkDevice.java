@@ -119,18 +119,16 @@ public class FromDpdkDevice extends DpdkDevice {
 
         Object val = this.configurationMap().get(ACTIVE);
         if (val != null) {
-            this.setActive(
-                Boolean.valueOf(val.toString())
-            );
+            this.setActive(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(ACTIVE);
         } else {
             this.setActive(DEF_ACTIVITY);
         }
 
         val = this.configurationMap().get(PROMISCUOUS);
         if (val != null) {
-            this.setPromisc(
-                Boolean.valueOf(val.toString())
-            );
+            this.setPromisc(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(PROMISCUOUS);
         } else {
             this.setPromisc(DEF_PROMISCUOUS);
         }
@@ -138,8 +136,11 @@ public class FromDpdkDevice extends DpdkDevice {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "FromDPDKDevice(" +
+                    super.fullConfiguration() + " " +
+                    PROMISCUOUS + " " + (isPromisc() ? "true" : "false") + ", " +
+                    ACTIVE      + " " + (isActive()  ? "true" : "false") +
+                ")";
     }
 
     @Override

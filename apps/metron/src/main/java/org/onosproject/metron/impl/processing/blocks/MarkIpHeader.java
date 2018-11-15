@@ -90,9 +90,8 @@ public class MarkIpHeader extends ModifierBlock {
     public void populateConfiguration() {
         Object val = this.configurationMap().get(OFFSET);
         if (val != null) {
-            this.setOffset(
-                Short.parseShort(val.toString())
-            );
+            this.setOffset(Short.parseShort(val.toString()));
+            this.configurationMap().remove(OFFSET);
         } else {
             this.setOffset(DEF_OFFSET);
         }
@@ -100,8 +99,7 @@ public class MarkIpHeader extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "MarkIPHeader(" + OFFSET + " " + offset() + ")";
     }
 
     @Override

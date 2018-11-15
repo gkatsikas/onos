@@ -46,8 +46,7 @@ public class Classifier extends ClassifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "Classifier(" + super.fullConfiguration() + ")";
     }
 
     @Override

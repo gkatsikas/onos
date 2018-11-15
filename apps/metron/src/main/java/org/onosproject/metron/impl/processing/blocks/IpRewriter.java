@@ -201,6 +201,7 @@ public class IpRewriter extends ModifierBlock {
         Object val = this.configurationMap.get(AGGREGATE);
         if (val != null) {
             this.setAggregate(Boolean.valueOf(val.toString()));
+            this.configurationMap.remove(AGGREGATE);
         } else {
             this.setAggregate(DEF_AGGREGATE_STATUS);
         }
@@ -208,8 +209,9 @@ public class IpRewriter extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "IPRewriter(" + patternConf().datapathPatternsToString() + ", " +
+                    AGGREGATE + " " + (aggregate() ? "true" : "false") +
+                ")";
     }
 
     @Override

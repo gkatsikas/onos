@@ -141,25 +141,22 @@ public abstract class DpdkDevice extends Device {
 
         Object val = this.configurationMap().get(PORT);
         if (val != null) {
-            this.setDevName(
-                val.toString()
-            );
+            this.setDevName(val.toString());
+            this.configurationMap().remove(PORT);
         }
 
         val = this.configurationMap().get(QUEUE);
         if (val != null) {
-            this.setQueue(
-                Short.parseShort(val.toString())
-            );
+            this.setQueue(Short.parseShort(val.toString()));
+            this.configurationMap().remove(QUEUE);
         } else {
             this.setQueue(DEF_QUEUE);
         }
 
         val = this.configurationMap().get(N_QUEUES);
         if (val != null) {
-            this.setQueuesNumber(
-                Short.parseShort(val.toString())
-            );
+            this.setQueuesNumber(Short.parseShort(val.toString()));
+            this.configurationMap().remove(N_QUEUES);
         } else {
             this.setQueuesNumber(DEF_NB_QUEUES);
         }
@@ -167,8 +164,10 @@ public abstract class DpdkDevice extends Device {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return PORT     + " " + devName()      + ", " +
+               QUEUE    + " " + queue()        + ", " +
+               N_QUEUES + " " + queuesNumber() + ", " +
+               super.fullConfiguration();
     }
 
 }

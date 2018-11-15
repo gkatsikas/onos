@@ -137,9 +137,8 @@ public abstract class Device extends TerminalBlock {
     public void populateConfiguration() {
         Object val = this.configurationMap().get(BURST);
         if (val != null) {
-            this.setBurst(
-                Short.parseShort(val.toString())
-            );
+            this.setBurst(Short.parseShort(val.toString()));
+            this.configurationMap().remove(BURST);
         } else {
             this.setBurst(DEF_BURST);
         }
@@ -147,8 +146,7 @@ public abstract class Device extends TerminalBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return BURST + " " + burst();
     }
 
 }

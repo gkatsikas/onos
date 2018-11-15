@@ -89,7 +89,6 @@ public class ToBlackboxDevice extends LinuxDevice {
 
     @Override
     public String fullConfiguration() {
-        // TODO
         return "";
     }
 

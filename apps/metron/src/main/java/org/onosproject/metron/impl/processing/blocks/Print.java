@@ -45,8 +45,7 @@ public class Print extends TransparentBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "Print()";
     }
 
     @Override
