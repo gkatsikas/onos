@@ -26,17 +26,13 @@ public enum NetworkFunctionType {
      */
     CLICK("click"),
     MIXED("mixed"),
-    STANDALONE("standalone");
+    STANDALONE("standalone"),
+    TRANSPARENT("transparent");
 
     private String nfType;
 
     private NetworkFunctionType(String nfType) {
         this.nfType = nfType.toLowerCase();
-    }
-
-    @Override
-    public String toString() {
-        return nfType;
     }
 
     /**
@@ -49,11 +45,28 @@ public enum NetworkFunctionType {
      * @return boolean validity status
      */
     public static boolean isValid(NetworkFunctionType nfType) {
-        if ((nfType != CLICK) && (nfType != STANDALONE)) {
+        if ((nfType != CLICK) && (nfType != STANDALONE) && (nfType != TRANSPARENT)) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * Returns whether an NF type is specific to a technology or not.
+     * MIXED type is specific as it derives from two or more specific NFs.
+     * TRANSPARENT is the only nom-specific NF type.
+     *
+     * @param nfType the network function's type
+     * @return boolean specificity status
+     */
+    public static boolean isSpecific(NetworkFunctionType nfType) {
+        return (nfType != TRANSPARENT);
+    }
+
+    @Override
+    public String toString() {
+        return nfType;
     }
 
 }

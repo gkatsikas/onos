@@ -43,6 +43,7 @@ import org.onosproject.metron.impl.classification.ClassificationTree;
 import org.onosproject.metron.impl.processing.blocks.CheckIpHeader;
 import org.onosproject.metron.impl.processing.blocks.Device;
 import org.onosproject.metron.impl.processing.blocks.EtherEncap;
+import org.onosproject.metron.impl.processing.blocks.EtherMirror;
 import org.onosproject.metron.impl.processing.blocks.EtherRewrite;
 import org.onosproject.metron.impl.processing.blocks.FromBlackboxDevice;
 import org.onosproject.metron.impl.processing.blocks.FromSnortDevice;
@@ -492,23 +493,12 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
-    public boolean hasDecrementIpTtl() {
-        for (ProcessingBlockClass block : this.postOperations()) {
-            if (block == ProcessingBlockClass.DEC_IP_TTL) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    @Override
     public boolean isTotallyOffloadable() {
-        if (this.writeOperationsAsString == null) {
+        if (this.writeOperationsAsString.isEmpty()) {
             this.computeWriteOperations();
         }
 
-        if (this.blackboxOperationsAsString == null) {
+        if (this.blackboxOperationsAsString.isEmpty()) {
             this.computeBlackboxOperations();
         }
 
@@ -542,8 +532,14 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
-    public void setTotallyOffloadable(boolean offloadable) {
-        this.totallyOffloadable = offloadable;
+    public boolean hasDecrementIpTtl() {
+        for (ProcessingBlockClass block : this.postOperations()) {
+            if (block == ProcessingBlockClass.DEC_IP_TTL) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     @Override
@@ -581,29 +577,14 @@ public class TrafficClass implements TrafficClassInterface {
     }
 
     @Override
-    public void setBlackboxOperationsAsString(String blackboxOps) {
-        this.blackboxOperationsAsString = blackboxOps;
-    }
-
-    @Override
     public String monitorOperationsAsString() {
         this.computeMonitorOperations();
         return this.monitorOperationsAsString;
     }
 
     @Override
-    public void setMonitorOperationsAsString(String monitorOps) {
-        this.monitorOperationsAsString = monitorOps;
-    }
-
-    @Override
     public String outputOperationsAsString() {
         return this.outputOperationsAsString;
-    }
-
-    @Override
-    public void setOutputOperationsAsString(String outputOps) {
-        this.outputOperationsAsString = outputOps;
     }
 
     @Override
@@ -652,35 +633,7 @@ public class TrafficClass implements TrafficClassInterface {
 
     @Override
     public boolean isEmpty() {
-        // A traffic class with packet filters is not empty
-        for (Map.Entry<HeaderField, Filter> entry : this.packetFilter().entrySet()) {
-            HeaderField headerField = entry.getKey();
-            Filter filter = entry.getValue();
-
-            // At least one non-empty filter
-            if (!filter.isNone()) {
-                return false;
-            }
-        }
-
-        // A traffic class with conditions is not empty
-        for (Map.Entry<HeaderField, List<Condition>> entry : this.conditionMap().entrySet()) {
-            for (Condition condition : entry.getValue()) {
-                // At least one non-empty condition
-                if (!condition.isNone()) {
-                    return false;
-                }
-            }
-        }
-
-        // No filters and conditions, but some blackbox configuration instead
-        if (this.hasBlackboxConfiguration()) {
-            // Mark this
-            this.solelyOwnedByBlackbox = true;
-            return false;
-        }
-
-        return true;
+        return evaluateProcessing();
     }
 
     @Override
@@ -821,7 +774,7 @@ public class TrafficClass implements TrafficClassInterface {
 
         // TODO: What if a subsequent traffic class uses the idle part??
         if (!this.ethernetEncapConfiguration.isEmpty()) {
-            outputConf += "[" + port + "]output;";
+            outputConf += (port >= 0) ? "[" + port + "]output;" : "output;";
         }
 
         this.outputOperationsAsString = outputConf;
@@ -870,32 +823,26 @@ public class TrafficClass implements TrafficClassInterface {
         // Ethernet configuration
         } else if (blockClass == ProcessingBlockClass.ETHER_ENCAP) {
             EtherEncap etherEncapBlock = (EtherEncap) block.processor();
-            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherEncapBlock.srcMacStr() +
-                                                         ", DST " + etherEncapBlock.dstMacStr() + ")";
+            this.ethernetEncapConfiguration = etherEncapBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.STORE_ETHER_ADDRESS) {
             StoreEtherAddress storeEtherAddrBlock = (StoreEtherAddress) block.processor();
-            this.ethernetEncapConfiguration = "StoreEtherAddress(" + storeEtherAddrBlock.macStr() + ", " +
-                                                                     storeEtherAddrBlock.offset() + ")";
+            this.ethernetEncapConfiguration = storeEtherAddrBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.ETHER_MIRROR) {
-            this.ethernetEncapConfiguration = "EtherMirror()";
+            EtherMirror etherMirrorBlock = (EtherMirror) block.processor();
+            this.ethernetEncapConfiguration = etherMirrorBlock.fullConfiguration();
         } else if (blockClass == ProcessingBlockClass.ETHER_REWRITE) {
             EtherRewrite etherRwBlock = (EtherRewrite) block.processor();
-            this.ethernetEncapConfiguration = "EtherRewrite(SRC " + etherRwBlock.srcMacStr() +
-                                                         ", DST " + etherRwBlock.dstMacStr() + ")";
+            this.ethernetEncapConfiguration = etherRwBlock.fullConfiguration();
         // Support for Blackbox NFs
         } else if (blockClass == ProcessingBlockClass.TO_BLACKBOX_DEVICE) {
             ToBlackboxDevice toBlackboxBlock = (ToBlackboxDevice) block.processor();
             FromBlackboxDevice fromBlackboxBlock = toBlackboxBlock.peerDevice();
-            this.blackboxConfiguration = FromBlackboxDevice.EXEC + " " + fromBlackboxBlock.executable() + ", " +
-                                         FromBlackboxDevice.ARGS + " " + fromBlackboxBlock.arguments()  + "";
+            this.blackboxConfiguration = fromBlackboxBlock.fullConfiguration();
+        // Snort is specific Blackbox device
         } else if (blockClass == ProcessingBlockClass.TO_SNORT_DEVICE) {
             ToSnortDevice toSnortBlock = (ToSnortDevice) block.processor();
             FromSnortDevice fromSnortBlock = (FromSnortDevice) toSnortBlock.peerDevice();
-            this.blackboxConfiguration = FromSnortDevice.EXEC + " " + fromSnortBlock.executable() + ", " +
-                                         FromSnortDevice.ARGS + " " + fromSnortBlock.arguments()  + ", " +
-                                         FromSnortDevice.FROM_RING + " " + fromSnortBlock.fromRing() + ", " +
-                                         FromSnortDevice.TO_RING   + " " + fromSnortBlock.toRing()   + ", " +
-                                         FromSnortDevice.TO_REVERSE_RING + " " + fromSnortBlock.toReverseRing();
+            this.blackboxConfiguration = fromSnortBlock.fullConfiguration();
         }
 
         // Last element of the chain -> no children
@@ -1352,6 +1299,47 @@ public class TrafficClass implements TrafficClassInterface {
         output += "=================  End Traffic Class  =================\n";
 
         return output;
+    }
+
+    /**
+     * Evaluates the processing demands of this traffic class.
+     */
+    private boolean evaluateProcessing() {
+        boolean isEmpty = true;
+
+        // A traffic class with packet filters is not empty
+        for (Map.Entry<HeaderField, Filter> entry : this.packetFilter().entrySet()) {
+            HeaderField headerField = entry.getKey();
+            Filter filter = entry.getValue();
+
+            // At least one non-empty filter
+            if (!filter.isNone()) {
+                isEmpty = false;
+                break;
+            }
+        }
+
+        if (isEmpty) {
+            // A traffic class with conditions is not empty
+            for (Map.Entry<HeaderField, List<Condition>> entry : this.conditionMap().entrySet()) {
+                for (Condition condition : entry.getValue()) {
+                    // At least one non-empty condition
+                    if (!condition.isNone()) {
+                        isEmpty = false;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // No filters and conditions, but some blackbox configuration instead
+        if (this.hasBlackboxConfiguration()) {
+            // Mark this
+            this.solelyOwnedByBlackbox = true;
+            isEmpty = false;
+        }
+
+        return isEmpty;
     }
 
     /**

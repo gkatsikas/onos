@@ -49,6 +49,22 @@ public enum NetworkFunctionClass {
         this.nfClass = nfClass.toLowerCase();
     }
 
+    /**
+     * Returns whether an NF class is transparent or not.
+     * Transparent NF classes can de deployed with both
+     * Click-based and blackbox NFs.
+     *
+     * @param nfType the network function's type
+     * @return boolean validity status
+     */
+    public static boolean isTransparent(NetworkFunctionClass nfClass) {
+        if ((nfClass == DISPATCHER) || (nfClass == TRANSPARENT)) {
+            return true;
+        }
+
+        return false;
+    }
+
     @Override
     public String toString() {
         return nfClass;

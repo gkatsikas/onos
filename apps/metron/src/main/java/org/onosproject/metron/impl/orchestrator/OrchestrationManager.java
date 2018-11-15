@@ -539,7 +539,7 @@ public final class OrchestrationManager implements OrchestrationService {
             // We only set the time when the change occurs.
             if (isRebalanced.containsKey(cpu)) {
                 if (isRebalanced.get(cpu).lastResched == null) {
-                    log.info("[{}] \t Uninitialized CPU {} busy {}", label(), cpu, cpuStat.busy());
+                    log.debug("[{}] \t Uninitialized CPU {} busy {}", label(), cpu, cpuStat.busy());
                     if ((cpuStat.busy() && (load > 0)) || (!cpuStat.busy() && (load == 0))) {
                         log.info("[{}] \t Initializing CPU {} with load {}", label(), cpu, load);
                         isRebalanced.get(cpu).lastResched = new WallClockTimestamp();
@@ -555,7 +555,7 @@ public final class OrchestrationManager implements OrchestrationService {
                         );
                         continue;
                     } else {
-                        log.info(
+                        log.debug(
                             "[{}] \t Doing rebalance check for traffic class {} core {} as delta is {}",
                             label(), tcId, cpu, diff
                         );

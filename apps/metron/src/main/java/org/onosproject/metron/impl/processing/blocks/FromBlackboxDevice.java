@@ -161,6 +161,8 @@ public class FromBlackboxDevice extends LinuxDevice {
             }
         }
 
+        this.configurationMap().clear();
+
         if (!args.isEmpty()) {
             // Strip off the last ', '
             args = args.substring(0, args.length() - 2);
