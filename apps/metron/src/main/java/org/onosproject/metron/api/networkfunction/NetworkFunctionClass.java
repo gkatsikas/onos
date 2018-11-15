@@ -52,10 +52,11 @@ public enum NetworkFunctionClass {
     /**
      * Returns whether an NF class is transparent or not.
      * Transparent NF classes can de deployed with both
-     * Click-based and blackbox NFs.
+     * Click-based and blackbox NFs, without affecting
+     * the class of the service chain.
      *
-     * @param nfType the network function's type
-     * @return boolean validity status
+     * @param nfClass the network function's class
+     * @return boolean transparency status
      */
     public static boolean isTransparent(NetworkFunctionClass nfClass) {
         if ((nfClass == DISPATCHER) || (nfClass == TRANSPARENT)) {

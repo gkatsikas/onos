@@ -92,7 +92,10 @@ public class CheckIpHeader extends MarkIpHeader {
 
     @Override
     public String fullConfiguration() {
-        return "CheckIPHeader(" + OFFSET + " " + offset() + ", " + CHECKSUM + " " + (this.checksum() ? "true" : "false") + ")";
+        return "CheckIPHeader(" +
+                    OFFSET   + " " + offset() + ", " +
+                    CHECKSUM + " " + (this.checksum() ? "true" : "false") +
+                ")";
     }
 
     @Override
