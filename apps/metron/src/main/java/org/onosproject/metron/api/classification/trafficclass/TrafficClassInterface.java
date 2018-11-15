@@ -252,14 +252,6 @@ public interface TrafficClassInterface {
     boolean hasMonitorConfiguration();
 
     /**
-     * Returns whether this traffic class requires its
-     * IP TTL field to be decremented.
-     *
-     * @return boolean decrement IP TTL not not
-     */
-    boolean hasDecrementIpTtl();
-
-    /**
      * Returns whether this traffic class can be
      * completely offloaded to the network.
      *
@@ -284,11 +276,12 @@ public interface TrafficClassInterface {
     boolean hasSoftwareRules();
 
     /**
-     * Sets the offloadability of  this traffic class.
+     * Returns whether this traffic class requires its
+     * IP TTL field to be decremented.
      *
-     * @param offloadable boolean offloadability
+     * @return boolean decrement IP TTL not not
      */
-    void setTotallyOffloadable(boolean offloadable);
+    boolean hasDecrementIpTtl();
 
     /**
      * Returns the input operations of this traffic class.
@@ -336,13 +329,6 @@ public interface TrafficClassInterface {
     String blackboxOperationsAsString();
 
     /**
-     * Sets the blackbox operations of this traffic class.
-     *
-     * @param blackboxOps blackbox operations as a string
-     */
-    void setBlackboxOperationsAsString(String blackboxOps);
-
-    /**
      * Returns the monitor operations of this traffic class.
      *
      * @return monitor operations as a string
@@ -350,25 +336,11 @@ public interface TrafficClassInterface {
     String monitorOperationsAsString();
 
     /**
-     * Sets the monitor operations of this traffic class.
-     *
-     * @param monitorOps monitor operations as a string
-     */
-    void setMonitorOperationsAsString(String monitorOps);
-
-    /**
      * Returns the output operations of this traffic class.
      *
      * @return output operations as a string
      */
     String outputOperationsAsString();
-
-    /**
-     * Sets the output operations of this traffic class.
-     *
-     * @param outputOps output operations as a string
-     */
-    void setOutputOperationsAsString(String outputOps);
 
     /**
      * Returns the application ID of this traffic class.

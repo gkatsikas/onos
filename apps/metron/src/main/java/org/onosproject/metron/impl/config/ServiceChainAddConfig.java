@@ -578,9 +578,7 @@ public final class ServiceChainAddConfig
                 checkNotNull(
                     compType,
                     "Invalid network function type. Choose one in: " + Common.<NetworkFunctionType>
-                    enumTypesToString(
-                        NetworkFunctionType.class
-                    )
+                    enumTypesToString(NetworkFunctionType.class)
                 );
 
                 // Convert the NF class to an object
@@ -590,10 +588,20 @@ public final class ServiceChainAddConfig
                 checkNotNull(
                     compClass,
                     "Invalid network function class. Choose one in: " + Common.<NetworkFunctionClass>
-                    enumTypesToString(
-                        NetworkFunctionClass.class
-                    )
+                    enumTypesToString(NetworkFunctionClass.class)
                 );
+
+                // Relax user's choice in determining NF type
+                if (NetworkFunctionClass.isTransparent(compClass)) {
+                    log.warn(
+                        "Network function {} got type {}, but this can be relaxed to type {}",
+                        nfName, compType, NetworkFunctionType.TRANSPARENT
+                    );
+                    log.warn(
+                        "Be careful of which blocks you used to implement this NF, so that it is trully transparent!"
+                    );
+                    compType = NetworkFunctionType.TRANSPARENT;
+                }
 
                 // Build the network function
                 NetworkFunction.Builder nfBuilder = NetworkFunction.builder()

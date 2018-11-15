@@ -72,9 +72,12 @@ import java.net.URI;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
-import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import javax.ws.rs.ProcessingException;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -182,12 +185,12 @@ public class ServerManager implements ServerService {
         checkNotNull(scId,     "[" + label() + "] NULL service chain ID.");
         checkNotNull(tcId,     "[" + label() + "] NULL traffic class ID.");
         checkArgument(!Strings.isNullOrEmpty(configuration),
-            "[" + label() + "] Configuration is NULL or empty");
+            "[" + label() + "] Configuration is NULL or empty.");
         checkArgument(newCpuSet.size() > 0,
-            "[" + label() + "] Number of cores must be positive");
+            "[" + label() + "] Number of cores must be positive.");
         checkArgument((maxNumberOfCores > 0) && (newCpuSet.size() <= maxNumberOfCores),
-            "[" + label() + "] Maximum number of cores must be positive");
-        checkNotNull(nicIds,
+            "[" + label() + "] Maximum number of cores must be positive.");
+        checkArgument((nicIds != null) && !nicIds.isEmpty(),
             "[" + label() + "] Cannot deploy traffic class without NICs.");
 
         log.info("[{}] ================================================================", label());
@@ -511,10 +514,10 @@ public class ServerManager implements ServerService {
             String nicName = entry.getKey();
             JsonNode filterNode = tagValNode.path(nicName);
 
-            // Convert the JSON list into a set of strings
-            Set<String> rxFilterValuesStr = null;
+            // Convert the JSON list into a list of strings
+            List<String> rxFilterValuesStr = null;
             try {
-                rxFilterValuesStr = mapper.readValue(filterNode.traverse(), new TypeReference<HashSet<String>>() { });
+                rxFilterValuesStr = sortTags(mapper.readValue(filterNode.traverse(), new TypeReference<TreeSet<String>>() { }));
             } catch (IOException ioEx) {
                 throw new ProtocolException(
                     "[" + label() + "] Failed to retrieve the list of Rx filter values of traffic class " +
@@ -523,7 +526,6 @@ public class ServerManager implements ServerService {
 
             // Add the tags for this NIC
             addTag(deviceId, scId, tcId, tcInfo, nicName, tagMethod, rxFilterValuesStr);
-
         }
 
         String    configType = BasicServerDriver.get(jsonNode, PARAM_CONFIG_TYPE);
@@ -541,7 +543,7 @@ public class ServerManager implements ServerService {
         // Convert the JSON list of CPUs into a set
         Set<Integer> cpuList = null;
         try {
-            cpuList = mapper.readValue(cpuNode.traverse(), new TypeReference<HashSet<Integer>>() { });
+            cpuList = mapper.readValue(cpuNode.traverse(), new TypeReference<TreeSet<Integer>>() { });
         } catch (IOException ioEx) {
             throw new ProtocolException("[" + label() + "] Failed to retrieve the list of CPUs of traffic class " +
                 tcId + " of service chain " + scId + ".");
@@ -578,7 +580,7 @@ public class ServerManager implements ServerService {
         // Convert the JSON list of NICs into a set of strings
         Set<String> nicsStr = null;
         try {
-            nicsStr = mapper.readValue(nicNode.traverse(), new TypeReference<HashSet<String>>() { });
+            nicsStr = mapper.readValue(nicNode.traverse(), new TypeReference<TreeSet<String>>() { });
         } catch (IOException ioEx) {
             throw new ProtocolException(
                 "[" + label() + "] Failed to retrieve the list of NICs of traffic class " +
@@ -817,11 +819,11 @@ public class ServerManager implements ServerService {
      * @param tcInfo the service chain's traffic class information
      * @param nicName the NIC where the tags are applied
      * @param tagMethod the Rx filter methodo of this service chain
-     * @param rxFilterValuesStr a set of Rx filter values to add
+     * @param rxFilterValuesStr a list of Rx filter values to add
      */
     private void addTag(
             DeviceId deviceId, ServiceChainId scId, URI tcId, TrafficClassRuntimeInfo tcInfo,
-            String nicName, String tagMethod, Set<String> rxFilterValuesStr) {
+            String nicName, String tagMethod, List<String> rxFilterValuesStr) {
         int coreId = 0;
         for (String tagValue : rxFilterValuesStr) {
             if (Strings.isNullOrEmpty(tagValue)) {
@@ -851,6 +853,32 @@ public class ServerManager implements ServerService {
             log.info("[{}] \t NIC {} - Tag {} Core {}", label(), nicName, tagValue, coreId);
             coreId++;
         }
+    }
+
+    /**
+     * Sorts tags numerically.
+     *
+     * @param tagSet set of tags to sort
+     * @return a list of sorted tags
+     */
+    private List<String> sortTags(Set<String> tagSet) {
+        Map<Integer, String> map = new HashMap<>();
+        Set<Integer> sortedListInt = new TreeSet<Integer>();
+
+        for (String tag : tagSet) {
+            int intTag = Integer.parseInt(tag.replaceAll("[^0-9]", ""));
+            map.put(intTag, tag);
+            sortedListInt.add(intTag);
+        }
+
+        List<String> sortedList = new ArrayList<String>(tagSet.size());
+
+        int index = 0;
+        for (Integer i : sortedListInt) {
+            sortedList.add(index++, map.get(i.intValue()));
+        }
+
+        return sortedList;
     }
 
     /**

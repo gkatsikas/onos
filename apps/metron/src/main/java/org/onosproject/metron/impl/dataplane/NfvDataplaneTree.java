@@ -530,6 +530,11 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
             // A. Input part
             tcConf += this.generateInputOperations(tc, "");
+            if (tcConf.isEmpty()) {
+                log.warn("Cannot generate software configuration without input operations!");
+                this.setSoftwareConfigurationOnCore(tcCount++, tcConf);
+                continue;
+            }
 
             // Decide the fate of this group of traffic classes
             String action = "allow";
@@ -622,7 +627,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                 rxFilter = this.tagService().getTaggingMechanismOfTrafficClassGroup(tcGroupId);
                 rxFilterValue = this.tagService().getFirstUsedTagOfTrafficClassGroup(tcGroupId);
                 log.info(
-                    "[{}] \t Traffic class {} --> Method {} with Tag {}",
+                    "[{}] Traffic class {} --> Method {} with Tag {}",
                     label(), tcGroupId, rxFilter, rxFilterValue
                 );
 
@@ -835,11 +840,17 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
      */
     private String generateInputOperations(TrafficClassInterface tc, String pipelineInstance) {
         String inputOps = tc.inputOperationsAsString();
+        if (inputOps.isEmpty()) {
+            log.warn("[{}] Empty input operations for traffic class {}", label(), tc.id());
+            return "";
+        }
+
         if (pipelineInstance.isEmpty()) {
             return inputOps + " -> ";
         }
 
         int pos = inputOps.indexOf(">");
+        checkArgument(pos >= 0, "Could not derive input operations for traffic class {}", tc.id());
         return inputOps.substring(0, pos + 1) + " " + pipelineInstance + " :: " + inputOps.substring(pos + 2) + "; ";
     }
 
@@ -936,11 +947,7 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
 
         // Fetch the type of this NF block
         NetworkFunctionType nfType = currentBlock.networkFunction().type();
-
-        checkNotNull(
-            nfType, "Network function type of block " +
-            currentBlock.name() + " is NULL"
-        );
+        checkNotNull(nfType, "Network function type of block " + currentBlock.name() + " is NULL");
 
         if (this.type == null) {
             this.type = nfType;
@@ -960,11 +967,18 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         /**
          * The current type is different from the input one.
          * This is possible when:
-         * |-> Current type is CLICK and input one is STANDALONE
-         * |-> Current type is STANDALONE and input one is CLICK
-         * in either case, the result type is MIXED.
+         * |-> Current type is CLICK/STANDALONE and input one is TRANSPARENT      --> CLICK/STANDALONE
+         * |-> Current type is TRANSPARENT and input one is CLICK/STANDALONE      --> CLICK/STANDALONE
+         * |-> Current type is CLICK/STANDALONE and input one is STANDALONE/CLICK --> MIXED
          */
-        this.type = NetworkFunctionType.MIXED;
+        if (NetworkFunctionType.isSpecific(this.type) && !NetworkFunctionType.isSpecific(nfType)) {
+            // Type remains unchanged
+            return;
+        } else if (!NetworkFunctionType.isSpecific(this.type) && NetworkFunctionType.isSpecific(nfType)) {
+            this.type = nfType;
+        } else {
+            this.type = NetworkFunctionType.MIXED;
+        }
     }
 
     /**
@@ -1001,9 +1015,10 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
             updateDataplaneTreeType(currentBlock);
 
             log.debug(
-                "[{}] \t\t Block {} ({}) with {} output ports and conf {}",
+                "[{}] \t\t Block of class {} with name {}, {} output ports, and conf {}",
                 label(), currentBlock.blockClass(), currentBlock.name(), currentBlock.portsNumber(),
-                currentBlock.basicConfiguration()
+                (currentBlock.basicConfiguration().length() > 200) ?
+                currentBlock.basicConfiguration().substring(0, 199) + "..." : currentBlock.basicConfiguration()
             );
 
             // For each output class of this block
@@ -1496,6 +1511,8 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
         Map<String, Long> inputNicsUsage  = new ConcurrentHashMap<String, Long>();
         Map<String, Long> outputNicsUsage = new ConcurrentHashMap<String, Long>();
 
+        boolean allPassive = true;
+
         for (TrafficClassInterface tc : this.trafficClasses.values()) {
             if (tc.isTotallyOffloadable() && doHwOffloading) {
                 log.debug("Traffic class {} is totally offloadable", tc.toString());
@@ -1535,20 +1552,24 @@ public class NfvDataplaneTree implements NfvDataplaneTreeInterface {
                 }
             }
 
-            // Compute the input configuration
-            tc.computeInputOperations(inputNicsUsage.get(inputInterface).longValue());
+            if (!tc.isSolelyOwnedByBlackbox()) {
+                // Compute the input configuration
+                tc.computeInputOperations(inputNicsUsage.get(inputInterface).longValue());
 
-            // Compute the output configuration
-            tc.computeOutputOperations(outputNicsUsage.get(outputInterface).longValue());
+                // Compute the output configuration
+                tc.computeOutputOperations(outputNicsUsage.get(outputInterface).longValue());
+
+                allPassive = false;
+            }
         }
 
         // This is how many NICs we currently use
         this.numberOfNics.set(inputNicsUsage.size());
 
         // Let's also find the idle NICs
-        this.idleInterfaceConfiguration = this.configureIdleInterfaces(
-            inputNicsUsage, outputNicsUsage
-        );
+        if (!allPassive) {
+            this.idleInterfaceConfiguration = this.configureIdleInterfaces(inputNicsUsage, outputNicsUsage);
+        }
 
         return;
     }
