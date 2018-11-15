@@ -517,7 +517,8 @@ public class ServerManager implements ServerService {
             // Convert the JSON list into a list of strings
             List<String> rxFilterValuesStr = null;
             try {
-                rxFilterValuesStr = sortTags(mapper.readValue(filterNode.traverse(), new TypeReference<TreeSet<String>>() { }));
+                rxFilterValuesStr = sortTags(
+                    mapper.readValue(filterNode.traverse(), new TypeReference<TreeSet<String>>() { }));
             } catch (IOException ioEx) {
                 throw new ProtocolException(
                     "[" + label() + "] Failed to retrieve the list of Rx filter values of traffic class " +
