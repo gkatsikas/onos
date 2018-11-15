@@ -96,8 +96,7 @@ public class Queue extends ShaperBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "Queue(" + CAPACITY + " " + capacity() + ")";
     }
 
     @Override

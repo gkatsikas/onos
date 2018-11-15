@@ -198,9 +198,8 @@ public class EtherEncap extends ModifierBlock {
                 strVal = strVal.replace("0x", "");
             }
 
-            this.setEtherType(
-                Short.parseShort(strVal, 16)
-            );
+            this.setEtherType(Short.parseShort(strVal, 16));
+            this.configurationMap().remove(ETHERTYPE);
         } else {
             this.setEtherType(DEF_ETHERTYPE);
         }
@@ -208,6 +207,7 @@ public class EtherEncap extends ModifierBlock {
         val = this.configurationMap().get(SRC_MAC);
         if (val != null) {
             this.setSrcMac(val.toString());
+            this.configurationMap().remove(SRC_MAC);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +
@@ -218,6 +218,7 @@ public class EtherEncap extends ModifierBlock {
         val = this.configurationMap().get(DST_MAC);
         if (val != null) {
             this.setDstMac(val.toString());
+            this.configurationMap().remove(DST_MAC);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +

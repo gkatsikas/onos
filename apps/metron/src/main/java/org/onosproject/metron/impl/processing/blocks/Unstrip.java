@@ -103,8 +103,7 @@ public class Unstrip extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "Unstrip(" + length() + ")";
     }
 
     @Override

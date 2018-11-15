@@ -169,27 +169,24 @@ public class ToDpdkDevice extends DpdkDevice {
 
         Object val = this.configurationMap().get(TIMEOUT);
         if (val != null) {
-            this.setTimeout(
-                Short.parseShort(val.toString())
-            );
+            this.setTimeout(Short.parseShort(val.toString()));
+            this.configurationMap().remove(TIMEOUT);
         } else {
             this.setTimeout(DEF_TIMEOUT);
         }
 
         val = this.configurationMap().get(INT_QUEUE_SIZE);
         if (val != null) {
-            this.setInternalQueueSize(
-                Short.parseShort(val.toString())
-            );
+            this.setInternalQueueSize(Short.parseShort(val.toString()));
+            this.configurationMap().remove(INT_QUEUE_SIZE);
         } else {
             this.setInternalQueueSize(DEF_INT_QUEUE_SIZE);
         }
 
         val = this.configurationMap().get(BLOCKING);
         if (val != null) {
-            this.setBlocking(
-                Boolean.valueOf(val.toString())
-            );
+            this.setBlocking(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(BLOCKING);
         } else {
             this.setBlocking(DEF_BLOCKING);
         }
@@ -197,8 +194,12 @@ public class ToDpdkDevice extends DpdkDevice {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "ToDPDKDevice(" +
+                    super.fullConfiguration() + " " +
+                    INT_QUEUE_SIZE + " " + internalQueueSize() + ", " +
+                    BLOCKING       + " " + (isBlocking() ? "true" : "false") + ", " +
+                    TIMEOUT        + " " + timeout() +
+                ")";
     }
 
     @Override

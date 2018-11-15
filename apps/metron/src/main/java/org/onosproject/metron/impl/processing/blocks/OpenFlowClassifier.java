@@ -65,8 +65,7 @@ public class OpenFlowClassifier extends ClassifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return super.fullConfiguration();
     }
 
     @Override

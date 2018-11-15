@@ -45,8 +45,7 @@ public class TcpRewriter extends IpRewriter {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return super.fullConfiguration();
     }
 
     @Override

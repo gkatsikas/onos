@@ -202,4 +202,9 @@ public abstract class ClassifierBlock extends ProcessingBlock {
         }
     }
 
+    @Override
+    public String fullConfiguration() {
+        return this.configuration();
+    }
+
 }

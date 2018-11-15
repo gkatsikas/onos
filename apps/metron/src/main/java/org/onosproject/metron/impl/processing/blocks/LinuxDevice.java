@@ -116,18 +116,16 @@ public abstract class LinuxDevice extends Device {
 
         Object val = this.configurationMap().get(DEV_NAME);
         if (val != null) {
-            this.setDevName(
-                val.toString()
-            );
+            this.setDevName(val.toString());
+            this.configurationMap().remove(DEV_NAME);
         } else {
             this.setDevName(DEF_DEV_NAME);
         }
 
         val = this.configurationMap().get(METHOD);
         if (val != null) {
-            this.setMethod(
-                val.toString()
-            );
+            this.setMethod(val.toString());
+            this.configurationMap().remove(METHOD);
         } else {
             this.setMethod(DEF_METHOD);
         }
@@ -135,8 +133,10 @@ public abstract class LinuxDevice extends Device {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return DEV_NAME + " " + devName() + ", " +
+               BURST    + " " + burst()   + ", " +
+               METHOD   + " " + method()  + ", " +
+               super.fullConfiguration();
     }
 
 }

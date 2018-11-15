@@ -159,6 +159,7 @@ public class StoreEtherAddress extends ModifierBlock {
         Object val = this.configurationMap().get(ADDRESS);
         if (val != null) {
             this.setMac(val.toString());
+            this.configurationMap().remove(ADDRESS);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +
@@ -169,6 +170,7 @@ public class StoreEtherAddress extends ModifierBlock {
         val = this.configurationMap().get(OFFSET);
         if (val != null) {
             this.setOffset(val.toString());
+            this.configurationMap().remove(OFFSET);
         } else {
             throw new ParseException(
                 "[" + this.id + " (" + this.processingBlockClass() + ")] " +
@@ -179,7 +181,7 @@ public class StoreEtherAddress extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        return "StoreEtherAddress(" + this.macStr() + ", " + this.offset() + ")";
+        return "StoreEtherAddress(" + ADDRESS + " " + this.macStr() + ", " + OFFSET + " " + this.offset() + ")";
     }
 
     @Override

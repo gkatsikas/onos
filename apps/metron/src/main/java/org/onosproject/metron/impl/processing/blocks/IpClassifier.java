@@ -45,8 +45,7 @@ public class IpClassifier extends ClassifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "IPClassifier(" + super.fullConfiguration() + ")";
     }
 
     @Override

@@ -104,18 +104,16 @@ public class DecIpTtl extends ModifierBlock {
     public void populateConfiguration() {
         Object val = this.configurationMap().get(ACTIVE);
         if (val != null) {
-            this.setActive(
-                Boolean.valueOf(val.toString())
-            );
+            this.setActive(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(ACTIVE);
         } else {
             this.setActive(DEF_ACTIVITY);
         }
 
         val = this.configurationMap().get(CALCULATE_CHECKSUM);
         if (val != null) {
-            this.setChecksumCalculation(
-                Boolean.valueOf(val.toString())
-            );
+            this.setChecksumCalculation(Boolean.valueOf(val.toString()));
+            this.configurationMap().remove(CALCULATE_CHECKSUM);
         } else {
             this.setChecksumCalculation(DEF_CALC_CHECKSUM);
         }
@@ -123,8 +121,8 @@ public class DecIpTtl extends ModifierBlock {
 
     @Override
     public String fullConfiguration() {
-        // TODO
-        return "";
+        return "DecIPTTL(" + CALCULATE_CHECKSUM + " " + (calculateChecksum() ? "true" : "false") + ", " +
+                             ACTIVE             + " " + (active() ? "true" : "false") + ")";
     }
 
     @Override
