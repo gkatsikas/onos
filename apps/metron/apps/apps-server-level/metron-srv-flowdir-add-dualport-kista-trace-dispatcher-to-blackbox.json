@@ -4,11 +4,11 @@
             "add" : {
                 "serviceChains" : [
                     {
-                        "name"       : "metron-srv-flowdir-dualport-fw-3rules-napt",
+                        "name"       : "metron-srv-flowdir-dualport-kista-trace-dispatcher-to-blackbox",
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
-                        "maxCpuCores": 3,
+                        "maxCpuCores": 16,
                         "scale"      : true,
                         "autoScale"  : false,
                         "scope"      : "server-rules",
@@ -16,14 +16,14 @@
                             {
                                 "name"  : "nf1",
                                 "type"  : "click",
-                                "class" : "firewall",
-                                "id"    : "kth-firewall-nf1"
+                                "class" : "dispatcher",
+                                "id"    : "kth-dispatcher-nf1"
                             },
                             {
                                 "name"  : "nf2",
-                                "type"  : "click",
-                                "class" : "napt",
-                                "id"    : "kth-napt-nf2"
+                                "type"  : "standalone",
+                                "class" : "blackbox",
+                                "id"    : "blackbox-nf2"
                             }
                         ],
                         "processors": [
@@ -52,7 +52,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFilter1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/firewall/3rules-flow-dir.json"
+                                        "configFile": "/home/katsikas/nfv/metron-testbed/metron-blackbox-metron/rules/kth/metron-rules/20181016-kista-all-nointernal.ip4.anon.ipfilter.json"
                                     },
                                     {
                                         "block": "EtherEncap",
@@ -140,55 +140,13 @@
                                 "name"  : "nf2",
                                 "blocks": [
                                     {
-                                        "block": "FromDevice",
+                                        "block": "FromBlackboxDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1",
+                                        "configArgs": "DEVNAME eno1, EXEC '0', ARGS '0', SRIOV 0",
                                         "configFile": ""
                                     },
                                     {
-                                        "block": "Strip",
-                                        "instance": "nf2_strip1",
-                                        "configArgs": "LENGTH 14",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "MarkIPHeader",
-                                        "instance": "nf2_mark1",
-                                        "configArgs": "OFFSET 0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "IPRewriter",
-                                        "instance": "nf2_rw1_1",
-                                        "configArgs": "pattern 10.0.0.4 1000-65535 - - 0 0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "IPRewriter",
-                                        "instance": "nf2_rw1_2",
-                                        "configArgs": "pattern - - 19.18.0.2 - 0 0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "IPRewriter",
-                                        "instance": "nf2_rw1_3",
-                                        "configArgs": "pattern 23.67.45.6 30-56 2.8.3.5 80 0 0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "EtherEncap",
-                                        "instance": "nf2_ethEncap1",
-                                        "configArgs": "ETHERTYPE 0x0800, SRC 50:6b:4b:43:88:cb, DST 24:8a:07:55:46:b0",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "Queue",
-                                        "instance": "nf2_q1",
-                                        "configArgs": "CAPACITY 1024",
-                                        "configFile": ""
-                                    },
-                                    {
-                                        "block": "ToDevice",
+                                        "block": "ToBlackboxDevice",
                                         "instance": "nf2_td1",
                                         "configArgs": "DEVNAME eno2",
                                         "configFile": ""
@@ -198,96 +156,6 @@
                                     {
                                         "src": {
                                             "instance": "nf2_fd1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_strip1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_strip1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_mark1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_mark1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_rw1_1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_mark1",
-                                            "port": 1
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_rw1_2",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_mark1",
-                                            "port": 2
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_rw1_3",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_rw1_1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_rw1_2",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 1
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_rw1_3",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 2
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_ethEncap1",
-                                            "port": 0
-                                        },
-                                        "dst": {
-                                            "instance": "nf2_q1",
-                                            "port": 0
-                                        }
-                                    },
-                                    {
-                                        "src": {
-                                            "instance": "nf2_q1",
                                             "port": 0
                                         },
                                         "dst": {
@@ -302,7 +170,7 @@
                             "network": {
                                 "ingressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.166:80",
+                                        "deviceId": "rest:192.16.125.169:80",
                                         "portIds": [
                                             {
                                                 "portId": 0
@@ -312,7 +180,7 @@
                                 ],
                                 "egressPoints": [
                                     {
-                                        "deviceId": "rest:192.16.125.166:80",
+                                        "deviceId": "rest:192.16.125.169:80",
                                         "portIds": [
                                             {
                                                 "portId": 1
@@ -320,7 +188,7 @@
                                         ]
                                     }
                                 ],
-                                "targetDevice": "rest:192.16.125.166:80"
+                                "targetDevice": "rest:192.16.125.169:80"
                             },
                             "server": [
                                 {

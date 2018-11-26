@@ -142,7 +142,7 @@
                                     {
                                         "block": "FromBlackboxDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno2, EXEC '/usr/local/bin/bb', ARGS 'args', UP_CMD 'up', DOWN_CMD 'down'",
+                                        "configArgs": "DEVNAME eno2, EXEC '0', ARGS '0', SRIOV 0",
                                         "configFile": ""
                                     },
                                     {
