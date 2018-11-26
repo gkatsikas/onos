@@ -749,7 +749,7 @@ public final class DeploymentManager implements DeploymentService {
         // Deploy the traffic classes one by one
         for (Map.Entry<Integer, String> entry : serviceChainConf.entrySet()) {
             int core = entry.getKey().intValue();
-            String conf = entry.getValue();
+            String conf = entry.getValue().trim();
 
             // Scale=false means that we create 'userRequestedMaxCpus' groups of independent traffic classes
             // Each group is assigned to 1 CPU core and the maximum CPU cores is also 1 (thus never scales).
