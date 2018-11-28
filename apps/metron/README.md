@@ -20,14 +20,58 @@ Setup
 Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 
-Build & Deploy
-----
-The Metron controller is part of the ONOS tree, hence to run it, you should first build and deploy ONOS.
+Dependencies
+---
+In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel 0.15.2 as a build tool.
+To install Bazel 0.15.2 follow the steps below:
+
 ```bash
-cd ~/onos
+wget https://github.com/bazelbuild/bazel/releases/download/0.15.2/bazel-0.15.2-installer-linux-x86_64.sh
+chmod +x bazel-0.15.2-installer-linux-x86_64.sh
+bash bazel-0.15.2-installer-linux-x86_64.sh --user
+source $HOME/.bazel/bin/bazel-complete.bash
+echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
+source $HOME/.bashrc
+rm bazel-0.15.2-installer-linux-x86_64.sh
+```
+
+
+Build ONOS
+----
+The Metron controller is part of the ONOS tree. You can use either BUCK or Bazel to build ONOS and Metron as follows:
+
+#### Build with BUCK ####
+```bash
+cd $ONOS_ROOT
 rm -rf buck-out bin
 onos-buck clean
-onos-build -Xlint:deprecation -Xlint:unchecked
+tools/build/onos-buck build onos --show-output
+```
+
+#### Build with Bazel ####
+```bash
+cd $ONOS_ROOT
+bazel clean --expunge
+onos-build -Xlint:deprecation
+bazel build onos --verbose_failures
+```
+
+
+Deploy ONOS
+----
+If you built ONOS and Metron using BUCK, then deploy as follows:
+
+#### Deploy with BUCK ####
+```bash
+cd $ONOS_ROOT
+tools/build/onos-buck run onos-local -- clean debug -Xlint:deprecation -Xlint:unchecked
+```
+
+If you built ONOS and Metron using Bazel, then deploy as follows:
+
+#### Deploy with Bazel ####
+```bash
+bazel run onos-local -- debug
 ```
 
 
@@ -145,3 +189,4 @@ The ONOS README is available [here][onos-readme].
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
 [onos-ui-apps]: http://127.0.0.1:8181/onos/ui/index.html#/app
 [onos-readme]: ../../README.onos.md
+[onos-dep]: https://github.com/gkatsikas/onos/blob/onos-1.14/README.md
