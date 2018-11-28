@@ -22,17 +22,17 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 Dependencies
 ---
-In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel 0.15.2 as a build tool.
-To install Bazel 0.15.2 follow the steps below:
+In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel 0.17.0 as a build tool.
+To install Bazel 0.17.0 follow the steps below:
 
 ```bash
-wget https://github.com/bazelbuild/bazel/releases/download/0.15.2/bazel-0.15.2-installer-linux-x86_64.sh
-chmod +x bazel-0.15.2-installer-linux-x86_64.sh
-bash bazel-0.15.2-installer-linux-x86_64.sh --user
+wget https://github.com/bazelbuild/bazel/releases/download/0.17.0/bazel-0.17.0-installer-linux-x86_64.sh
+chmod +x bazel-0.17.0-installer-linux-x86_64.sh
+bash bazel-0.17.0-installer-linux-x86_64.sh --user
 source $HOME/.bazel/bin/bazel-complete.bash
 echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
 source $HOME/.bashrc
-rm bazel-0.15.2-installer-linux-x86_64.sh
+rm bazel-0.17.0-installer-linux-x86_64.sh
 ```
 
 
