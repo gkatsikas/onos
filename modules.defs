@@ -169,6 +169,7 @@ ONOS_APPS = [
     '//apps/intentsync:onos-apps-intentsync-oar',
     '//apps/influxdbmetrics:onos-apps-influxdbmetrics-oar',
     '//apps/metrics:onos-apps-metrics-oar',
+    '//apps/metron:onos-apps-metron-oar',
     '//apps/mfwd:onos-apps-mfwd-oar',
     '//apps/mlb:onos-apps-mlb-oar',
     '//apps/openstacknetworking:onos-apps-openstacknetworking-oar',
