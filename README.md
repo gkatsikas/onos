@@ -18,19 +18,38 @@ Setup ONOS
 Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 
-Build ONOS with Bazel
-----
-To build ONOS, do:
+Dependencies
+---
+In addition to the basic [ONOS dependencies][onos-dep], since version 2.0.0, ONOS uses Bazel 0.19.0 as a build tool.
+To install Bazel 0.19.0 follow the steps below:
+
 ```bash
-cd $ONOS_ROOT
-bazel build onos
+wget https://github.com/bazelbuild/bazel/releases/download/0.19.0/bazel-0.19.0-installer-linux-x86_64.sh
+chmod +x bazel-0.19.0-installer-linux-x86_64.sh
+bash bazel-0.19.0-installer-linux-x86_64.sh --user
+source $HOME/.bazel/bin/bazel-complete.bash
+echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
+source $HOME/.bashrc
+rm bazel-0.19.0-installer-linux-x86_64.sh
 ```
 
 
-Deploy ONOS with Bazel
+Build ONOS
 ----
+The Metron controller is part of the ONOS tree. You can use Bazel to build ONOS and Metron as follows:
 ```bash
-bazel run onos-local [-- [clean] [debug]]
+cd $ONOS_ROOT
+bazel clean --expunge
+onos-build -Xlint:deprecation
+bazel build onos --verbose_failures
+```
+
+
+Deploy ONOS
+----
+To deploy ONOS, do:
+```bash
+bazel run onos-local -- debug
 ```
 
 
@@ -92,7 +111,9 @@ If you want to add a service chain, then describe it using the following key att
       * 'name' a sensitive keyword used by subsequent JSON fields
       * 'type' can be either 'click' for Click-based NFs or 'standalone' for blackbox NFs
       * 'class' which can be chosen from the following list:
+          * blackbox for any custom software stack you desire to launch
           * dpi for Deep Packet Inspection (DPI)
+          * dispatcher for any (offloadable) device to CPU core traffic dispatcher (a classifier associated with hardware queues)
           * firewall for Firewall or Access Control List (ACL)
           * ids for Intrusion Detection System (IDS)
           * ips for Intrusion Prevention System (IPS)
@@ -113,7 +134,7 @@ If you want to add a service chain, then describe it using the following key att
       * a set of packet processing 'blocks' each being a respective Click element. Each block has:
           * 'block' name
           * 'instance' name
-          * 'configArgs' string-based configuration arguments
+          * 'configArgs' string-based configuration arguments. Blackbox blocks might take EXEC 'blackbox exec path', ARGS 'blackbox arguments', and any random arguments in the form of KEY VALUE pairs.
           * 'configFile' file-based configuration. For example, an 'IPClassifier' element requires a configFile with IP classification rules encoded using Click's IPFilter/IPClassifier format. An example configFile for IPClassifier (or IPFilter) elements can be found [here][metron-example-ipclassifier].
       * 'graph' list where we describe the connections of the blocks. Graph edges are described by grouping graph vertices 'src' or 'dst' each encoded as follows:
           * 'instance' the instance name of a block
@@ -225,3 +246,4 @@ The ONOS README is available [here][onos-readme].
 [dpdk]: https://dpdk.org/
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
 [onos-readme]: https://bitbucket.org/nslab/onos/src/metron-ctrl/README.onos.md
+[onos-dep]: https://github.com/opennetworkinglab/onos/blob/master/README.md
