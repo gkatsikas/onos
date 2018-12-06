@@ -89,6 +89,7 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 
 import static org.onosproject.metron.api.config.TrafficPoint.TrafficPointType.PROCESSING;
+import static org.onosproject.metron.api.networkfunction.NetworkFunctionType.STANDALONE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.onlab.util.Tools.groupedThreads;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -723,7 +724,8 @@ public final class DeploymentManager implements DeploymentService {
             "CPU cores, but user has requested only " + userRequestedMaxCpus + " CPU cores");
 
         // This is the number of NICs required for this service chain
-        int neededNics = dpTree.numberOfNics();
+        // TODO: NIC info must be expressed more naturally..
+        int neededNics = confType.equals(STANDALONE.toString()) ? userRequestedNics : dpTree.numberOfNics();
         checkArgument(serverNics >= neededNics,
             "Metron agent " + deviceId + " has " +
             Integer.toString(serverNics) + " NICs, but " +
