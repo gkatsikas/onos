@@ -49,10 +49,17 @@ public class IpRewriter extends ModifierBlock {
      */
     protected boolean aggregate;
 
+    /**
+     * If true, handle state migration
+     */
+    protected boolean migration;
+
     public static final String PATTERN   = "PATTERN";
     public static final String AGGREGATE = "SET_AGGREGATE";
+    public static final String MIGRATION = "HANDLE_MIGRATION";
 
     protected static final boolean DEF_AGGREGATE_STATUS = false;
+    protected static final boolean DEF_MIGRATION_STATUS = false;
 
     public    static final String DROP_PATTERN    = "drop";
     public    static final String DISCARD_PATTERN = "discard";
@@ -66,6 +73,7 @@ public class IpRewriter extends ModifierBlock {
         this.outputPortsNumber = 0;
         this.patternConf = null;
         this.aggregate = DEF_AGGREGATE_STATUS;
+        this.migration = DEF_MIGRATION_STATUS;
     }
 
     public IpRewriter(
@@ -79,6 +87,7 @@ public class IpRewriter extends ModifierBlock {
         this.outputPortsNumber = portsNumber;
         this.patternConf = patternConf;
         this.aggregate = DEF_AGGREGATE_STATUS;
+        this.aggregate = DEF_MIGRATION_STATUS;
     }
 
     public IpRewriter(
@@ -87,12 +96,14 @@ public class IpRewriter extends ModifierBlock {
             String  confFile,
             int     portsNumber,
             PatternConfigurationInterface patternConf,
-            boolean aggregate) {
+            boolean aggregate,
+            boolean migration) {
         super(id, conf, confFile);
 
         this.outputPortsNumber = portsNumber;
         this.patternConf = patternConf;
         this.aggregate = aggregate;
+        this.migration = migration;
     }
 
     /**
@@ -160,6 +171,24 @@ public class IpRewriter extends ModifierBlock {
         this.aggregate = aggregate;
     }
 
+    /**
+     * Returns the whether aggregate flow monitoring is enabled or not.
+     *
+     * @return aggregate flow monitoring status
+     */
+    public boolean migration() {
+        return this.migration;
+    }
+
+    /**
+     * Sets the aggregate flow monitoring status of this element.
+     *
+     * @param aggregate aggregate flow monitoring status
+     */
+    public void setMigration(boolean migration) {
+        this.migration = migration;
+    }
+
     public void addConfiguration() {
         if (this.patternConf == null) {
             log.error("No pattern configuration available for {}", this.id());
@@ -205,12 +234,20 @@ public class IpRewriter extends ModifierBlock {
         } else {
             this.setAggregate(DEF_AGGREGATE_STATUS);
         }
+        val = this.configurationMap.get(MIGRATION);
+        if (val != null) {
+            this.setMigration(Boolean.valueOf(val.toString()));
+            this.configurationMap.remove(MIGRATION);
+        } else {
+            this.setAggregate(DEF_MIGRATION_STATUS);
+        }
     }
 
     @Override
     public String fullConfiguration() {
         return "IPRewriter(" + patternConf().datapathPatternsToString() + ", " +
-                    AGGREGATE + " " + (aggregate() ? "true" : "false") +
+                    AGGREGATE + " " + (aggregate() ? "true" : "false") + ", " +
+                    MIGRATION + " " + (migration() ? "true" : "false") +
                 ")";
     }
 
@@ -222,7 +259,8 @@ public class IpRewriter extends ModifierBlock {
             this.configurationFile(),
             this.outputPortsNumber(),
             this.patternConf(),
-            this.aggregate()
+            this.aggregate(),
+            this.migration()
         );
     }
 
