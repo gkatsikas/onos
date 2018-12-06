@@ -782,6 +782,17 @@ public class NfvDataplaneBlock implements NfvDataplaneBlockInterface {
 
                 break;
             }
+            if (rule.contains(IpRewriter.MIGRATION)) {
+                String[] tokens = rule.split(IpRewriter.MIGRATION);
+                if (tokens.length != 2) {
+                    continue;
+                }
+
+                IpRewriter rw = (IpRewriter) processor;
+                rw.setMigration(Boolean.parseBoolean(tokens[1].toLowerCase().trim()));
+
+                break;
+            }
         }
 
         // Keep only the configuration of the rule associated with the input port
