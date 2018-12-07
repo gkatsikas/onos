@@ -446,14 +446,15 @@ public class OutputClass {
      */
     public static OutputClass fromIpMapper(List<String> patterns) {
         OutputClass foutput = null;
-        Set<Long> statefulSetValues = new HashSet<Long>();
+        Set<Long> statefulSetValuesSrc = new HashSet<Long>();
+        Set<Long> statefulSetValuesDst = new HashSet<Long>();
 
         for (String pattern : patterns) {
             String[] token = pattern.split("\\s+");
             checkArgument(
                 token.length == IPMAPPER_PATTERN_LENGTH,
                 "Failed to parse line: " + pattern + ". " +
-                "IPMapper element expects rules in the form: - - DSTIP - FOUTPUT BOUTPUT"
+                "IPMapper element expects rules in the form: SRCIP - DSTIP - FOUTPUT BOUTPUT"
             );
 
             int bwdPort = Integer.parseInt(token[5]);
@@ -463,25 +464,47 @@ public class OutputClass {
                 foutput = new OutputClass(fwdPort);
             }
 
-            if (!token[0].equals("-") || !token[1].equals("-") || !token[3].equals("-")) {
+            if (!token[1].equals("-") || !token[3].equals("-")) {
                 log.warn("Limited support for pattern: " + pattern + ". " +
-                         "RoundRobinIPMapper support is currently limited to destination IP addresses");
+                         "RoundRobinIPMapper support is currently limited to destination or source IP addresses");
             }
 
-            long ipDst = Common.stringIpToInt(token[2]);
-            statefulSetValues.add(ipDst);
+            if (!token[0].equals("-")) {
+                long ipSrc = Common.stringIpToInt(token[0]);
+                statefulSetValuesSrc.add(ipSrc);
+            }
+
+            if (!token[2].equals("-")) {
+                long ipDst = Common.stringIpToInt(token[2]);
+                statefulSetValuesDst.add(ipDst);
+            }
         }
 
-        checkArgument(!statefulSetValues.isEmpty(), "No IPMapper operations out of patterns: " + patterns);
-        StatefulSetOperationValue stfOp = new StatefulSetOperationValue(statefulSetValues);
 
-        foutput.addFieldOperation(
-            new FieldOperation(
-                HeaderField.IP_DST,
-                OperationType.WRITE_LB,
-                stfOp
-            )
-        );
+        checkArgument(!statefulSetValuesSrc.isEmpty() || !statefulSetValuesDst.isEmpty(), "No IPMapper operations out of patterns: " + patterns);
+        if (!statefulSetValuesSrc.isEmpty()) {
+            StatefulSetOperationValue stfOp = new StatefulSetOperationValue(statefulSetValuesSrc);
+
+            foutput.addFieldOperation(
+                new FieldOperation(
+                    HeaderField.IP_SRC,
+                    OperationType.WRITE_LB,
+                    stfOp
+                )
+            );
+        };
+        if (!statefulSetValuesDst.isEmpty()) {
+            StatefulSetOperationValue stfOp = new StatefulSetOperationValue(statefulSetValuesDst);
+
+            foutput.addFieldOperation(
+                new FieldOperation(
+                    HeaderField.IP_DST,
+                    OperationType.WRITE_LB,
+                    stfOp
+                )
+            );
+
+        }
 
         log.debug("Created output class: " + foutput.toString());
 
