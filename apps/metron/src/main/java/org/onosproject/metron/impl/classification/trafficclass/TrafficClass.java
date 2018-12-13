@@ -87,6 +87,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Set;
 import java.util.List;
+import java.util.LinkedList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -1796,7 +1797,7 @@ public class TrafficClass implements TrafficClassInterface {
      * @return string-based arguments for write operations
      */
     private String writeOperationsArguments() {
-        String args = "";
+        List<String> args = new LinkedList<String>();
 
         for (NfvDataplaneBlockInterface block : this.blockPath) {
             // Looking for write operations
@@ -1806,11 +1807,14 @@ public class TrafficClass implements TrafficClassInterface {
 
             IpRewriter ipRw = (IpRewriter) block.processor();
             if (ipRw.aggregate()) {
-                args += IpRewriter.AGGREGATE + " true";
+                args.add(IpRewriter.AGGREGATE + " true");
+            }
+            if (ipRw.migration()) {
+                args.add(IpRewriter.MIGRATION + " true");
             }
         }
 
-        return args;
+        return String.join(", ", args);
     }
 
 }
