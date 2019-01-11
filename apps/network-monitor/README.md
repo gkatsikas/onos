@@ -17,11 +17,20 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 Also, setup the InfluxDB database following the instructions [here][influx-db].
 
 
-Build & Deploy
+Build ONOS
 ----
-To build and deploy ONOS, do:
+To build ONOS, do:
 ```bash
-./tools/build/onos-buck run onos-local -- clean debug -Xlint:deprecation -Xlint:unchecked
+cd $ONOS_ROOT
+bazel clean --expunge
+bazel build onos --verbose_failures
+```
+
+Deploy ONOS
+----
+To deploy ONOS, do:
+```bash
+bazel run onos-local -- clean
 ```
 
 
@@ -75,7 +84,7 @@ The name of the application is: ''Network Monitor''.
 
 Getting help
 ----
-Contact georgios.katsikas at ri.se if you encounter any problems with Network Monitor.
+Contact katsikas.gp at gmail.com if you encounter any problems with Network Monitor.
 
 The ONOS README is available [here][onos-readme].
 
