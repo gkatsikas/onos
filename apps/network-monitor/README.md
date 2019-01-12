@@ -17,6 +17,21 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 Also, setup the InfluxDB database following the instructions [here][influx-db].
 
 
+Dependencies
+---
+In addition to the basic [ONOS dependencies][onos-dep], since version 2.0, ONOS uses Bazel as the main build tool along with Java 11.
+To install Bazel version VER (e.g., 0.21.0) follow the steps below:
+
+```bash
+wget https://github.com/bazelbuild/bazel/releases/download/0.19.0/bazel-VER-installer-linux-x86_64.sh
+chmod +x bazel-VER-installer-linux-x86_64.sh
+bash bazel-VER-installer-linux-x86_64.sh --user
+source $HOME/.bazel/bin/bazel-complete.bash
+echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
+source $HOME/.bashrc
+rm bazel-VER-installer-linux-x86_64.sh
+
+
 Build ONOS
 ----
 To build ONOS, do:
@@ -30,6 +45,7 @@ Deploy ONOS
 ----
 To deploy ONOS, do:
 ```bash
+cd $ONOS_ROOT
 bazel run onos-local -- clean
 ```
 
@@ -60,7 +76,7 @@ Alternatively, you can activate Network Monitor from the [Applications tab][onos
 The name of the application is: ''Network Monitor''.
 
 
-Network Monitor REST API
+Network Monitor's REST API
 ----
 You can retrieve Network Monitor's run-time statistics by issuing HTTP get requests.
 
@@ -86,11 +102,8 @@ Getting help
 ----
 Contact katsikas.gp at gmail.com if you encounter any problems with Network Monitor.
 
-The ONOS README is available [here][onos-readme].
-
 [onos]: https://onosproject.org/
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
 [onos-ui-apps]: http://127.0.0.1:8181/onos/ui/index.html#/app
-[onos-readme]: README.onos.md
-[network-monitor-conf]: ./conf/
 [influx-db]: https://github.com/influxdata/influxdb
+[network-monitor-conf]: ./conf/
