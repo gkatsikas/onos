@@ -20,8 +20,8 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 Dependencies
 ---
-In addition to the basic [ONOS dependencies][onos-dep], since version 2.0, ONOS uses Bazel as a build tool.
-To install Bazel version VER (e.g., 0.19.0) follow the steps below:
+In addition to the basic [ONOS dependencies][onos-dep], since version 2.0, ONOS uses Bazel as the main build tool along with Java 11.
+To install Bazel version VER (e.g., 0.21.0) follow the steps below:
 
 ```bash
 wget https://github.com/bazelbuild/bazel/releases/download/0.19.0/bazel-VER-installer-linux-x86_64.sh
@@ -48,6 +48,7 @@ Deploy ONOS
 ----
 To deploy ONOS, do:
 ```bash
+cd $ONOS_ROOT
 bazel run onos-local -- clean
 ```
 
@@ -256,7 +257,7 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 
 Getting help
 ----
-Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
+Contact katsikas.gp at gmail.com or barbette at kth.se if you encounter any problems with Metron.
 
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
