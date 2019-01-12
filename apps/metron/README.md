@@ -276,7 +276,7 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 
 Getting help
 ----
-Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
+Contact katsikas.gp at gmail.com or barbette at kth.se if you encounter any problems with Metron.
 
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
