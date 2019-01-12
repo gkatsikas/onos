@@ -20,7 +20,7 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 Dependencies
 ---
-In addition to the basic [ONOS dependencies][onos-dep], since version 2.0, ONOS uses Bazel as a build tool.
+In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel as a build tool.
 To install Bazel version VER (e.g., 0.19.0) follow the steps below:
 
 ```bash
@@ -48,6 +48,7 @@ Deploy ONOS
 ----
 To deploy ONOS, do:
 ```bash
+cd $ONOS_ROOT
 bazel run onos-local -- clean
 ```
 
@@ -256,7 +257,7 @@ If you use Metron in your work, please cite our [paper][metron-paper]:
 
 Getting help
 ----
-Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
+Contact katsikas.gp at gmail.com or barbette at kth.se if you encounter any problems with Metron.
 
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
@@ -271,4 +272,4 @@ Contact katsikas.gp at gmail.com if you encounter any problems with Metron.
 [dpdk]: https://dpdk.org/
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
 [onos-ui-apps]: http://127.0.0.1:8181/onos/ui/index.html#/app
-[onos-dep]: https://github.com/opennetworkinglab/onos/blob/master/README.md
+[onos-dep]: https://github.com/opennetworkinglab/onos/blob/onos-1.15/README.md
