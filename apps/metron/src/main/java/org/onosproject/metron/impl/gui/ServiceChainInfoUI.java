@@ -34,6 +34,7 @@ import com.google.common.collect.ImmutableList;
 import java.util.List;
 
 import static org.onosproject.ui.UiView.Category.NETWORK;
+import static org.onosproject.ui.GlyphConstants.CHAIN;
 
 /**
  * Mechanism to stream service chain information to the GUI.
@@ -62,7 +63,7 @@ public class ServiceChainInfoUI {
 
     // List of application views
     private final List<UiView> views = ImmutableList.of(
-            new UiView(NETWORK, SC_INFO_ID, SC_INFO_TEXT)
+            new UiView(NETWORK, SC_INFO_ID, SC_INFO_TEXT, CHAIN)
     );
 
     // Application UI extension
