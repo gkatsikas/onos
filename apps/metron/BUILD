@@ -1,9 +1,9 @@
 COMPILE_DEPS = CORE_DEPS + KRYO + CLI + REST + JACKSON + [
     "@joda_time//jar",
+    "//apps/virtual/api:onos-apps-virtual-api",
     "//core/common:onos-core-common",
     "//core/store/serializers:onos-core-serializers",
     "//drivers/server:onos-drivers-server",
-    "//incubator/api:onos-incubator-api",
     "//protocols/rest/api:onos-protocols-rest-api",
 ]
 
