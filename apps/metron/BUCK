@@ -42,7 +42,7 @@ osgi_jar_with_tests (
 
 onos_app(
     title = 'Metron NFV Controller',
-    category = 'Traffic Processing &amp; Steering',
+    category = 'Traffic Engineering',
     origin = 'KTH Royal Institute of Technology &amp; RISE SICS',
     url = 'https://bitbucket.org/nslab/onos/src/metron-ctrl/',
     description = 'Metron realizes NFV service chains at the speed of the underlying hardware',
