@@ -31,7 +31,7 @@ osgi_jar_with_tests(
 
 onos_app(
     app_name = "org.onosproject.metron",
-    category = "Traffic Processing &amp; Steering",
+    category = "Traffic Engineering",
     description = "Metron realizes NFV service chains at the speed of the underlying hardware",
     included_bundles = BUNDLES,
     origin = "KTH Royal Institute of Technology &amp; RISE SICS",
