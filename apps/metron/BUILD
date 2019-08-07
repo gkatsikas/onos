@@ -32,10 +32,10 @@ osgi_jar_with_tests(
 onos_app(
     app_name = "org.onosproject.metron",
     category = "Traffic Engineering",
-    description = "Metron realizes NFV service chains at the speed of the underlying hardware",
+    description = "Metron realizes NFV service chains at the true speed of the underlying hardware",
     included_bundles = BUNDLES,
     origin = "KTH Royal Institute of Technology &amp; RISE SICS",
     required_apps = REQUIRED_APPS,
     title = "Metron NFV Controller",
-    url = "https://bitbucket.org/nslab/onos/src/metron-ctrl/",
+    url = "https://github.com/gkatsikas/onos/tree/metron-ctrl-1.15.0",
 )
