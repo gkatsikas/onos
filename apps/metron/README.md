@@ -10,7 +10,7 @@ These drivers are now part of the [official ONOS distribution][onos-master] (sin
 
 [Metron's data plane][metron-agent] extends [FastClick][fastclick], which in turn uses [DPDK][dpdk] as a high performance network I/O subsystem.
 
-This repository provides the source code of ONOS extended with the Metron controller as an overlay application.
+This repository provides the source code of ONOS 1.15.0 (Peacock) extended with the Metron controller as an overlay application.
 
 
 Setup ONOS
@@ -21,16 +21,17 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 Dependencies
 ---
 In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel as a build tool.
-To install Bazel version VER (e.g., 0.19.0) follow the steps below:
+The right Bazel version for ONOS 1.15.0 (Peacock) is 0.23.0. To install Bazel follow the steps below:
 
 ```bash
-wget https://github.com/bazelbuild/bazel/releases/download/0.19.0/bazel-VER-installer-linux-x86_64.sh
-chmod +x bazel-VER-installer-linux-x86_64.sh
-bash bazel-VER-installer-linux-x86_64.sh --user
+VER="0.23.0"
+wget https://github.com/bazelbuild/bazel/releases/download/$VER/bazel-$VER-installer-linux-x86_64.sh
+chmod +x bazel-$VER-installer-linux-x86_64.sh
+bash bazel-$VER-installer-linux-x86_64.sh --user
 source $HOME/.bazel/bin/bazel-complete.bash
 echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
 source $HOME/.bashrc
-rm bazel-VER-installer-linux-x86_64.sh
+rm bazel-$VER-installer-linux-x86_64.sh
 ```
 
 
@@ -60,7 +61,7 @@ To activate Metron using the ONOS CLI, do:
 app activate metron
 ```
 
-Alternatively, you can activate Metron from the [Applications tab][onos-ui-apps] of the ONOS UI.
+Alternatively, you can activate Metron from the Applications tab of the ONOS UI.
 The name of the application is: ''Metron NFV Controller''.
 
 
@@ -202,8 +203,8 @@ Deploy a Metron service chain
 Once an instance of the ONOS controller has been deployed, the Metron controller application has started, and a Metron agent has been launched, we can deploy a service chain.
 For example, to deploy a server-level Firewall->NAPT service chain do:
 ```bash
-vi $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json.json according to your needs (e.g., topology is important to change)
-onos-netcfg <ONOS CTRL IP> $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json.json
+vi $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json according to your needs (e.g., topology is important to change)
+onos-netcfg <ONOS CTRL IP> $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json
 ```
 
 
@@ -231,7 +232,7 @@ To deactivate Metron using the ONOS CLI, do:
 app deactivate metron
 ```
 
-Alternatively, you can deactivate Metron from the [Applications tab][onos-ui-apps] of the ONOS UI.
+Alternatively, you can deactivate Metron from the Applications tab of the ONOS UI.
 The name of the application is: ''Metron NFV Controller''.
 
 
@@ -264,12 +265,11 @@ Contact katsikas.gp at gmail.com or barbette at kth.se if you encounter any prob
 [onos]: https://onosproject.org/
 [metron-driver]: https://github.com/opennetworkinglab/onos/tree/master/drivers/server
 [metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
-[metron-server-apps]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/apps-server-level/
-[metron-net-apps]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/apps-network-wide/
-[metron-example-ipclassifier]: https://bitbucket.org/nslab/onos/src/metron-ctrl/apps/metron/apps/firewall/3rules-flow-dir.json
+[metron-server-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.15.0/apps/metron/apps/apps-server-level
+[metron-net-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.15.0/apps/metron/apps/apps-network-wide
+[metron-example-ipclassifier]: https://github.com/gkatsikas/onos/blob/metron-ctrl-1.15.0/apps/metron/apps/firewall/3rules-flow-dir.json
 [onos-master]: https://github.com/opennetworkinglab/onos
 [fastclick]: https://github.com/tbarbette/fastclick
 [dpdk]: https://dpdk.org/
 [onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
-[onos-ui-apps]: http://127.0.0.1:8181/onos/ui/index.html#/app
 [onos-dep]: https://github.com/opennetworkinglab/onos/blob/onos-1.15/README.md
