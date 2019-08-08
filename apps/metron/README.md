@@ -21,10 +21,10 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 Dependencies
 ---
 In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel as a build tool.
-The right Bazel version for ONOS 1.15.0 (Peacock) is 0.23.0. To install Bazel follow the steps below:
+The right Bazel version for ONOS 1.15.0 (Peacock) is 0.24.0. To install Bazel follow the steps below:
 
 ```bash
-VER="0.23.0"
+VER="0.24.0"
 wget https://github.com/bazelbuild/bazel/releases/download/$VER/bazel-$VER-installer-linux-x86_64.sh
 chmod +x bazel-$VER-installer-linux-x86_64.sh
 bash bazel-$VER-installer-linux-x86_64.sh --user
