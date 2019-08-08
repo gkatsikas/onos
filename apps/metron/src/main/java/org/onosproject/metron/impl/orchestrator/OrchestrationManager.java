@@ -100,6 +100,9 @@ import static java.util.concurrent.Executors.newFixedThreadPool;
 @Service
 public final class OrchestrationManager implements OrchestrationService {
 
+    /**
+     * Record the last time a CPU core was checked for load imbalance.
+     */
     private class CpuRuntimeInfo {
         public CpuRuntimeInfo() {
             lastResched = null;
@@ -177,29 +180,29 @@ public final class OrchestrationManager implements OrchestrationService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected TagService taggingService;
 
-    // The CPU utilization threshold to perform scale down
+    /** The CPU utilization threshold to perform scale down. */
     private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
-    private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.25;
-    @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
+    private static final float SCALE_DOWN_LOAD_THRESHOLD_DEFAULT = 0.25f;
+    @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = SCALE_DOWN_LOAD_THRESHOLD_DEFAULT,
              label = "Configure the amount of CPU load to trigger scale down events; " +
                     "default is 25% CPU core utilization")
-    private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
+    private float scaleDownLoadThreshold = SCALE_DOWN_LOAD_THRESHOLD_DEFAULT;
 
-    // The CPU utilization threshold to perform scale up
+    /** The CPU utilization threshold to perform scale up. */
     private static final String SCALE_UP_LOAD_THRESHOLD = "scaleUpLoadThreshold";
-    private static final float DEFAULT_SCALE_UP_LOAD_THRESHOLD = (float) 0.75;
-    @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
+    private static final float SCALE_UP_LOAD_THRESHOLD_DEFAULT = 0.75f;
+    @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = SCALE_UP_LOAD_THRESHOLD_DEFAULT,
              label = "Configure the amount of CPU load to trigger scale up events; " +
                     "default is 75% CPU core utilization")
-    private float scaleUpLoadThreshold = DEFAULT_SCALE_UP_LOAD_THRESHOLD;
+    private float scaleUpLoadThreshold = SCALE_UP_LOAD_THRESHOLD_DEFAULT;
 
-    // The frequency of the Orchestrator's monitoring in milliseconds
+    /** The frequency of the Orchestrator's monitoring in milliseconds. */
     private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
-    private static final int DEFAULT_MONITORING_PERIOD_MS = 100;
-    @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
+    private static final int MONITORING_PERIOD_MS_DEFAULT = 100;
+    @Property(name = MONITORING_PERIOD_MS, intValue = MONITORING_PERIOD_MS_DEFAULT,
              label = "Configure the data plane monitoring frequency (in milliseconds); " +
                     "default is 100 ms")
-    private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
+    private int monitoringPeriodMilli = MONITORING_PERIOD_MS_DEFAULT;
 
     public OrchestrationManager() {
         this.activeServiceChains    = Sets.<ServiceChainInterface>newConcurrentHashSet();
@@ -1142,7 +1145,7 @@ public final class OrchestrationManager implements OrchestrationService {
         if (Tools.isPropertyEnabled(properties, MONITORING_PERIOD_MS) != null) {
             int previousMonitoringPeriodMilli = monitoringPeriodMilli;
             monitoringPeriodMilli = Tools.getIntegerProperty(
-                properties, MONITORING_PERIOD_MS, DEFAULT_MONITORING_PERIOD_MS);
+                properties, MONITORING_PERIOD_MS, MONITORING_PERIOD_MS_DEFAULT);
 
             if (monitoringPeriodMilli <= 0) {
                 monitoringPeriodMilli = previousMonitoringPeriodMilli;

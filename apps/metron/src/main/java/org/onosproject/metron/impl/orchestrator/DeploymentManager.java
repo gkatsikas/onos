@@ -141,30 +141,19 @@ public final class DeploymentManager implements DeploymentService {
      */
     private final ServiceChainListenerInterface serviceChainListener = new InternalServiceChainListener();
 
-    /**
-     * Component properties to be adjusted by the operator.
-     * The operator can select whether the synthesizer will be
-     * involved in the formation of the traffic classes or not.
-     * By default the synthesizer is enabled, so every CONSTRUCTED
-     * service chain will be translated into a highly optimized
-     * equivalent, before it becomes READY.
-     */
+    /** Determines whether hardware offloading is exploited. */
     private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
-    private static final boolean DEF_HW_OFFLOADING = true;
-    @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
+    private static final boolean ENABLE_HW_OFFLOADING_DEFAULT = true;
+    @Property(name = ENABLE_HW_OFFLOADING, boolValue = ENABLE_HW_OFFLOADING_DEFAULT,
              label = "Enable the hardware offloading features of Metron; default is true")
-    private boolean enableHwOffloading = DEF_HW_OFFLOADING;
+    private boolean enableHwOffloading = ENABLE_HW_OFFLOADING_DEFAULT;
 
-    /**
-     * Variable that determines the scaling policy.
-     * If true, the data plane undertakes scaling, otherwise
-     * the controller performs scaling.
-     */
+    /** Determines the scaling policy. If true, the data plane undertakes scaling instead of the controller. */
     private static final String ENABLE_AUTOSCALE = "enableAutoScale";
-    public  static final boolean DEF_AUTOSCALE = false;
-    @Property(name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
+    public  static final boolean ENABLE_AUTOSCALE_DEFAULT = false;
+    @Property(name = ENABLE_AUTOSCALE, boolValue = ENABLE_AUTOSCALE_DEFAULT,
              label = "Allow the data plane to undertake scaling in case of load imbalances; default is false")
-    private boolean enableAutoScale = DEF_AUTOSCALE;
+    private boolean enableAutoScale = ENABLE_AUTOSCALE_DEFAULT;
 
     /**
      * A dedicated thread pool to deploy Metron service chains.
@@ -1736,7 +1725,7 @@ public final class DeploymentManager implements DeploymentService {
         // Property for hardware offloading is given
         if (Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING) != null) {
             boolean previousEnableHwOffloading = this.enableHwOffloading;
-            this.enableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING, DEF_HW_OFFLOADING);
+            this.enableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING, ENABLE_HW_OFFLOADING_DEFAULT);
 
             if (this.enableHwOffloading != previousEnableHwOffloading) {
                 log.info("Configured! Hardware offloading is now {}", this.enableHwOffloading ? "enabled" : "disabled");
@@ -1748,7 +1737,7 @@ public final class DeploymentManager implements DeploymentService {
         // Property for autoscale is given
         if (Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE) != null) {
             boolean previousEnableAutoScale = this.enableAutoScale;
-            this.enableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE, DEF_AUTOSCALE);
+            this.enableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE, ENABLE_AUTOSCALE_DEFAULT);
 
             if (this.enableAutoScale != previousEnableAutoScale) {
                 log.info("Configured! Autoscale is now {}", this.enableAutoScale ? "enabled" : "disabled");
