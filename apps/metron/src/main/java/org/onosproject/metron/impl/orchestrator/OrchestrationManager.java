@@ -56,7 +56,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-// import org.osgi.service.component.annotations.Property;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 
@@ -91,13 +90,30 @@ import static org.onlab.util.Tools.groupedThreads;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.SCALE_DOWN_LOAD_THRESHOLD;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.SCALE_DOWN_LOAD_THRESHOLD_DEFAULT;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.SCALE_UP_LOAD_THRESHOLD;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.SCALE_UP_LOAD_THRESHOLD_DEFAULT;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.MONITORING_PERIOD_MS;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.MONITORING_PERIOD_MS_DEFAULT;
 
 /**
  * A service that undertakes to deploy and manage Metron service chains.
  */
-@Component(immediate = true, service = OrchestrationService.class)
+@Component(
+    immediate = true,
+    service = OrchestrationService.class,
+    property = {
+        SCALE_DOWN_LOAD_THRESHOLD + ":Double=" + SCALE_DOWN_LOAD_THRESHOLD_DEFAULT,
+        SCALE_UP_LOAD_THRESHOLD + ":Double=" + SCALE_UP_LOAD_THRESHOLD_DEFAULT,
+        MONITORING_PERIOD_MS + ":Integer=" + MONITORING_PERIOD_MS_DEFAULT
+    }
+)
 public final class OrchestrationManager implements OrchestrationService {
 
+    /**
+     * Record the last time a CPU core was checked for load imbalance.
+     */
     private class CpuRuntimeInfo {
         public CpuRuntimeInfo() {
             lastResched = null;
@@ -175,29 +191,14 @@ public final class OrchestrationManager implements OrchestrationService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected TagService taggingService;
 
-    // The CPU utilization threshold to perform scale down
-    private static final String SCALE_DOWN_LOAD_THRESHOLD = "scaleDownLoadThreshold";
-    private static final float DEFAULT_SCALE_DOWN_LOAD_THRESHOLD = (float) 0.25;
-    // @Property(name = SCALE_DOWN_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD,
-    //          label = "Configure the amount of CPU load to trigger scale down events; " +
-    //                 "default is 25% CPU core utilization")
-    private float scaleDownLoadThreshold = DEFAULT_SCALE_DOWN_LOAD_THRESHOLD;
+    /** The CPU utilization threshold to perform scale down */
+    private float scaleDownLoadThreshold = SCALE_DOWN_LOAD_THRESHOLD_DEFAULT;
 
-    // The CPU utilization threshold to perform scale up
-    private static final String SCALE_UP_LOAD_THRESHOLD = "scaleUpLoadThreshold";
-    private static final float DEFAULT_SCALE_UP_LOAD_THRESHOLD = (float) 0.75;
-    // @Property(name = SCALE_UP_LOAD_THRESHOLD, floatValue = DEFAULT_SCALE_UP_LOAD_THRESHOLD,
-    //          label = "Configure the amount of CPU load to trigger scale up events; " +
-    //                 "default is 75% CPU core utilization")
-    private float scaleUpLoadThreshold = DEFAULT_SCALE_UP_LOAD_THRESHOLD;
+    /** The CPU utilization threshold to perform scale up */
+    private float scaleUpLoadThreshold = SCALE_UP_LOAD_THRESHOLD_DEFAULT;
 
-    // The frequency of the Orchestrator's monitoring in milliseconds
-    private static final String MONITORING_PERIOD_MS = "monitoringPeriodMilli";
-    private static final int DEFAULT_MONITORING_PERIOD_MS = 100;
-    // @Property(name = MONITORING_PERIOD_MS, intValue = DEFAULT_MONITORING_PERIOD_MS,
-    //          label = "Configure the data plane monitoring frequency (in milliseconds); " +
-    //                 "default is 100 ms")
-    private int monitoringPeriodMilli = DEFAULT_MONITORING_PERIOD_MS;
+    /** The frequency of the Orchestrator's monitoring in milliseconds */
+    private int monitoringPeriodMilli = MONITORING_PERIOD_MS_DEFAULT;
 
     public OrchestrationManager() {
         this.activeServiceChains    = Sets.<ServiceChainInterface>newConcurrentHashSet();
@@ -205,31 +206,26 @@ public final class OrchestrationManager implements OrchestrationService {
     }
 
     @Activate
-    protected void activate() {
+    protected void activate(ComponentContext context) {
         // Register the Metron Orchestrator with the core
         this.appId = coreService.registerApplication(APP_NAME);
+
+        // Register the component configuration
+        cfgService.registerProperties(getClass());
 
         // Catch events coming from the service chain manager
         serviceChainService.addListener(serviceChainListener);
 
-        // Configuration service is up
-        cfgService.registerProperties(getClass());
-
         log.info("[{}] Started", label());
     }
 
-    @Modified
-    public void modified(ComponentContext context) {
-        this.readComponentConfiguration(context);
-    }
-
     @Deactivate
-    protected void deactivate() {
-        // Remove the listener for the events coming from the service chain manager
-        serviceChainService.removeListener(serviceChainListener);
-
+    protected void deactivate(ComponentContext context) {
         // Disable configuration service
         cfgService.unregisterProperties(getClass(), false);
+
+        // Remove the listener for the events coming from the service chain manager
+        serviceChainService.removeListener(serviceChainListener);
 
         // Take care of the thread pool
         this.managerExecutor.shutdown();
@@ -239,6 +235,11 @@ public final class OrchestrationManager implements OrchestrationService {
         this.suspendedServiceChains.clear();
 
         log.info("[{}] Stopped", label());
+    }
+
+    @Modified
+    protected void modified(ComponentContext context) {
+        this.readComponentConfiguration(context);
     }
 
     @Override
@@ -1140,7 +1141,7 @@ public final class OrchestrationManager implements OrchestrationService {
         if (Tools.isPropertyEnabled(properties, MONITORING_PERIOD_MS) != null) {
             int previousMonitoringPeriodMilli = monitoringPeriodMilli;
             monitoringPeriodMilli = Tools.getIntegerProperty(
-                properties, MONITORING_PERIOD_MS, DEFAULT_MONITORING_PERIOD_MS);
+                properties, MONITORING_PERIOD_MS, MONITORING_PERIOD_MS_DEFAULT);
 
             if (monitoringPeriodMilli <= 0) {
                 monitoringPeriodMilli = previousMonitoringPeriodMilli;

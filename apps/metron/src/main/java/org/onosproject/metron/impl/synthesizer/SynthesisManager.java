@@ -57,7 +57,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-// import org.osgi.service.component.annotations.Property;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.ComponentContext;
@@ -80,6 +79,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.onlab.util.Tools.groupedThreads;
 import static org.slf4j.LoggerFactory.getLogger;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_SYNTHESIZER;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_SYNTHESIZER_DEFAULT;
 
 /**
  * A service that converts a constructed service chain (by an application)
@@ -89,7 +90,13 @@ import static org.slf4j.LoggerFactory.getLogger;
  * If this component is disabled, it directly moves a CONSTRUCTED state to
  * the READY state.
  */
-@Component(immediate = true, service = SynthesisService.class)
+@Component(
+    immediate = true,
+    service = SynthesisService.class,
+    property = {
+        ENABLE_SYNTHESIZER + ":Boolean=" + ENABLE_SYNTHESIZER_DEFAULT
+    }
+)
 public final class SynthesisManager implements SynthesisService {
 
     private static final Logger log = getLogger(SynthesisManager.class);
@@ -125,21 +132,8 @@ public final class SynthesisManager implements SynthesisService {
         groupedThreads(this.getClass().getSimpleName(), "sc-synthesizer", log)
     );
 
-    /**
-     * Component properties to be adjusted by the operator.
-     * The operator can select whether the synthesizer will be
-     * involved in the formation of the traffic classes or not.
-     * By default the synthesizer is enabled, so every CONSTRUCTED
-     * service chain will be translated into a highly optimized
-     * equivalent, before it becomes READY.
-     */
-    private static final String ENABLE_SYNTHESIZER = "enableSynthesizer";
-    private static final boolean DEF_ENABLE_SYNTHESIZER = true;
-    // @Property(
-    //     name = ENABLE_SYNTHESIZER, boolValue = DEF_ENABLE_SYNTHESIZER,
-    //     label = "Enable Metron's synthesizer component (i.e., SNF); default is true"
-    // )
-    private boolean enableSynthesizer = DEF_ENABLE_SYNTHESIZER;
+    /** Determines whether the synthesizer will be involved in the traffic class formation. */
+    private boolean enableSynthesizer = ENABLE_SYNTHESIZER_DEFAULT;
 
     /**
      * The Metron Synthesizer requires the ONOS core service to register
@@ -167,24 +161,24 @@ public final class SynthesisManager implements SynthesisService {
 
     @Activate
     protected void activate(ComponentContext context) {
-        // Register the Metron Synthesizer with the core.
+        // Register the Metron Synthesizer with the core
         this.appId = coreService.registerApplication(APP_NAME);
 
         // Register the component configuration
-        cfgService.registerProperties(getClass());
+        cfgService.registerProperties(SynthesisManager.class);
 
-        // Add a listener to catch events coming from the service chain manager.
+        // Add a listener to catch events coming from the service chain manager
         serviceChainService.addListener(serviceChainListener);
 
         log.info("[{}] Started", label());
     }
 
     @Deactivate
-    protected void deactivate() {
+    protected void deactivate(ComponentContext context) {
         // Unregister the component configuration
-        cfgService.unregisterProperties(getClass(), false);
+        cfgService.unregisterProperties(SynthesisManager.class, false);
 
-        // Remove the listener for the events coming from the service chain manager.
+        // Remove the listener for the events coming from the service chain manager
         serviceChainService.removeListener(serviceChainListener);
 
         this.serviceChainsToSynthesize.clear();
@@ -195,7 +189,7 @@ public final class SynthesisManager implements SynthesisService {
     }
 
     @Modified
-    public void modified(ComponentContext context) {
+    protected void modified(ComponentContext context) {
         this.readComponentConfiguration(context);
     }
 
@@ -765,15 +759,14 @@ public final class SynthesisManager implements SynthesisService {
         boolean previousState = this.enableSynthesizer;
 
         // Property for synthesizer is given
-        if (Tools.isPropertyEnabled(properties, ENABLE_SYNTHESIZER) != null) {
-            this.enableSynthesizer = Tools.isPropertyEnabled(properties, ENABLE_SYNTHESIZER, DEF_ENABLE_SYNTHESIZER);
-            // TODO: Allow the user to disable it!
-            checkArgument(this.enableSynthesizer, "Synthesizer cannot be currently disabled. Sorry!");
-            if (this.enableSynthesizer != previousState) {
-                log.info("Configured! Synthesizer state is {}", this.enableSynthesizer ? "enabled" : "disabled");
-            } else {
-                log.info("Synthesizer state remains {}", this.enableSynthesizer ? "enabled" : "disabled");
-            }
+        Boolean newState = Tools.isPropertyEnabled(properties, ENABLE_SYNTHESIZER);
+        this.enableSynthesizer = (newState != null) ? newState : ENABLE_SYNTHESIZER_DEFAULT;
+        // TODO: Allow the user to disable it!
+        checkArgument(this.enableSynthesizer, "Synthesizer cannot be currently disabled. Sorry!");
+        if (this.enableSynthesizer != previousState) {
+            log.info("Configured! Synthesizer state is {}", this.enableSynthesizer ? "enabled" : "disabled");
+        } else {
+            log.info("Synthesizer state remains {}", this.enableSynthesizer ? "enabled" : "disabled");
         }
 
         // After the change (if any)

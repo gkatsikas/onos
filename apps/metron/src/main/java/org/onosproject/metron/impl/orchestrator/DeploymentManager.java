@@ -63,7 +63,6 @@ import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Deactivate;
 import org.osgi.service.component.annotations.Modified;
-// import org.osgi.service.component.annotations.Property;
 import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.ComponentContext;
@@ -88,18 +87,29 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 
-import static org.onosproject.metron.api.config.TrafficPoint.TrafficPointType.PROCESSING;
-import static org.onosproject.metron.api.networkfunction.NetworkFunctionType.STANDALONE;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.onlab.util.Tools.groupedThreads;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.onosproject.metron.api.config.TrafficPoint.TrafficPointType.PROCESSING;
+import static org.onosproject.metron.api.networkfunction.NetworkFunctionType.STANDALONE;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_HW_OFFLOADING;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_HW_OFFLOADING_DEFAULT;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_AUTOSCALE;
+import static org.onosproject.metron.impl.OsgiPropertyConstants.ENABLE_AUTOSCALE_DEFAULT;
 
 /**
  * A service that undertakes to deploy Metron service chains.
  */
-@Component(immediate = true, service = DeploymentService.class)
+@Component(
+    immediate = true,
+    service = DeploymentService.class,
+    property = {
+        ENABLE_HW_OFFLOADING + ":Boolean=" + ENABLE_HW_OFFLOADING_DEFAULT,
+        ENABLE_AUTOSCALE + ":Boolean=" + ENABLE_AUTOSCALE_DEFAULT
+    }
+)
 public final class DeploymentManager implements DeploymentService {
 
     private static final Logger log = getLogger(DeploymentManager.class);
@@ -139,30 +149,11 @@ public final class DeploymentManager implements DeploymentService {
      */
     private final ServiceChainListenerInterface serviceChainListener = new InternalServiceChainListener();
 
-    /**
-     * Component properties to be adjusted by the operator.
-     * The operator can select whether the synthesizer will be
-     * involved in the formation of the traffic classes or not.
-     * By default the synthesizer is enabled, so every CONSTRUCTED
-     * service chain will be translated into a highly optimized
-     * equivalent, before it becomes READY.
-     */
-    private static final String ENABLE_HW_OFFLOADING = "enableHwOffloading";
-    private static final boolean DEF_HW_OFFLOADING = true;
-    // @Property(name = ENABLE_HW_OFFLOADING, boolValue = DEF_HW_OFFLOADING,
-    //          label = "Enable the hardware offloading features of Metron; default is true")
-    private boolean enableHwOffloading = DEF_HW_OFFLOADING;
+    /** Determines whether hardware offloading is exploited. */
+    private boolean enableHwOffloading = ENABLE_HW_OFFLOADING_DEFAULT;
 
-    /**
-     * Variable that determines the scaling policy.
-     * If true, the data plane undertakes scaling, otherwise
-     * the controller performs scaling.
-     */
-    private static final String ENABLE_AUTOSCALE = "enableAutoScale";
-    public  static final boolean DEF_AUTOSCALE = false;
-    // @Property(name = ENABLE_AUTOSCALE, boolValue = DEF_AUTOSCALE,
-    //          label = "Allow the data plane to undertake scaling in case of load imbalances; default is false")
-    private boolean enableAutoScale = DEF_AUTOSCALE;
+    /** Determines the scaling policy. If true, the data plane undertakes scaling instead of the controller. */
+    private boolean enableAutoScale = ENABLE_AUTOSCALE_DEFAULT;
 
     /**
      * A dedicated thread pool to deploy Metron service chains.
@@ -224,7 +215,7 @@ public final class DeploymentManager implements DeploymentService {
     }
 
     @Deactivate
-    protected void deactivate() {
+    protected void deactivate(ComponentContext context) {
         // Unregister the component configuration
         cfgService.unregisterProperties(getClass(), false);
 
@@ -250,7 +241,7 @@ public final class DeploymentManager implements DeploymentService {
     }
 
     @Modified
-    public void modified(ComponentContext context) {
+    protected void modified(ComponentContext context) {
         this.readComponentConfiguration(context);
     }
 
@@ -1734,7 +1725,7 @@ public final class DeploymentManager implements DeploymentService {
         // Property for hardware offloading is given
         if (Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING) != null) {
             boolean previousEnableHwOffloading = this.enableHwOffloading;
-            this.enableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING, DEF_HW_OFFLOADING);
+            this.enableHwOffloading = Tools.isPropertyEnabled(properties, ENABLE_HW_OFFLOADING, ENABLE_HW_OFFLOADING_DEFAULT);
 
             if (this.enableHwOffloading != previousEnableHwOffloading) {
                 log.info("Configured! Hardware offloading is now {}", this.enableHwOffloading ? "enabled" : "disabled");
@@ -1746,7 +1737,7 @@ public final class DeploymentManager implements DeploymentService {
         // Property for autoscale is given
         if (Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE) != null) {
             boolean previousEnableAutoScale = this.enableAutoScale;
-            this.enableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE, DEF_AUTOSCALE);
+            this.enableAutoScale = Tools.isPropertyEnabled(properties, ENABLE_AUTOSCALE, ENABLE_AUTOSCALE_DEFAULT);
 
             if (this.enableAutoScale != previousEnableAutoScale) {
                 log.info("Configured! Autoscale is now {}", this.enableAutoScale ? "enabled" : "disabled");

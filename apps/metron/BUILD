@@ -13,9 +13,10 @@ BUNDLES = [
 
 REQUIRED_APPS = [
     "org.onosproject.drivers.server",
+    "org.onosproject.virtual",
 ]
 
-TEST_DEPS = TEST_ADAPTERS + [
+TEST_DEPS = TEST_REST + TEST_ADAPTERS + [
     "//utils/osgi:onlab-osgi-tests",
 ]
 
