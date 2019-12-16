@@ -1,6 +1,6 @@
 Metron
 =========
-[Metron][metron-paper] is an ultra high performance and efficient NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
+[Metron][metron-paper] is an ultra high performance NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
 
 
 About
@@ -20,11 +20,11 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 
 Dependencies
 ---
-In addition to the basic [ONOS dependencies][onos-dep], since version 2.0, ONOS uses Bazel as the main build tool along with Java 11 and Karaf 4.X.Y.
-To install Bazel version VER (e.g., 0.27.0 for ONOS 2.2.0) follow the steps below:
+In addition to the basic [ONOS dependencies][onos-dep], since version 2.0 ONOS uses Bazel as the main build tool along with Java 11 and Karaf 4.2.
+To install Bazel version VER (e.g., 1.0.0 for ONOS 2.2.0) follow the steps below:
 
 ```bash
-VER="0.27.0"
+VER="1.0.0"
 wget https://github.com/bazelbuild/bazel/releases/download/$VER/bazel-$VER-installer-linux-x86_64.sh
 chmod +x bazel-$VER-installer-linux-x86_64.sh
 bash bazel-$VER-installer-linux-x86_64.sh --user
