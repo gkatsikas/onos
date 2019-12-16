@@ -1,6 +1,6 @@
 Metron
 =========
-[Metron][metron-paper] is an ultra high performance and efficient NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
+[Metron][metron-paper] is an ultra high performance NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
 
 
 About
