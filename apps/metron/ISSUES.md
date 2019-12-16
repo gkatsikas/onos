@@ -5,22 +5,15 @@ ISSUES
 
   * Merge inflate/deflateLoad in Orchestrator. They execute very similar code
 
-  * Associate a service chain with input and output points in the network.
-
   * When a service chain is totally offloaded, ensure that the switch redirects traffic to the correct output point.
 
   * Fix the way DPI is handled.
 
   * Fix the toIPRewriterConfig of Operation.java.
 
-  * Consider adding a new Device Type COMMODITY_SERVER in org.onosproject.net.Device.Type.
-  Use this device type in the server driver to characterize a RestServerSBDevice.
-
   * If the NfvSynthesizer is deactived, there is no way to generate a Click configuration.
     Add a DFS in ServiceChain to generate: (i) a fully softwarerized Click configuration or
     (ii) a Click configuration with offloaded classifiers.
-
-  * Check the value of MAX_PIPELINE_PORT_NB in Constants.java.
 
   * Abstract the I/O type from the application.
 
