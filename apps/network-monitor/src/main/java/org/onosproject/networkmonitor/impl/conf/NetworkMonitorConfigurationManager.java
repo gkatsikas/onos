@@ -16,12 +16,11 @@
 
 package org.onosproject.networkmonitor.impl.conf;
 
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 import org.onosproject.networkmonitor.api.common.Constants;
 import org.onosproject.networkmonitor.api.conf.DatabaseConfiguration;
@@ -58,8 +57,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = NetworkMonitorConfigurationService.class)
 public class NetworkMonitorConfigurationManager
         extends AbstractListenerProviderRegistry<
             NetworkMonitorConfigurationEvent, NetworkMonitorConfigurationListenerInterface,
@@ -113,13 +111,13 @@ public class NetworkMonitorConfigurationManager
     /**
      * Services used by the Network Monitor Configuration manager.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NetworkMonitorConfigurationStoreService networkMonitorConfigurationStore;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NetworkConfigRegistry netcfgRegistry;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
     /**

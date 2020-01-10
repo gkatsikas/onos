@@ -16,13 +16,12 @@
 
 package org.onosproject.networkmonitor.impl.conf;
 
-// Apache libraries
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.apache.felix.scr.annotations.Service;
+// OSGI libraries
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 // Network Monitor libraries
 import org.onosproject.networkmonitor.api.conf.DatabaseConfiguration;
@@ -65,8 +64,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Manages the registry of Network Monitor configurations in the ONOS core.
  */
-@Component(immediate = true)
-@Service
+@Component(immediate = true, service = NetworkMonitorConfigurationStoreService.class)
 public class NetworkMonitorConfigurationStore
         extends AbstractStore<NetworkMonitorConfigurationEvent, NetworkMonitorConfigurationDelegate>
         implements NetworkMonitorConfigurationStoreService {
@@ -78,7 +76,7 @@ public class NetworkMonitorConfigurationStore
     /**
      * ONOS's distributed storage service.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected StorageService storageService;
 
     /**

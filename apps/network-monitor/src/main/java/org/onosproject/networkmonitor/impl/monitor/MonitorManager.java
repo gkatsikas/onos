@@ -17,12 +17,12 @@
 package org.onosproject.networkmonitor.impl.monitor;
 
 import org.apache.commons.lang.ArrayUtils;
-import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.ReferenceCardinality;
+
+import org.osgi.service.component.annotations.Activate;
+import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Deactivate;
+import org.osgi.service.component.annotations.Reference;
+import org.osgi.service.component.annotations.ReferenceCardinality;
 
 import org.onosproject.networkmonitor.api.common.Constants;
 import org.onosproject.networkmonitor.api.conf.DatabaseConfiguration;
@@ -73,10 +73,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-@Component(immediate = true)
-@Service
-public class MonitorManager
-        implements MonitorService {
+@Component(immediate = true, service = MonitorService.class)
+public class MonitorManager implements MonitorService {
 
     private final Logger log = getLogger(getClass());
 
@@ -177,13 +175,13 @@ public class MonitorManager
     /**
      * Services used by the Monitor manager.
      */
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected NetworkMonitorConfigurationService networkMonitorConfigurationService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected DeviceService deviceService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    @Reference(cardinality = ReferenceCardinality.MANDATORY)
     protected CoreService coreService;
 
     /**

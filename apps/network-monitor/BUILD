@@ -1,14 +1,8 @@
 REQUIRED_APPS = [
-//    "org.onosproject.drivers.server",
-]
-
-BUNDLES = [
-    "//apps/network-monitor:onos-apps-network-monitor",
+    "org.onosproject.drivers.server",
 ]
 
 COMPILE_DEPS = CORE_DEPS + KRYO + CLI + METRICS + REST + JACKSON + [
-    "//core/common:onos-core-common",
-    "//core/store/serializers:onos-core-serializers",
     "@joda_time//jar",
     "@metrics_influxdb//jar",
     "@influxdb_java//jar",
@@ -20,8 +14,9 @@ COMPILE_DEPS = CORE_DEPS + KRYO + CLI + METRICS + REST + JACKSON + [
     "@moshi//jar",
     "@converter_moshi//jar",
     "@com_google_code_gson_gson//jar",
-    "@commons-math3//jar",
-//    "//lib:commons-math3",
+    "@commons_math3//jar",
+    "//core/common:onos-core-common",
+    "//core/store/serializers:onos-core-serializers",
 ]
 
 BUNDLES = [
@@ -35,8 +30,8 @@ BUNDLES = [
     "@okio//jar",
     "@moshi//jar",
     "@converter_moshi//jar",
-    "@commons-math3//jar",
-//  "//lib:commons-math3",
+    "@commons_math3//jar",
+    "//apps/network-monitor:onos-apps-network-monitor",
 ]
 
 EXCLUDED_BUNDLES = [
@@ -50,8 +45,7 @@ EXCLUDED_BUNDLES = [
     "@okio//jar",
     "@moshi//jar",
     "@converter_moshi//jar",
-    "@commons-math3//jar",
-//  "//lib:commons-math3",
+    "@commons_math3//jar",
 ]
 
 TEST_DEPS = TEST_ADAPTERS + [

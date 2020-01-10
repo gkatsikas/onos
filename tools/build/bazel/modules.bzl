@@ -221,6 +221,8 @@ APP_MAP = {
     "//apps/mfwd:onos-apps-mfwd-oar": [],
     "//apps/mlb:onos-apps-mlb-oar": ["tost"],
     "//apps/mobility:onos-apps-mobility-oar": [],
+    "//apps/netconf/client:onos-apps-netconf-client-oar": [],
+    "//apps/network-monitor:onos-apps-network-monitor-oar": [],
     "//apps/network-troubleshoot:onos-apps-network-troubleshoot-oar": [],
     "//apps/newoptical:onos-apps-newoptical-oar": [],
     "//apps/nodemetrics:onos-apps-nodemetrics-oar": [],
