@@ -38,7 +38,7 @@ ADVICE
 =======
 
   * Input an external configuration file with the app ID of Metron applications (org.onosproject.metron.apps) and a label `nfv`.
-    To do so, use the onos-netcfg command after you boot ONOS and Metron. See the examples in the `apps` folder.
+    To do so, use the onos-netcfg command after you boot ONOS and Metron. See the examples in the `nbi/apps` folder.
 
   * When you add a new processing block into impl/processing/blocks, ensure that you also update the ProcessingBlockLauncher.java.
 
