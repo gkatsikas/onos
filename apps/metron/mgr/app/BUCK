@@ -1,0 +1,26 @@
+COMPILE_DEPS = [
+    '//lib:CORE_DEPS',
+    '//lib:JACKSON',
+    '//lib:KRYO',
+    '//apps/metron/mgr/api:onos-apps-metron-mgr-api',
+    '//core/api:onos-api',
+    '//core/common:onos-core-common',
+    '//core/store/serializers:onos-core-serializers',
+    '//drivers/server:onos-drivers-server',
+    '//lib:jackson-core',
+    '//lib:javax.ws.rs-api',
+    '//lib:joda-time',
+    '//incubator/api:onos-incubator-api',
+    '//protocols/rest/api:onos-protocols-rest-api',
+]
+
+TEST_DEPS = [
+    '//lib:TEST_ADAPTERS',
+    '//core/api:onos-api-tests',
+    '//utils/osgi:onlab-osgi-tests',
+]
+
+osgi_jar_with_tests (
+    deps = COMPILE_DEPS,
+    test_deps = TEST_DEPS,
+)

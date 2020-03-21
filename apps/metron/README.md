@@ -2,11 +2,25 @@ Metron
 =========
 [Metron][metron-paper] is an ultra high performance NFV service chaining platform, appeared in [USENIX NSDI 2018][metron-nsdi-page].
 
+<p align="center">
+    <img src="figures/metron-arch.png" alt="metron architecture">
+</p>
 
-About
+
+Metron Components
 ----
-Metron's control plane is based on the [ONOS SDN controller][onos], which we extended with [southbound drivers][metron-driver] that allow Metron to monitor and configure commodity servers.
-These drivers are now part of the [official ONOS distribution][onos-master] (since February 22, 2018).
+Metron's control plane is based on the [ONOS SDN controller][onos] and split across four main components:
+
+ * [Metron's Northbound Interface][metron-nbi] with examples on how to create, deploy, and tear down Metron applications
+ * [Metron Monitor][metron-web] through a REST API
+ * [Metron GUI][metron-gui] as part of the ONOS legacy GUI
+ * [Metron Manager][metron-mgr] for managing the run-time of the deployed Metron applications
+
+Before Metron, ONOS was only capable of managing network devices (e.g., programmable switches).
+However, Metron required additional visibility into server resources, such as CPU cores, CPU caches, memory modules, and network interfaces cards (NICs).
+To this end, Metron also contributed a southbound [server device driver][metron-driver] to ONOS.
+This driver is part of the [official ONOS distribution][onos-master] (since February 22, 2018).
+A Metron application along with OpenFlow and server device drivers is now able to manage an entire fabric of programmable switches and servers.
 
 [Metron's data plane][metron-agent] extends [FastClick][fastclick], which in turn uses [DPDK][dpdk] as a high performance network I/O subsystem.
 
@@ -21,10 +35,10 @@ Follow the instructions in the [ONOS wiki][onos-wiki] to setup ONOS.
 Dependencies
 ---
 In addition to the basic [ONOS dependencies][onos-dep], since version 1.14, ONOS uses Bazel as a build tool.
-The right Bazel version for ONOS 1.14.0 (Owl) is 0.19.0. To install Bazel follow the steps below:
+The right Bazel version for ONOS 1.14.0 (Owl) is 0.19.2. To install Bazel follow the steps below:
 
 ```bash
-VER="0.19.0"
+VER="0.19.2"
 wget https://github.com/bazelbuild/bazel/releases/download/$VER/bazel-$VER-installer-linux-x86_64.sh
 chmod +x bazel-$VER-installer-linux-x86_64.sh
 bash bazel-$VER-installer-linux-x86_64.sh --user
@@ -33,6 +47,7 @@ echo 'export PATH=$PATH:$HOME/bin' >> $HOME/.bashrc
 source $HOME/.bashrc
 rm bazel-$VER-installer-linux-x86_64.sh
 ```
+
 
 Build ONOS
 ----
@@ -61,6 +76,7 @@ If you built ONOS and Metron using BUCK, then deploy as follows:
 #### Deploy with BUCK ####
 ```bash
 cd $ONOS_ROOT
+export ONOS_APPS=drivers,openflow,gui,metron,netcfghostprovider
 tools/build/onos-buck run onos-local -- clean debug -Xlint:deprecation -Xlint:unchecked
 ```
 
@@ -69,13 +85,16 @@ If you built ONOS and Metron using Bazel, then deploy as follows:
 #### Deploy with Bazel ####
 ```bash
 cd $ONOS_ROOT
+export ONOS_APPS=drivers,openflow,gui,metron,netcfghostprovider
 bazel run onos-local -- clean
 ```
 
 
 Activate Metron
 ----
-To activate Metron using the ONOS CLI, do:
+If metron is included in the exported variable ONOS_APPS, it will be auto-activated.
+
+If not, to activate Metron using the ONOS CLI, do:
 ```bash
 app activate metron
 ```
@@ -126,7 +145,7 @@ If you want to add a service chain, then describe it using the following key att
   * 'scope' the desired deployment scope of a service chain (string). Currently Metron offers 1 network-wide and 2 server-level deployments as follows:
       * Network-wide deployments with 'scope': 'network-mac' indicate that Metron uses a programmable switch to offload traffic classification and tag packets using their destination MAC addresses. Then, at the server Metron uses NIC Virtual Machine Device queues (VMDq) to match incoming packets' destination MAC address and dispatch these packets to the correct CPU core.
       * Server-level deployments with 'scope': 'server-rules' indicate that Metron uses NICs for traffic classification and dispatching, while the stateful part of a service chain still runs in software.
-      * Server-level deployments with 'scope': 'server-rss' indicate that Metron relies on Receive-Side Scaling (RSS) for traffic dispatching. In this case no offloading is allowed and Metron runs the entire service chain in software. This is an option to maintain backward compatibility with regular FastClick service chains.
+      * Server-level deployments with 'scope': 'server-rss' indicate that Metron relies on Receive-Side Scaling (RSS) for traffic dispatching. In this case no offloading is allowed and Metron runs the entire service chain in software. This is an option to maintain backward compatibility with regular service chains.
   * 'components' list provides a high level description of the Network Functions (NFs) that comprise a service chain. Each NF (i.e., list item) has:
       * 'name' a sensitive keyword used by subsequent JSON fields
       * 'type' can be either 'click' for Click-based NFs or 'standalone' for blackbox NFs
@@ -222,8 +241,8 @@ Deploy a Metron service chain
 Once an instance of the ONOS controller has been deployed, the Metron controller application has started, and a Metron agent has been launched, we can deploy a service chain.
 For example, to deploy a server-level Firewall->NAPT service chain do:
 ```bash
-vi $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json according to your needs (e.g., topology is important to change)
-onos-netcfg <ONOS CTRL IP> $ONOS_ROOT/apps/metron/apps/apps-server-level/metron-srv-flowdir-add-singleport-fw-3rules-napt.json
+vi $ONOS_ROOT/apps/metron/nbi/apps/apps-server-level/metron-srv-flowdisp-add-singleport-fw-3rules-napt.json according to your needs (e.g., topology is important to change)
+onos-netcfg <ONOS CTRL IP> $ONOS_ROOT/apps/metron/nbi/apps/apps-server-level/metron-srv-flowdisp-add-singleport-fw-3rules-napt.json
 ```
 
 
@@ -231,14 +250,14 @@ Metron User Interface
 ----
 You can access Metron's graphical user interface from your favorite browser by visiting:
 ```bash
-http://<ONOS-CTRL-IP>:8181/onos/ui/index.html#/topo
+http://<ONOS-CTRL-IP>:8181/onos/ui
 ```
 
 
 Metron REST API
 ----
-You can retrieve Metron's run-time NFV statistics by issuing HTTP get requests.
-See our Metron NFV REST API at:
+You can retrieve Metron's run-time statistics by issuing HTTP get requests.
+See Metron's REST API at:
 ```bash
 http://<ONOS-CTRL-IP>:8181/onos/v1/docs
 ```
@@ -282,13 +301,17 @@ Contact katsikas.gp at gmail.com or barbette at kth.se if you encounter any prob
 [metron-paper]: https://www.usenix.org/system/files/conference/nsdi18/nsdi18-katsikas.pdf
 [metron-nsdi-page]: https://www.usenix.org/conference/nsdi18/presentation/katsikas
 [onos]: https://onosproject.org/
+[metron-nbi]: nbi/
+[metron-web]: web/
+[metron-gui]: gui/
+[metron-mgr]: mgr/
 [metron-driver]: https://github.com/opennetworkinglab/onos/tree/master/drivers/server
 [metron-agent]: https://github.com/tbarbette/fastclick/tree/metron
-[metron-server-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.14.0/apps/metron/apps/apps-server-level
-[metron-net-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.14.0/apps/metron/apps/apps-network-wide
-[metron-example-ipclassifier]: https://github.com/gkatsikas/onos/blob/metron-ctrl-1.14.0/apps/metron/apps/firewall/3rules-flow-dir.json
+[metron-server-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.14.0/apps/metron/nbi/apps/apps-server-level
+[metron-net-apps]: https://github.com/gkatsikas/onos/tree/metron-ctrl-1.14.0/apps/metron/nbi/apps/apps-network-wide
+[metron-example-ipclassifier]: https://github.com/gkatsikas/onos/blob/metron-ctrl-1.14.0/apps/metron/nbi/apps/firewall/3rules-flowdisp.json
 [onos-master]: https://github.com/opennetworkinglab/onos
 [fastclick]: https://github.com/tbarbette/fastclick
 [dpdk]: https://dpdk.org/
-[onos-wiki]: https://wiki.onosproject.org/display/ONOS/Wiki+Home
+[onos-wiki]: https://wiki.onosproject.org/display/ONOS/ONOS
 [onos-dep]: https://github.com/opennetworkinglab/onos/blob/onos-1.14/README.md

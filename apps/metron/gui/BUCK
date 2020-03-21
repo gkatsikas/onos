@@ -1,0 +1,14 @@
+COMPILE_DEPS = [
+    '//lib:CORE_DEPS',
+    '//lib:JACKSON',
+    '//apps/metron/mgr/api:onos-apps-metron-mgr-api',
+    '//apps/metron/mgr/app:onos-apps-metron-mgr-app',
+    '//core/api:onos-api',
+    '//core/common:onos-core-common',
+    '//lib:jackson-core',
+    '//lib:joda-time',
+]
+
+osgi_jar_with_tests (
+    deps = COMPILE_DEPS,
+)

@@ -1,0 +1,29 @@
+COMPILE_DEPS = [
+    '//lib:CORE_DEPS',
+    '//lib:JACKSON',
+    '//apps/metron/mgr/api:onos-apps-metron-mgr-api',
+    '//apps/metron/mgr/app:onos-apps-metron-mgr-app',
+    '//core/api:onos-api',
+    '//core/common:onos-core-common',
+    '//core/store/serializers:onos-core-serializers',
+    '//lib:jackson-core',
+    '//lib:javax.ws.rs-api',
+    '//protocols/rest/api:onos-protocols-rest-api',
+    '//utils/rest:onlab-rest',
+]
+
+TEST_DEPS = [
+    '//lib:TEST_ADAPTERS',
+    '//core/api:onos-api-tests',
+    '//utils/osgi:onlab-osgi-tests',
+]
+
+osgi_jar_with_tests (
+    deps = COMPILE_DEPS,
+    test_deps = TEST_DEPS,
+    web_context = '/onos/metron',
+    api_title = 'Metron NFV Controller REST API',
+    api_version = '/onos/v1/metron',
+    api_description = 'REST API for interacting with the Metron NFV Controller',
+    api_package = 'org.onosproject.metron.web',
+)
