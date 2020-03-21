@@ -1,0 +1,16 @@
+{
+    "links" : {
+        "of:000000223d4b0182/1-rest:192.168.1.1:80/1" : {
+            "basic" : {
+                "allowed": true
+            }
+        }
+    },
+    "apps" : {
+        "org.onosproject.core" : {
+            "core" : {
+                "linkDiscoveryMode" : "STRICT"
+            }
+        }
+    }
+}
