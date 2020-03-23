@@ -54,7 +54,6 @@ import org.onosproject.net.topology.TopologyCluster;
 import org.onosproject.net.topology.TopologyVertex;
 
 import org.onosproject.drivers.server.devices.RestServerSBDevice;
-import org.onosproject.drivers.server.devices.nic.NicDevice;
 import org.onosproject.drivers.server.devices.nic.NicRxFilter.RxFilter;
 import org.onosproject.drivers.server.devices.nic.RxFilterValue;
 
@@ -668,17 +667,20 @@ public final class DeploymentManager implements DeploymentService {
 
         DeviceId deviceId = server.deviceId();
         int serverNics = server.numberOfNics();
+        Set<String> nics = new ConcurrentSkipListSet<String>();
 
         // Requires rule installation in the server's NIC
         TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
         checkNotNull(ingressPoint, "Cannot generate NIC flow rules without ingress point information");
         PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
         long serverIngPort = serverIngPortNum.toLong();
+        nics.add(server.portNameFromNumber(serverIngPort));
 
         TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
         checkNotNull(egressPoint, "Cannot generate NIC flow rules without egress point information");
         PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
         long serverEgrPort = serverEgrPortNum.toLong();
+        nics.add(server.portNameFromNumber(serverEgrPort));
 
         // In Flow Director or RSS modes there is no network placement, thus path must be built here
         if (inFlowDirMode || inRssMode) {
@@ -728,12 +730,9 @@ public final class DeploymentManager implements DeploymentService {
             "but the required number of NICs according to the Click elements is " +
             Integer.toString(neededNics)
         );
-
-        Set<String> nics = new ConcurrentSkipListSet<String>();
-        for (int i = 0; i < neededNics; i++) {
-            NicDevice nic = (NicDevice) server.nics().toArray()[i];
-            nics.add(nic.name());
-        }
+        // We could iterate the RestServerSBDevice's list of NICs to fill in more
+        checkArgument(neededNics <= nics.size(),
+            nics.size() + " NICs provisioned for this service chain, but " + neededNics + " are required");
 
         // Runtime information per traffic class
         Set<TrafficClassRuntimeInfo> serviceChainRuntimeInfo =
