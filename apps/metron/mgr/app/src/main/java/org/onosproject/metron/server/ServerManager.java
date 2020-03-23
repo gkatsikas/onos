@@ -203,14 +203,13 @@ public class ServerManager implements ServerService {
         log.info("[{}] \t with configuration {}", label(), configuration);
         log.info("[{}] \t using {} CPU cores", label(), newCpuSet.size());
         log.info("[{}] \t with  {} maximum CPU cores", label(), maxNumberOfCores);
-        log.info("[{}] \t using {} NICs", label(), nicIds.size());
+        log.info("[{}] \t using NIC(s) {}", label(), nicIds);
         log.info("[{}] \t with auto-scale {}", label(), autoscale ? "true" : "false");
         log.info("[{}] ================================================================", label());
 
         // TODO: Why always the first?
         String primaryNic = nicIds.iterator().next();
         RxFilter rxFilterMethod = null;
-        String rxFilterMethodStr = "";
         boolean rxFilterFound = false;
 
         // Get the device's object from the controller
@@ -234,7 +233,6 @@ public class ServerManager implements ServerService {
                         // Pick the first supported Rx filter
                         if (RxFilter.isSupported(rf)) {
                             rxFilterMethod = rf;
-                            rxFilterMethodStr = rf.toString();
                             rxFilterFound  = true;
                             break;
                         }
@@ -248,7 +246,7 @@ public class ServerManager implements ServerService {
         }
 
         // The NICs of this device do not support
-        if (!rxFilterFound || rxFilterMethodStr.isEmpty()) {
+        if (!rxFilterFound || (rxFilterMethod == null)) {
             log.error("[{}] \t Unsupported Rx filter method on device {}", label(), deviceId);
             return null;
         }
@@ -286,6 +284,7 @@ public class ServerManager implements ServerService {
             );
         }
 
+        String rxFilterMethodStr = rxFilterMethod.toString();
         log.info("[{}] \t Supported Rx filter method {} on device {}", label(), rxFilterMethodStr, deviceId);
 
         ObjectMapper mapper = new ObjectMapper();
