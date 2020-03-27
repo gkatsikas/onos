@@ -213,8 +213,7 @@ public class NfvTopologyManager implements NfvTopologyService {
         for (Link link : linkService.getDeviceIngressLinks(deviceId)) {
             DeviceId dev = link.src().deviceId();
             long port = link.src().port().toLong();
-            // if (dev.equals(deviceId) && (port == portId)) {
-            if (port == portId) {
+            if (dev.equals(deviceId) && (port == portId)) {
                 links.add(link);
             }
         }
@@ -231,10 +230,9 @@ public class NfvTopologyManager implements NfvTopologyService {
     public Set<Link> getDeviceEgressLinksWithPort(DeviceId deviceId, long portId) {
         Set<Link> links = Sets.<Link>newConcurrentHashSet();
         for (Link link : linkService.getDeviceEgressLinks(deviceId)) {
-            DeviceId dev = link.src().deviceId();
+            DeviceId dev = link.dst().deviceId();
             long port = link.dst().port().toLong();
-            // if (dev.equals(deviceId) && (port == portId)) {
-            if (port == portId) {
+            if (dev.equals(deviceId) && (port == portId)) {
                 links.add(link);
             }
         }
@@ -258,7 +256,7 @@ public class NfvTopologyManager implements NfvTopologyService {
     @Override
     public boolean linkHasPort(Link link, long port) {
         checkNotNull(link, "Cannot check NULL link");
-        checkArgument(port > 0, "Cannot check negative port");
+        checkArgument(port >= 0, "Cannot check negative port");
 
         if ((link.src().port().toLong() == port) ||
             (link.dst().port().toLong() == port)) {

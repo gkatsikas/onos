@@ -35,6 +35,11 @@ import java.util.Set;
 public interface PathEstablisherInterface {
 
     /**
+     * Indicates any port.
+     */
+    static final long ANY_PORT = -1;
+
+    /**
      * Returns the forward path of this dataplane tree.
      *
      * @return forward path
@@ -130,7 +135,7 @@ public interface PathEstablisherInterface {
      *
      * @return offloader switch port number towards Metron
      */
-    long offloaderSwitchMetronPort();
+    long offloaderSwitchToServerPort();
 
     /**
      * Returns the ID of the leaf switch of this dataplane tree.

@@ -66,12 +66,12 @@ import org.osgi.service.component.annotations.Reference;
 import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.ComponentContext;
 
-// Guava
-import com.google.common.collect.Sets;
-
 // Other libraries
 import org.apache.commons.lang.ArrayUtils;
 import org.slf4j.Logger;
+
+// Guava
+import com.google.common.collect.Sets;
 
 // Java libraries
 import java.net.URI;
@@ -86,17 +86,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.ExecutorService;
 
-import static org.slf4j.LoggerFactory.getLogger;
-import static org.onlab.util.Tools.groupedThreads;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.Executors.newFixedThreadPool;
+import static org.onlab.util.Tools.groupedThreads;
 import static org.onosproject.metron.api.config.TrafficPoint.TrafficPointType.PROCESSING;
+import static org.onosproject.metron.api.dataplane.PathEstablisherInterface.ANY_PORT;
 import static org.onosproject.metron.api.networkfunction.NetworkFunctionType.STANDALONE;
-import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_HW_OFFLOADING;
-import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_HW_OFFLOADING_DEFAULT;
 import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_AUTOSCALE;
 import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_AUTOSCALE_DEFAULT;
+import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_HW_OFFLOADING;
+import static org.onosproject.metron.OsgiPropertyConstants.ENABLE_HW_OFFLOADING_DEFAULT;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * A service that undertakes to deploy Metron service chains.
@@ -120,12 +121,9 @@ public final class DeploymentManager implements DeploymentService {
     private static final String COMPONET_LABEL = "Metron Deployer";
 
     /**
-     * Constants.
+     * Default number of requested paths from a switch to a server.
      */
-    // Default number of requested paths from a switch to a server
-    private static final int  DEF_NUMBER_OF_SW_TO_SRV_PATHS = 8;
-    // Indicates any port
-    private static final long ANY_PORT = -1;
+    private static final int DEF_NUMBER_OF_SW_TO_SRV_PATHS = 8;
 
     /**
      * Members:
@@ -139,6 +137,7 @@ public final class DeploymentManager implements DeploymentService {
     private Set<ServiceChainInterface> serviceChainsToDeploy = null;
     private Set<ServiceChainInterface> deployedServiceChains = null;
     private Map<ServiceChainId, Map<URI, TrafficClassRuntimeInfo>> runtimeInfo = null;
+    private Map<ServiceChainId, RestServerSBDevice> serviceChainToServer = null;
     private Map<RestServerSBDevice, Set<FlowRule>> serverToNetworkRules = null;
 
     /**
@@ -196,6 +195,7 @@ public final class DeploymentManager implements DeploymentService {
         this.serviceChainsToDeploy = Sets.<ServiceChainInterface>newConcurrentHashSet();
         this.deployedServiceChains = Sets.<ServiceChainInterface>newConcurrentHashSet();
         this.runtimeInfo = new ConcurrentHashMap<ServiceChainId, Map<URI, TrafficClassRuntimeInfo>>();
+        this.serviceChainToServer = new ConcurrentHashMap<ServiceChainId, RestServerSBDevice>();
         this.serverToNetworkRules = new ConcurrentHashMap<RestServerSBDevice, Set<FlowRule>>();
     }
 
@@ -234,6 +234,7 @@ public final class DeploymentManager implements DeploymentService {
         this.serviceChainsToDeploy.clear();
         this.deployedServiceChains.clear();
         this.runtimeInfo.clear();
+        this.serviceChainToServer.clear();
         this.serverToNetworkRules.clear();
 
         log.info("[{}] Stopped", label());
@@ -306,22 +307,41 @@ public final class DeploymentManager implements DeploymentService {
                 boolean networkOffloadable = this.canDoNetworkOffloading(sc);
                 // Can this be done without involving a server?
                 boolean isTotallyOffloadable = dpTree.isTotallyOffloadable();
+                // Final outcome
+                boolean totalOffloading = (networkOffloadable && isTotallyOffloadable);
 
                 /**
                  * *********************************************************************************
-                 * ***************************  A. Complete Offloading  ****************************
+                 * ***********************  A. Forwarding Path Computation  ************************
+                 * *********************************************************************************
+                 * Compute the forwarding path for this service chain, taking into account both
+                 * network-wide (i.e., switches and server) and server-level (only server)
+                 * deployments.
+                 */
+                try {
+                    if (!this.pathComputer(sc, dpTree, totalOffloading)) {
+                        throw new DeploymentException(
+                            "\t Failed to pre-compute a forwarding path for service chain " + scId);
+                    }
+                } catch (DeploymentException depEx) {
+                    throw depEx;
+                }
+
+                /**
+                 * *********************************************************************************
+                 * ***************************  B. Complete Offloading  ****************************
                  * *********************************************************************************
                  * If network elements are available for offloading this service chain and
                  * the service chain can be completely offloaded, we should not involve any server.
                  * try to offload parts of the service chains that are ready to be deployed.
                  */
-                if (networkOffloadable && isTotallyOffloadable) {
+                if (totalOffloading) {
                     try {
                         if (!this.networkPlacer(sc, dpTree, null)) {
-                            correctDeployment = false;
+                            correctDeployment &= false;
                             break;
                         } else {
-                            // No need to continue, this service chain is fully offloadable.
+                            // No need to continue, this service chain is fully offloadable
                             continue;
                         }
                     } catch (DeploymentException depEx) {
@@ -334,10 +354,10 @@ public final class DeploymentManager implements DeploymentService {
 
                 /**
                  * *********************************************************************************
-                 * ****************************  B. Partial Offloading  ****************************
+                 * ****************************  C. Partial Offloading  ****************************
                  * *********************************************************************************
                  * *** B1. Software Part
-                 * First find a candidate Metron server that can host this service chain, and then
+                 * First, find a candidate Metron server that can host this service chain, and then
                  * deploy the service chain there.
                  * The Metron agent of the server will give you the tags associated with this
                  * service chain, such that you can instruct the network elements accordingly.
@@ -346,7 +366,7 @@ public final class DeploymentManager implements DeploymentService {
                 try {
                     server = this.serverPlacer(sc, iface, dpTree, isOffloadable);
                 } catch (DeploymentException depEx) {
-                    correctDeployment = false;
+                    correctDeployment &= false;
                     break;
                 }
 
@@ -362,7 +382,7 @@ public final class DeploymentManager implements DeploymentService {
                  * *** B2. Hardware Part
                  * Use the tags above to mark the traffic classes of this service chain.
                  * Each traffic class consists of a set of SDN rules installed to one or
-                 * more switches along the path between ingress and the target Metron server.
+                 * more switches along the path between ingress point and the target Metron server.
                  */
                 if (serverAndNetworkCooperation) {
                     try {
@@ -371,7 +391,7 @@ public final class DeploymentManager implements DeploymentService {
                              * This can happen if e.g., the target switch is not connected with a Metron server.
                              * This failure results in tearing down the software part of this service chain.
                              */
-                            correctDeployment = false;
+                            correctDeployment &= false;
                         }
                     } catch (DeploymentException depEx) {
                         throw depEx;
@@ -392,15 +412,79 @@ public final class DeploymentManager implements DeploymentService {
     }
 
     /**
-     * Fetch the topology from the Topology Manager and check
-     * if there are available network elements. If so, try to
-     * offload parts of the given service chain.
+     * Compute the forwarding path for the given service chain.
+     *
+     * @param sc a service chain
+     * @param dpTree the dataplane configuration of this service chain
+     * @param totalOffloading this service chain can be totally offloaded
+     * @return boolean status
+     * @throws DeploymentException if path computation fails
+     */
+    private boolean pathComputer(ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree, boolean totalOffloading)
+            throws DeploymentException {
+        checkNotNull(sc, "[" + label() + "] Cannot compute path for NULL service chain");
+        checkNotNull(dpTree, "[" + label() + "] Cannot compute path for a NULL dataplane configuration");
+
+        log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
+
+        boolean status = false;
+
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        // The deployment will be only handled by a server
+        if (sc.isServerLevel()) {
+            status = computePathForServerLevelServiceChain(sc, dpTree);
+            log.info("[{}] {}\n", label(), Constants.STDOUT_BARS_SUB);
+            return status;
+        }
+
+        // Search for the switch that precedes the server
+        DeviceId coreSwitchId = null;
+
+        for (TopologyCluster cluster : this.topologyClusters()) {
+            // This is where the traffic enters
+            TopologyVertex device = cluster.root();
+
+            // We only care about network devices, not servers
+            if (topologyService.isServer(device.deviceId())) {
+                continue;
+            }
+
+            // The target switch must be an ingress point
+            if (!sc.isIngressPoint(device.deviceId())) {
+                continue;
+            } else {
+                // This is a network device, keep its ID
+                coreSwitchId = device.deviceId();
+                break;
+            }
+        }
+
+        checkNotNull(coreSwitchId,
+            "Could not find a switch for network-wide service chain deployment. " +
+            "Check input JSON configuration and/or the ONOS topology");
+
+        // Totally offloaded service chain has a more simplified path
+        if (totalOffloading) {
+            status = computePathForTotallyOffloadedServiceChain(sc, dpTree, coreSwitchId);
+        } else {
+            status = computePathForNetworkAndServerLevelServiceChain(sc, dpTree, coreSwitchId);
+        }
+
+        log.info("[{}] {}\n", label(), Constants.STDOUT_BARS_SUB);
+
+        return status;
+    }
+
+    /**
+     * Offload parts of the given service chain to available network elements.
      *
      * @param sc     the service chain to be offloaded
      * @param dpTree the dataplane configuration of this service chain
      * @param server the Metron device where the software part of the
-     *        service chain is offloaded
-     *        (null means that the service chain is fully offloaded)
+     *        service chain will be deployed
+     *        (null means that this service chain is fully offloaded)
      * @return boolean status
      * @throws DeploymentException if network placement fails
      */
@@ -414,183 +498,23 @@ public final class DeploymentManager implements DeploymentService {
         log.info("[{}] Offloading Metron traffic classes to hardware", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
 
-        // Obtain the ID of the service chain
-        ServiceChainId scId = sc.id();
+        PathEstablisherInterface pathEstablisher = dpTree.pathEstablisher();
+        checkNotNull(pathEstablisher,
+            "No path establishment for offloaded service chain " + sc.id());
 
-        // Scaling ability for this service chain
-        boolean scale = sc.scale();
+        DeviceId switchId = pathEstablisher.offloaderSwitchId();
+        checkNotNull(switchId, "The switch for network placement of service chain " + sc.id() + " is NULL");
 
-        // The number of CPU cores at the server side
-        int numberOfCores = scale ? sc.cpuCores() : sc.maxCpuCores();
-
-        // and the number of NICs required
-        int numberOfNics = dpTree.numberOfNics();
-
-        // Indicates successful outcome
-        boolean offloaded = false;
-
-        log.info("[{}] Hardware Offloader for service chain {}", label(), scId);
-
-        for (TopologyCluster cluster : this.topologyClusters()) {
-            // This is where the traffic enters
-            TopologyVertex device = cluster.root();
-
-            // We only care about network devices, not servers
-            if (topologyService.isServer(device.deviceId())) {
-                continue;
-            }
-
-            // This is a network device, keep its ID
-            DeviceId coreSwitchId = device.deviceId();
-
-            // The target switch must be an ingress point
-            if (!sc.isIngressPoint(coreSwitchId)) {
-                continue;
-            }
-
-            // Totally offloaded service chain is redirected towards an egress point
-            if (server == null) {
-                return placeTotallyOffloadedServiceChain(sc, dpTree, coreSwitchId);
-            }
-
-            // Port towards the server
-            long coreSwitchMetronPort = ANY_PORT;
-            // TODO: Eliminate lists?
-            // Get the port where traffic is expected to show up
-            TrafficPoint ingressPoint = sc.ingressPointOfDevice(coreSwitchId);
-            long   coreSwitchIngrPort = ingressPoint.portIds().get(0).toLong();
-            // Get the port where traffic is expected to leave
-            TrafficPoint egressPoint  = sc.egressPointOfDevice(coreSwitchId);
-            long   coreSwitchEgrPort  = egressPoint.portIds().get(0).toLong();
-
-            // This is the destination we want to reach
-            DeviceId serverId = server.deviceId();
-            // TODO: Always 0? numberOfNics?
-            List<Link> serverIngLinks = new ArrayList<Link>(
-                topologyService.getDeviceIngressLinksWithPort(serverId, 0)
-            );
-            List<Link> serverEgrLinks = new ArrayList<Link>(
-                topologyService.getDeviceEgressLinksWithPort(serverId, numberOfNics)
-            );
-            checkArgument(
-                (serverIngLinks != null) && !serverIngLinks.isEmpty() &&
-                (serverEgrLinks != null) && !serverEgrLinks.isEmpty(),
-                "Empty list of server ingress links. Check your topology"
-            );
-            // TODO: How to make it more explicit?
-            long serverIngrPort = serverIngLinks.get(0).dst().port().toLong();
-            long serverEgrPort  = serverEgrLinks.get(0).src().port().toLong();
-
-            if (this.hasPortConflicts(
-                    serverIngLinks, coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort
-                ) ||
-                this.hasPortConflicts(
-                    serverEgrLinks, coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort
-                )) {
-                log.error("[{}] Conflicts detected between {} and {} ingress/egress ports. " +
-                    "Please check your JSON configuration", label(), coreSwitchId, serverId);
-                return false;
-            }
-
-            log.info("[{}] \t Partial offloading of service chain {}", label(), scId);
-
-            // Add the switch and the server to the set of processing points of this service chain
-            addProcessingPoint(sc, coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort);
-            addProcessingPoint(sc, serverId, serverIngrPort, serverEgrPort);
-
-            // Get the shortest path between the target switch and the target server
-            Path selectedFwdPath = this.selectShortestPath(coreSwitchId, ANY_PORT, serverId, serverIngrPort);
-            // And the reverse path
-            Path selectedBwdPath = this.selectShortestPath(
-                serverId, serverEgrPort, coreSwitchId, ANY_PORT
-            );
-            if ((selectedFwdPath == null) || (selectedBwdPath == null)) {
-                log.error("[{}] \t Could not establish forward/backward paths towards {} for service chain",
-                    label(), serverId, scId);
-                return false;
-            }
-
-            // Build a forward and a reverse path
-            PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
-                selectedFwdPath, selectedBwdPath, coreSwitchIngrPort, coreSwitchEgrPort, true
-            );
-
-            // Verify
-            coreSwitchId = pathEstablisher.offloaderSwitchId().equals(coreSwitchId) ?
-                coreSwitchId : null;
-            coreSwitchMetronPort = pathEstablisher.offloaderSwitchMetronPort() > 0 ?
-                pathEstablisher.offloaderSwitchMetronPort() : ANY_PORT;
-            coreSwitchIngrPort = pathEstablisher.ingressPort() == coreSwitchIngrPort ?
-                coreSwitchIngrPort : ANY_PORT;
-            coreSwitchEgrPort  = pathEstablisher.egressPort()  == coreSwitchEgrPort ?
-                coreSwitchEgrPort : ANY_PORT;
-            serverId = pathEstablisher.serverId().equals(serverId) ? serverId : null;
-            serverIngrPort = pathEstablisher.serverInressPort() == serverIngrPort ? serverIngrPort : ANY_PORT;
-            serverEgrPort  = pathEstablisher.serverEgressPort() == serverEgrPort  ? serverEgrPort  : ANY_PORT;
-            final String msg = String.format(
-                "[%s] \t Core switch %s IN:%d/EG:%d -> Server %s IN:%d/EG:%d", label(),
-                coreSwitchId, coreSwitchIngrPort, coreSwitchEgrPort, serverId, serverIngrPort, serverEgrPort
-            );
-            checkArgument(
-                (coreSwitchId         != null)     &&
-                (coreSwitchMetronPort != ANY_PORT) &&
-                (coreSwitchIngrPort   != ANY_PORT) && (coreSwitchEgrPort != ANY_PORT) &&
-                (serverId             != null)     &&
-                (serverIngrPort       != ANY_PORT) && (serverEgrPort     != ANY_PORT),
-                "Network path from " + device.deviceId() + " towards " + server.deviceId() + " is wrong. " + msg
-            );
-
-            // We might have a leaf switch, potentially different from the core one
-            DeviceId  leafSwitchId = pathEstablisher.leafSwitchId();
-            long leafSwitchEgrPort = pathEstablisher.leafSwitchEgressPort();
-            boolean coreAndLeafMatch = leafSwitchId.equals(coreSwitchId);
-
-            // Establish the path between server and egress point
-            if (!serverToNetworkRules.containsKey(server)) {
-                Set<FlowRule> bwdPathRules = pathEstablisher.egressRules(this.appId);
-                if (this.installRules(scId, bwdPathRules, false)) {
-                    // Add the set of rules to the map
-                    serverToNetworkRules.put(server, bwdPathRules);
-                }
-            }
-
-            /**
-             * Generate the hardware configuration of this service chain.
-             * Tagging flag is true to indicate partial offloading with tagging.
-             */
-            Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, coreSwitchId, numberOfCores, -1, -1, coreSwitchEgrPort, true, false
-            );
-
-            // Get the set of OpenFlow rules that comprise the hardware configuration
-            Set<FlowRule> offloadingRules = dpTree.hardwareConfigurationToSet();
-
-            // Push them to the switch
-            this.installRules(scId, offloadingRules, false);
-
-            offloaded = true;
-
-            /**
-             * Now establish the path between the ingress switch and the server.
-             * This is only required when 1 or more switches lie between the
-             * ingress switch and the Metron server.
-             */
-            if (!coreAndLeafMatch) {
-                for (Map.Entry<URI, RxFilterValue> entry : tcTags.entrySet()) {
-                    URI tcGroupId = entry.getKey();
-                    RxFilterValue tag = entry.getValue();
-
-                    Set<FlowRule> fwdPathRules = pathEstablisher.ingressRules(this.appId, tag);
-                    this.installRules(scId, fwdPathRules, false);
-                }
-            }
-
-            break;
+        boolean status = false;
+        if (server == null) {
+            status = placeTotallyOffloadedServiceChain(sc, dpTree, switchId);
+        } else {
+            status = placePartiallyOffloadedServiceChain(sc, dpTree, switchId, server);
         }
 
         log.info("[{}] {}\n", label(), Constants.STDOUT_BARS_SUB);
 
-        return offloaded;
+        return status;
     }
 
    /**
@@ -617,8 +541,8 @@ public final class DeploymentManager implements DeploymentService {
         // Obtain the ID of the service chain
         ServiceChainId scId = sc.id();
 
-        boolean inFlowDirMode = sc.isServerLevel() && sc.isHardwareBased();
-        boolean inRssMode = sc.isServerLevel() && sc.isSoftwareBased();
+        // This mode requires rule installation in a NIC
+        boolean inFlowDispMode = sc.isServerLevel() && sc.isHardwareBased();
 
         // Scaling ability for this service chain
         boolean scale = sc.scale();
@@ -635,65 +559,26 @@ public final class DeploymentManager implements DeploymentService {
         log.info("[{}] Instantiating server-level Metron traffic classes", label());
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
 
+        PathEstablisherInterface pathEstablisher = dpTree.pathEstablisher();
+        checkNotNull(pathEstablisher, "No path has been established for service chain " + scId);
+
         // Pick a server with enough resources
-        RestServerSBDevice server = null;
-        if (sc.targetDevice() == null) {
-            server = this.getLeastOverloadedServer(userRequestedMaxCpus, userRequestedNics);
-        } else {
-            server = this.getDesiredServer(sc.targetDevice(), userRequestedMaxCpus, userRequestedNics);
-        }
+        RestServerSBDevice server = pickServer(sc);
 
-        if (server == null) {
-            if (sc.targetDevice() == null) {
-                log.error(
-                    "[{}] \t Service chain with ID {} cannot be deployed. " +
-                    "Either no servers are available or none of the available servers " +
-                    "complies with the processing requirements (i.e., {} NICs and up to {} CPU cores) " +
-                    "of this service chain.",
-                    label(), scId, userRequestedNics, userRequestedMaxCpus
-                );
-            } else {
-                log.error(
-                    "[{}] \t Service chain with ID {} cannot be deployed. " +
-                    "The desired server with ID {} is either unavailable or " +
-                    "it does not comply with the processing requirements (i.e., " +
-                    "{} NICs and up to {} CPU cores) of this service chain.",
-                    label(), scId, sc.targetDevice(), userRequestedNics, userRequestedMaxCpus
-                );
-            }
-
-            return null;
-        }
-
-        DeviceId deviceId = server.deviceId();
+        DeviceId serverId = server.deviceId();
         int serverNics = server.numberOfNics();
         Set<String> nics = new ConcurrentSkipListSet<String>();
 
-        // Requires rule installation in the server's NIC
-        TrafficPoint ingressPoint = sc.ingressPointOfDevice(deviceId);
-        checkNotNull(ingressPoint, "Cannot generate NIC flow rules without ingress point information");
-        PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
-        long serverIngPort = serverIngPortNum.toLong();
+        // Get this server's ingress/egress ports
+        long serverIngPort = pathEstablisher.serverInressPort();
+        checkArgument(serverIngPort >= 0, "Wrong ingress port for service chain " + scId);
         nics.add(server.portNameFromNumber(serverIngPort));
 
-        TrafficPoint egressPoint = sc.egressPointOfDevice(deviceId);
-        checkNotNull(egressPoint, "Cannot generate NIC flow rules without egress point information");
-        PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
-        long serverEgrPort = serverEgrPortNum.toLong();
+        long serverEgrPort = pathEstablisher.serverEgressPort();
+        checkArgument(serverEgrPort >= 0, "Wrong egress port for service chain " + scId);
         nics.add(server.portNameFromNumber(serverEgrPort));
 
-        // In Flow Director or RSS modes there is no network placement, thus path must be built here
-        if (inFlowDirMode || inRssMode) {
-            dpTree.createPathEstablisher(
-                new ConnectPoint(deviceId, serverIngPortNum),
-                new ConnectPoint(deviceId, serverEgrPortNum),
-                serverIngPort, serverEgrPort, true
-            );
-
-            addProcessingPoint(sc, deviceId, serverIngPort, serverEgrPort);
-        }
-
-        // Get the configuration
+        // Get the server's software configuration
         String confType = dpTree.type().toString();
         checkNotNull(confType, "[" + label() + "] Service chain configuration type is NULL");
         Map<Integer, String> serviceChainConf = dpTree.softwareConfiguration(server, userRequestedCpus, isOffloadable);
@@ -720,16 +605,16 @@ public final class DeploymentManager implements DeploymentService {
         // TODO: NIC info must be expressed more naturally..
         int neededNics = confType.equals(STANDALONE.toString()) ? userRequestedNics : dpTree.numberOfNics();
         checkArgument(serverNics >= neededNics,
-            "Metron agent " + deviceId + " has " +
+            "Metron agent " + serverId + " has " +
             Integer.toString(serverNics) + " NICs, but " +
-            Integer.toString(neededNics) + " are required for this deployment"
-        );
+            Integer.toString(neededNics) + " are required for this deployment");
+
         checkArgument(userRequestedNics >= neededNics,
             "User defined ingress/egress point indicate the need for " +
             Integer.toString(userRequestedNics) + " NICs, " +
             "but the required number of NICs according to the Click elements is " +
-            Integer.toString(neededNics)
-        );
+            Integer.toString(neededNics));
+
         // We could iterate the RestServerSBDevice's list of NICs to fill in more
         checkArgument(neededNics <= nics.size(),
             nics.size() + " NICs provisioned for this service chain, but " + neededNics + " are required");
@@ -759,7 +644,7 @@ public final class DeploymentManager implements DeploymentService {
             // Ask from the topology manager to deploy this traffic class
             TrafficClassRuntimeInfo tcRuntimeInfo =
                 topologyService.deployTrafficClassOfServiceChain(
-                    deviceId, scId, tcId, sc.scope(), confType, conf, cpuCoreSet, maxCores, nics, autoScale);
+                    serverId, scId, tcId, sc.scope(), confType, conf, cpuCoreSet, maxCores, nics, autoScale);
 
             if (tcRuntimeInfo == null) {
                 throw new DeploymentException("[" + label() + "] Failed to deploy traffic class " + tcId +
@@ -772,7 +657,7 @@ public final class DeploymentManager implements DeploymentService {
             serviceChainRuntimeInfo.add(tcRuntimeInfo);
 
             // Update the monitoring service
-            monitoringService.addActiveCoresToDevice(deviceId, cores);
+            monitoringService.addActiveCoresToDevice(serverId, cores);
         }
 
         // Push this information to the distributed store
@@ -784,19 +669,20 @@ public final class DeploymentManager implements DeploymentService {
         }
 
         // Perform rule installation in the server's NIC
-        if (inFlowDirMode) {
+        if (inFlowDispMode) {
             long numberOfQueues = (long) userRequestedCpus;
 
             // Generate the hardware configuration for this service chain
             Map<URI, RxFilterValue> tcTags = this.createRules(
-                scId, dpTree, deviceId, userRequestedCpus, serverIngPort, numberOfQueues, serverEgrPort, true, false
-            );
+                scId, dpTree, serverId, userRequestedCpus, serverIngPort, numberOfQueues, serverEgrPort, true, false);
 
             // Get the set of rules that comprise the hardware configuration
             Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
 
             // Push them to the server
-            this.installRules(scId, rules, false);
+            if (!this.installRules(scId, rules, false)) {
+                return null;
+            }
         }
 
         log.info("[{}] {}", label(), Constants.STDOUT_BARS_SUB);
@@ -806,21 +692,21 @@ public final class DeploymentManager implements DeploymentService {
     }
 
     /**
-     * Handles the placement of a service chain that is totally
-     * offloadable.
+     * Computes the forwarding path for a service chain that is totally offloadable
+     * (i.e., no server is required to run the service chain).
      *
-     * @param sc the service chain to be offloaded
+     * @param sc a service chain
      * @param dpTree the dataplane configuration of this service chain
-     * @param switchId the device ID of the switch that will host this chain
+     * @param switchId the ID of the switch that will host this service chain
      * @return boolean status
      */
-    private boolean placeTotallyOffloadedServiceChain(
+    private boolean computePathForTotallyOffloadedServiceChain(
             ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree, DeviceId switchId) {
+        // Obtain the ID of the service chain
         ServiceChainId scId = sc.id();
-        log.info(
-            "[{}] \t Total offloading of service chain {} --> Switch {}",
-            label(), scId, switchId
-        );
+
+        log.info("[{}] Computing path for totally offloadable service chain {} on switch {}",
+            label(), scId, switchId);
 
         TrafficPoint ingressPoint = sc.ingressPointOfDevice(switchId);
         checkNotNull(ingressPoint,
@@ -828,6 +714,7 @@ public final class DeploymentManager implements DeploymentService {
         PortNumber ingressPortNum = ingressPoint.portIds().get(0);
         long ingressPort = ingressPortNum.toLong();
         checkArgument(ingressPort >= 0, "Invalid ingress port to redirect traffic");
+        log.info("[{}] \t Switch ingress port: {}", label(), ingressPort);
 
         TrafficPoint egressPoint = sc.egressPointOfDevice(switchId);
         checkNotNull(egressPoint,
@@ -835,15 +722,190 @@ public final class DeploymentManager implements DeploymentService {
         PortNumber egressPortNum = egressPoint.portIds().get(0);
         long egressPort = egressPortNum.toLong();
         checkArgument(egressPort >= 0, "Invalid egress port to redirect traffic");
+        log.info("[{}] \t Switch egress port: {}", label(), egressPort);
 
         // Add this switch to the set of processing points of this service chain
         addProcessingPoint(sc, switchId, ingressPort, egressPort);
 
+        // Build the (short) path of this service chain
+        return dpTree.createPathEstablisher(
+            new ConnectPoint(switchId, ingressPortNum),
+            new ConnectPoint(switchId, egressPortNum),
+            ingressPort, egressPort, false) != null;
+    }
+
+    /**
+     * Computes the forwarding path for a service chain that is offloaded into the
+     * network (i.e., the stateless part of the service chain runs in a network element),
+     * while retaining its stateful part in a server.
+     *
+     * @param sc a service chain with network-wide scope (i.e., network-mac)
+     * @param dpTree the dataplane configuration of this service chain
+     * @param switchId the ID of the switch that will host the stateless part of this service chain
+     * @return boolean status
+     */
+    private boolean computePathForNetworkAndServerLevelServiceChain(
+            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree, DeviceId switchId) {
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        // Pick a server with enough resources
+        RestServerSBDevice server = pickServer(sc);
+        DeviceId serverId = server.deviceId();
+
+        log.info("[{}] Computing path for network & server-level service chain {} on switch {} and server {}",
+            label(), scId, switchId, serverId);
+
+        // TODO: Eliminate lists?
+        // Get the port where traffic is expected to show up
+        TrafficPoint ingressPoint = sc.ingressPointOfDevice(switchId);
+        checkNotNull(ingressPoint, "Cannot find switch's ingress port");
+        long switchIngPort = ingressPoint.portIds().get(0).toLong();
+        log.info("[{}] \t Switch ingress port: {}", label(), switchIngPort);
+
+        // Get the port where traffic is expected to leave
+        TrafficPoint egressPoint = sc.egressPointOfDevice(switchId);
+        checkNotNull(egressPoint, "Cannot find switch's egress port");
+        long switchEgrPort = egressPoint.portIds().get(0).toLong();
+        log.info("[{}] \t Switch  egress port: {}", label(), switchEgrPort);
+
+        List<Link> serverIngLinks = new ArrayList<Link>(topologyService.getDeviceIngressLinks(serverId));
+        List<Link> serverEgrLinks = new ArrayList<Link>(topologyService.getDeviceEgressLinks(serverId));
+        checkArgument(
+            (serverIngLinks != null) && !serverIngLinks.isEmpty() &&
+            (serverEgrLinks != null) && !serverEgrLinks.isEmpty(),
+            "Empty list of server ingress/egress links. " +
+            "Ensure that there is a duplex link between the server and the network"
+        );
+        // TODO: How to make it more explicit?
+        long serverIngPort = serverIngLinks.get(0).dst().port().toLong();
+        long serverEgrPort = serverEgrLinks.get(0).src().port().toLong();
+        log.info("[{}] \t Server ingress port: {}", label(), serverIngPort);
+        log.info("[{}] \t Server  egress port: {}", label(), serverEgrPort);
+
+        // Get the shortest path between the target switch and the target server
+        Path selectedFwdPath = this.selectShortestPath(
+            switchId, (switchEgrPort >= 0) ? switchEgrPort : ANY_PORT, serverId, serverIngPort);
+        // And the reverse path
+        Path selectedBwdPath = this.selectShortestPath(
+            serverId, serverEgrPort, switchId, (switchIngPort >= 0) ? switchIngPort : ANY_PORT);
+        checkArgument((selectedFwdPath != null) && (selectedBwdPath != null),
+            "Could not establish forward/backward paths towards " + serverId + " for service chain " + scId);
+
+        // Build a forward and a reverse path
+        PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
+            selectedFwdPath, selectedBwdPath, switchIngPort, switchEgrPort, true);
+
+        // Verify
+        switchId = pathEstablisher.offloaderSwitchId().equals(switchId) ? switchId : null;
+        long switchToServerPort = pathEstablisher.offloaderSwitchToServerPort();
+        switchIngPort = pathEstablisher.ingressPort() == switchIngPort ? switchIngPort : ANY_PORT;
+        switchEgrPort = pathEstablisher.egressPort()  == switchEgrPort ? switchEgrPort : ANY_PORT;
+        serverId = pathEstablisher.serverId().equals(serverId) ? serverId : null;
+        serverIngPort = pathEstablisher.serverInressPort() == serverIngPort ? serverIngPort : ANY_PORT;
+        serverEgrPort  = pathEstablisher.serverEgressPort() == serverEgrPort  ? serverEgrPort  : ANY_PORT;
+        final String msg = String.format(
+            "[%s] \t Core switch %s IN:%d/EG:%d -> Server %s IN:%d/EG:%d", label(),
+            switchId, switchIngPort, switchEgrPort, serverId, serverIngPort, serverEgrPort
+        );
+        checkArgument(
+            (switchId           != null)     &&
+            (switchToServerPort != ANY_PORT) &&
+            (switchIngPort      != ANY_PORT) && (switchEgrPort != ANY_PORT) &&
+            (serverId           != null)     &&
+            (serverIngPort      != ANY_PORT) && (serverEgrPort != ANY_PORT),
+            "Network path from " + switchId + " towards " + serverId + " is wrong. " + msg
+        );
+
+        // Add the switch and the server to the set of processing points of this service chain
+        addProcessingPoint(sc, switchId, switchIngPort, switchEgrPort);
+        addProcessingPoint(sc, serverId, serverIngPort, serverEgrPort);
+
+        return true;
+    }
+
+    /**
+     * Computes the forwarding path for a service chain that is only server-based
+     * (i.e., no prior network element is required).
+     *
+     * @param sc a service chain with scope server-level (i.e., server-rules or server-rss)
+     * @param dpTree the dataplane configuration of this service chain
+     * @return boolean status
+     */
+    private boolean computePathForServerLevelServiceChain(
+            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree) {
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        checkArgument(!sc.isNetworkWide(),
+            "Service chain " + scId + " is expected to have server-level scope");
+
+        // Pick a server with enough resources
+        RestServerSBDevice server = pickServer(sc);
+        checkNotNull(server, "No server found for server-level service chain deployment");
+        DeviceId serverId = server.deviceId();
+
+        log.info("[{}] Computing path for server-level service chain {} on server {}",
+            label(), scId, serverId);
+
+        // See if this server is ingress/egress point
+        TrafficPoint ingressPoint = sc.ingressPointOfDevice(serverId);
+        checkNotNull(ingressPoint,
+            "Service chain " + scId + " has no ingress point on device " + serverId);
+        PortNumber serverIngPortNum = ingressPoint.portIds().get(0);
+        checkNotNull(serverIngPortNum,
+            "Server-level service chain without a server as ingress point");
+        long serverIngPort = serverIngPortNum.toLong();
+
+        TrafficPoint egressPoint = sc.egressPointOfDevice(serverId);
+        checkNotNull(egressPoint,
+            "Service chain " + scId + " has no egress point on device " + serverId);
+        PortNumber serverEgrPortNum = egressPoint.portIds().get(0);
+        checkNotNull(serverEgrPortNum,
+            "Server-level service chain without a server as egress point");
+        long serverEgrPort = serverEgrPortNum.toLong();
+
+        log.info("[{}] \t Server ingress port: {}", label(), serverIngPort);
+        log.info("[{}] \t Server  egress port: {}", label(), serverEgrPort);
+
+        PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
+            new ConnectPoint(serverId, serverIngPortNum),
+            new ConnectPoint(serverId, serverEgrPortNum),
+            serverIngPort, serverEgrPort, true
+        );
+
+        addProcessingPoint(sc, serverId, serverIngPort, serverEgrPort);
+
+        return true;
+    }
+
+    /**
+     * Handles the placement of a service chain that is totally
+     * offloadable.
+     *
+     * @param sc the service chain to be offloaded
+     * @param dpTree the dataplane configuration of this service chain
+     * @param switchId the ID of the switch that will host this chain
+     * @return boolean status
+     */
+    private boolean placeTotallyOffloadedServiceChain(
+            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree, DeviceId switchId) {
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        log.info("[{}] \t Total offloading of service chain {} --> Switch {}",
+            label(), scId, switchId);
+
+        PathEstablisherInterface pathEstablisher = dpTree.pathEstablisher();
+
+        long egressPort = pathEstablisher.egressPort();
+        checkArgument(egressPort >= 0, "Invalid egress port to redirect traffic");
+
         /**
          * Generate the hardware configuration of this service chain.
          * Number of CPU cores is irrelevant as traffic will never reach a server,
-         * therefore argument no4 is set to 1.
-         * Tagging flag is false to indicate total offloading.
+         * therefore argument no4 is set to 1 core.
+         * Tagging flag (argument no8) is false to indicate total offloading.
          */
         Map<URI, RxFilterValue> tcTags = this.createRules(
             scId, dpTree, switchId, 1, -1, -1, egressPort, false, true
@@ -853,16 +915,120 @@ public final class DeploymentManager implements DeploymentService {
         Set<FlowRule> rules = dpTree.hardwareConfigurationToSet();
 
         // Push them to the switch
-        this.installRules(scId, rules, false);
+        return this.installRules(scId, rules, false);
+    }
 
-        // Build the (short) path of this service chain
-        PathEstablisherInterface pathEstablisher = dpTree.createPathEstablisher(
-            new ConnectPoint(switchId, ingressPortNum),
-            new ConnectPoint(switchId, egressPortNum),
-            ingressPort, egressPort, false
+    /**
+     * Handles the placement of a service chain that is partially
+     * offloadable.
+     *
+     * @param sc the service chain to be offloaded
+     * @param dpTree the dataplane configuration of this service chain
+     * @param switchId the ID of the switch that will host this chain
+     * @param server the server that will host the stateful part of this service chain
+     * @return boolean status
+     */
+    private boolean placePartiallyOffloadedServiceChain(
+            ServiceChainInterface sc, NfvDataplaneTreeInterface dpTree,
+            DeviceId switchId, RestServerSBDevice server) {
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        log.info("[{}] \t Partial offloading of service chain {} --> Switch {}",
+            label(), scId, switchId);
+
+        PathEstablisherInterface pathEstablisher = dpTree.pathEstablisher();
+
+        long egressPort = pathEstablisher.egressPort();
+        checkArgument(egressPort >= 0, "Invalid egress port to redirect traffic");
+
+        // Scaling ability for this service chain
+        boolean scale = sc.scale();
+
+        // The number of CPU cores at the server side
+        int numberOfCores = scale ? sc.cpuCores() : sc.maxCpuCores();
+
+        // We might have a leaf switch, potentially different from the core one
+        DeviceId leafSwitchId = pathEstablisher.leafSwitchId();
+        boolean coreAndLeafMatch = leafSwitchId.equals(switchId);
+
+        // Establish the path between server and egress point
+        if (!serverToNetworkRules.containsKey(server)) {
+            Set<FlowRule> bwdPathRules = pathEstablisher.egressRules(this.appId);
+            if (this.installRules(scId, bwdPathRules, false)) {
+                // Add the set of rules to the map
+                serverToNetworkRules.put(server, bwdPathRules);
+            }
+        }
+
+        /**
+         * Generate the hardware configuration of this service chain.
+         * Tagging flag is true to indicate partial offloading with tagging.
+         */
+        Map<URI, RxFilterValue> tcTags = this.createRules(
+            scId, dpTree, switchId, numberOfCores, -1, -1, egressPort, true, false
         );
 
-        return true;
+        // Get the set of OpenFlow rules that comprise the hardware configuration
+        Set<FlowRule> offloadingRules = dpTree.hardwareConfigurationToSet();
+
+        // Push them to the switch
+        boolean status = this.installRules(scId, offloadingRules, false);
+
+        /**
+         * Now establish the path between the ingress switch and the server.
+         * This is only required when 1 or more switches lay between the
+         * ingress switch and the Metron server.
+         */
+        if (!coreAndLeafMatch) {
+            for (Map.Entry<URI, RxFilterValue> entry : tcTags.entrySet()) {
+                RxFilterValue tag = entry.getValue();
+
+                Set<FlowRule> fwdPathRules = pathEstablisher.ingressRules(this.appId, tag);
+                status &= this.installRules(scId, fwdPathRules, false);
+            }
+        }
+
+        return status;
+    }
+
+    /**
+     * Picks a commodity server to be used for a service chain deployment.
+     *
+     * @param sc the service chain to be deployed
+     * @return a commodity server device object
+     */
+    private RestServerSBDevice pickServer(ServiceChainInterface sc) {
+        // Obtain the ID of the service chain
+        ServiceChainId scId = sc.id();
+
+        // Already stored
+        if (serviceChainToServer.containsKey(scId)) {
+            return serviceChainToServer.get(scId);
+        }
+
+        // This is an upper limit of the number of CPU cores a target server should have
+        int userRequestedMaxCpus = sc.maxCpuCores();
+        // The required number of NICs for a target server
+        int userRequestedNics = sc.nics();
+
+        // Pick a server with enough resources
+        RestServerSBDevice server = null;
+        if (sc.targetDevice() == null) {
+            server = this.getLeastOverloadedServer(userRequestedMaxCpus, userRequestedNics);
+        } else {
+            server = this.getDesiredServer(sc.targetDevice(), userRequestedMaxCpus, userRequestedNics);
+        }
+
+        checkNotNull(server,
+            "Service chain with ID " + scId + " cannot be deployed. " +
+            "Either no servers are available or none of the available servers " +
+            "complies with the processing requirements (i.e., " + userRequestedNics + " NICs " +
+            "and up to " + userRequestedMaxCpus + " CPU cores) of this service chain.");
+
+        serviceChainToServer.put(scId, server);
+
+        return server;
     }
 
     @Override
@@ -1154,36 +1320,6 @@ public final class DeploymentManager implements DeploymentService {
     }
 
     /**
-     * Check if a switche's ingress/egress ports are contained into the
-     * respective server ports. This indicates a confict as the same port
-     * cannot be used both as an NFV server prt and as a traffic src/sink.
-     *
-     * @param serverLinks a list of links that end up/begin from a server
-     * @param coreSwitchId the ID of the switch
-     * @param coreSwitchIngrPort the ingress port of the switch
-     * @param coreSwitchEgrPort the egress port of the switch
-     * @return boolean conflict status
-     */
-    private boolean hasPortConflicts(
-            List<Link> serverLinks, DeviceId coreSwitchId,
-            long coreSwitchIngrPort, long coreSwitchEgrPort) {
-        log.debug("[{}] \t Checking for topology conflicts", label());
-        log.debug("[{}] \t\t Switch Ingress  Port {}", label(), coreSwitchIngrPort);
-        log.debug("[{}] \t\t Switch  Egress  Port {}", label(), coreSwitchEgrPort);
-        log.debug("[{}] \t\t Server  links {}", label(), serverLinks);
-
-        for (Link link : serverLinks) {
-            if (topologyService.linkHasDevice(link, coreSwitchId) &&
-               (topologyService.linkHasPort(link, coreSwitchIngrPort) ||
-                topologyService.linkHasPort(link, coreSwitchEgrPort))) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Given a source and destination device in the network, find a set of
      * shortest paths and return one that also satisfies their ingress ports.
      *
@@ -1230,10 +1366,10 @@ public final class DeploymentManager implements DeploymentService {
             long srcIngrPort = firstLink.src().port().toLong();
             long dstIngrPort = lastLink.dst().port().toLong();
 
-            if ((onlySrcCheck && topologyService.linkHasPort(firstLink, srcPort)) ||
-                (onlyDstCheck && topologyService.linkHasPort(lastLink,  dstPort)) ||
-                (topologyService.linkHasPort(firstLink, srcPort) &&
-                 topologyService.linkHasPort(lastLink, dstPort))) {
+            if ((onlySrcCheck && topologyService.linkHasPort(firstLink, srcIngrPort)) ||
+                (onlyDstCheck && topologyService.linkHasPort(lastLink,  dstIngrPort)) ||
+                (topologyService.linkHasPort(firstLink, srcIngrPort) &&
+                 topologyService.linkHasPort(lastLink, dstIngrPort))) {
                 log.info("[{}] \t Retrieved a path between {}/{} and {}/{}",
                     label(), srcDeviceId, srcPortStr, dstDeviceId, dstPortStr);
                 return path;

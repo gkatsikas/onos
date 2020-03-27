@@ -142,7 +142,7 @@
                                     {
                                         "block": "FromDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1",
+                                        "configArgs": "DEVNAME eno2",
                                         "configFile": ""
                                     },
                                     {
@@ -339,7 +339,7 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     }
                                 },
                                 {
