@@ -8,7 +8,7 @@
                         "type"       : "generic",
                         "networkId"  : 1,
                         "cpuCores"   : 1,
-                        "maxCpuCores": 3,
+                        "maxCpuCores": 8,
                         "scale"      : true,
                         "autoScale"  : false,
                         "scope"      : "network-mac",
@@ -142,7 +142,7 @@
                                     {
                                         "block": "FromDevice",
                                         "instance": "nf2_fd1",
-                                        "configArgs": "DEVNAME eno1",
+                                        "configArgs": "DEVNAME eno2",
                                         "configFile": ""
                                     },
                                     {
@@ -305,7 +305,7 @@
                                         "deviceId": "of:000000223d4b0182",
                                         "portIds": [
                                             {
-                                                "portId": 1
+                                                "portId": 6
                                             }
                                         ]
                                     }
@@ -315,7 +315,7 @@
                                         "deviceId": "of:000000223d4b0182",
                                         "portIds": [
                                             {
-                                                "portId": 1
+                                                "portId": 6
                                             }
                                         ]
                                     }
@@ -339,7 +339,7 @@
                                     },
                                     "dst" : {
                                         "entity"      : "nf2",
-                                        "interface"   : "eno1"
+                                        "interface"   : "eno2"
                                     }
                                 },
                                 {

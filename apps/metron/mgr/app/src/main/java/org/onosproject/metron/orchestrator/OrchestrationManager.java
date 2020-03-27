@@ -734,7 +734,7 @@ public final class OrchestrationManager implements OrchestrationService {
             // Get useful information about the device that will host the new rules
             DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
             long  offloaderInPort = tree.pathEstablisher().serverInressPort();
-            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchToServerPort();
 
             // Compute the new rules
             newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
@@ -847,7 +847,7 @@ public final class OrchestrationManager implements OrchestrationService {
             // Get useful information about the device that will host the new rules
             DeviceId  offloaderId = tree.pathEstablisher().offloaderSwitchId();
             long offloaderInPort = tree.pathEstablisher().serverInressPort();
-            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchMetronPort();
+            long offloaderOutPort = tree.pathEstablisher().offloaderSwitchToServerPort();
 
             // Compute the new rules
             newRules = NfvDataplaneTree.convertTrafficClassSetToOpenFlowRules(
@@ -868,7 +868,7 @@ public final class OrchestrationManager implements OrchestrationService {
         monitoringService.removeActiveCoresFromDevice(deviceId, 1);
 
         // Reconfigure the Metron agent and the necessary network elements
-        checkArgument(tc.coresOfDevice(deviceId).contains(removedCpu), "Removing an unused CPU !");
+        checkArgument(tc.coresOfDevice(deviceId).contains(removedCpu), "Removing an unused CPU!");
         checkArgument(tc.coresOfDevice(deviceId).contains(underLoadedCpu), "The underloaded CPU is not scheduled...?");
 
         Set<Integer> newMap = tc.coresOfDevice(deviceId);

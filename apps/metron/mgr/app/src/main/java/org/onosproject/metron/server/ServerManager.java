@@ -195,10 +195,10 @@ public class ServerManager implements ServerService {
 
         log.info("[{}] ================================================================", label());
         log.info("[{}] Deploy", label());
-        log.info("[{}] \t traffic class {} of", label(), tcId);
-        log.info("[{}] \t service chain {}", label(), scId);
-        log.info("[{}] \t with scope {} on", label(), scScope.toString());
-        log.info("[{}] \t server {}", label(), deviceId);
+        log.info("[{}] \t traffic class {}", label(), tcId);
+        log.info("[{}] \t of service chain {}", label(), scId);
+        log.info("[{}] \t with scope {}", label(), scScope.toString());
+        log.info("[{}] \t on server {}", label(), deviceId);
         log.info("[{}] \t with configuration type {}", label(), configurationType);
         log.info("[{}] \t with configuration {}", label(), configuration);
         log.info("[{}] \t using {} CPU cores", label(), newCpuSet.size());
