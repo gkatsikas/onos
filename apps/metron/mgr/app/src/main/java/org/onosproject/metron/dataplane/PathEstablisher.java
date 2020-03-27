@@ -55,6 +55,7 @@ import java.util.Set;
 import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.onosproject.metron.api.dataplane.PathEstablisherInterface.ANY_PORT;
 
 /**
  * An entity that establishes the path between an ingress point,
@@ -65,9 +66,6 @@ public final class PathEstablisher implements PathEstablisherInterface {
     private static final Logger log = getLogger(PathEstablisher.class);
 
     private String label;
-
-    // Indicates any port
-    private static final long ANY_PORT = -1;
 
     /**
      * Paths that this traffic class goes through.
@@ -248,12 +246,18 @@ public final class PathEstablisher implements PathEstablisherInterface {
 
     @Override
     public DeviceId offloaderSwitchId() {
-        return this.offloaderSwitch.deviceId();
+        if (this.offloaderSwitch != null) {
+            return this.offloaderSwitch.deviceId();
+        }
+        return null;
     }
 
     @Override
-    public long offloaderSwitchMetronPort() {
-        return this.offloaderSwitch.port().toLong();
+    public long offloaderSwitchToServerPort() {
+        if (this.offloaderSwitch != null) {
+            return this.offloaderSwitch.port().toLong();
+        }
+        return ANY_PORT;
     }
 
     @Override
@@ -269,12 +273,18 @@ public final class PathEstablisher implements PathEstablisherInterface {
 
     @Override
     public DeviceId leafSwitchId() {
-        return this.leafSwitch.deviceId();
+        if (this.leafSwitch != null) {
+            return this.leafSwitch.deviceId();
+        }
+        return null;
     }
 
     @Override
     public long leafSwitchEgressPort() {
-        return this.leafSwitch.port().toLong();
+        if (this.leafSwitch != null) {
+            return this.leafSwitch.port().toLong();
+        }
+        return ANY_PORT;
     }
 
     @Override
@@ -297,18 +307,27 @@ public final class PathEstablisher implements PathEstablisherInterface {
 
     @Override
     public DeviceId serverId() {
-        checkArgument(this.serverIngr.deviceId().equals(this.serverEgr.deviceId()));
-        return this.serverIngr.deviceId();
+        if (this.serverIngr != null) {
+            checkArgument(this.serverIngr.deviceId().equals(this.serverEgr.deviceId()));
+            return this.serverIngr.deviceId();
+        }
+        return null;
     }
 
     @Override
     public long serverInressPort() {
-        return this.serverIngr.port().toLong();
+        if (this.serverIngr != null) {
+            return this.serverIngr.port().toLong();
+        }
+        return ANY_PORT;
     }
 
     @Override
     public long serverEgressPort() {
-        return this.serverEgr.port().toLong();
+        if (this.serverIngr != null) {
+            return this.serverEgr.port().toLong();
+        }
+        return ANY_PORT;
     }
 
     @Override
@@ -323,30 +342,27 @@ public final class PathEstablisher implements PathEstablisherInterface {
         // Forward path: The src of the first link is the switch to offload
         Link firstFwdLink = this.fwdLinks.get(0);
         checkNotNull(firstFwdLink, "First link in forward path is NULL");
-        this.offloaderSwitch = new ConnectPoint(
-            firstFwdLink.src().deviceId(), firstFwdLink.src().port()
-        );
+        this.offloaderSwitch = !isServer(firstFwdLink.src().deviceId()) ?
+                new ConnectPoint(firstFwdLink.src().deviceId(), firstFwdLink.src().port()) :
+                null;
+        log.info("[{}] First FWD link: {}", label, firstFwdLink);
 
         // Forward path: The src of the last link is the leaf switch
         Link lastFwdLink = this.fwdLinks.get(this.fwdLinks.size() - 1);
         checkNotNull(lastFwdLink, "Last link in forward path is NULL");
-        this.leafSwitch = new ConnectPoint(
-            lastFwdLink.src().deviceId(),
-            lastFwdLink.src().port()
-        );
+        this.leafSwitch = !isServer(lastFwdLink.src().deviceId()) ?
+                new ConnectPoint(lastFwdLink.src().deviceId(), lastFwdLink.src().port()) :
+                null;
+        log.info("[{}]  Last FWD link: {}", label, lastFwdLink);
+
+        log.info("[{}] Offloader switch: {}", label, this.offloaderSwitch);
+        log.info("[{}]      Leaf switch: {}", label, this.leafSwitch);
 
         if (withServer) {
-            // No switch before the server
-            if (this.fwdLinks.size() == 1) {
-                this.serverIngr = this.offloaderSwitch;
-            // There are at least 2 devices present
-            } else {
-                // Forward path: The dst of the last link is the ingress point of the server
-                this.serverIngr = new ConnectPoint(
-                    lastFwdLink.dst().deviceId(),
-                    lastFwdLink.dst().port()
-                );
-            }
+            // Forward path: The dst of the last link is the ingress point of the server
+            this.serverIngr = new ConnectPoint(
+                lastFwdLink.dst().deviceId(),
+                lastFwdLink.dst().port());
 
             // Backward path: The src of the first link is the egress point of the server
             Link firstBwdLink = this.bwdLinks.get(0);
@@ -535,75 +551,75 @@ public final class PathEstablisher implements PathEstablisherInterface {
      */
     private void verifyPath(boolean withServer)
             throws DeploymentException {
-        DeviceId     coreSwitchId  = this.offloaderSwitchId();
-        long coreSwitchIngressPort = this.ingressPort();
-        long coreSwitchMetronPort  = this.offloaderSwitchMetronPort();
-        long coreSwitchEgressPort  = this.egressPort();
-        DeviceId     leafSwitchId  = this.leafSwitchId();
-        long leafSwitchEgressPort  = this.leafSwitchEgressPort();
-
-        if ((coreSwitchEgressPort < 0) || (leafSwitchEgressPort < 0)) {
-            throw new DeploymentException(
-                "Failed to establish a valid path for a service chain. " +
-                "The path invloves core device " + coreSwitchId + " " +
-                "with egress port " + coreSwitchEgressPort + "and " +
-                "leaf device " + leafSwitchId + " with egress port " +
-                leafSwitchEgressPort
-            );
-        }
+        long ingressPort = this.ingressPort();
+        long egressPort = this.egressPort();
+        DeviceId coreSwitchId = this.offloaderSwitchId();
+        long coreSwitchToServerPort = this.offloaderSwitchToServerPort();
+        DeviceId leafSwitchId = this.leafSwitchId();
+        long leafSwitchEgressPort = this.leafSwitchEgressPort();
 
         String msg = "";
 
-        if ((coreSwitchId == null) && (leafSwitchId == null)) {
-            log.info("[{}] No switches in the path", label);
-        } else if (coreSwitchId.equals(leafSwitchId)) {
-            msg = String.format("[%s] \t Path: Ingress device [IN %d]%s",
-                label, coreSwitchIngressPort, coreSwitchId
-            );
-        } else {
-            msg = String.format(
-                "[%s] \t Path: Ingress device [IN %d]%s[OUT %d] -> Leaf device %s[OUT %d]",
-                label,
-                coreSwitchIngressPort, coreSwitchId, coreSwitchMetronPort,
-                leafSwitchId, leafSwitchEgressPort
-            );
+        if ((coreSwitchId != null) || (leafSwitchId != null)) {
+            if (coreSwitchId.equals(leafSwitchId)) {
+                msg = String.format("[%s] \t Path: Ingress device [IN %d]%s[OUT %d]",
+                    label, ingressPort, coreSwitchId, coreSwitchToServerPort);
+            } else {
+                msg = String.format(
+                    "[%s] \t Path: Ingress device [IN %d]%s[OUT %d] --> Leaf device %s[OUT %d]",
+                    label, ingressPort, coreSwitchId, coreSwitchToServerPort,
+                    leafSwitchId, leafSwitchEgressPort);
+            }
         }
 
         if (!withServer) {
-            msg += String.format(" -> Egress device %s[OUT %d]", coreSwitchId, coreSwitchEgressPort);
+            msg += String.format(" --> Egress device %s[OUT %d]", coreSwitchId, egressPort);
             log.info("{}", msg);
             return;
         }
 
-        DeviceId      serverId = this.serverId();
+        DeviceId serverId = this.serverId();
         long serverIngressPort = this.serverInressPort();
-        long serverEgressPort  = this.serverEgressPort();
+        long serverEgressPort = this.serverEgressPort();
 
         if ((serverId == null) || (serverIngressPort < 0) || (serverEgressPort < 0)) {
             throw new DeploymentException(
                 "Failed to establish a valid path for a service chain. " +
                 "The path invloves server " + serverId + " " +
                 "with ingress port " + serverIngressPort + " " +
-                "and egress port " + serverEgressPort
-            );
+                "and egress port " + serverEgressPort);
         }
 
         if (!msg.isEmpty()) {
             if (serverId.equals(coreSwitchId)) {
-                msg += " -> " + String.format(
-                    "Egress device %s[OUT %d]",
-                    coreSwitchId, coreSwitchEgressPort
-                );
+                msg += String.format(" --> Egress device %s[OUT %d]",
+                    coreSwitchId, egressPort);
             } else {
-                msg += " -> " + String.format(
-                    "Server [IN %d]%s[OUT %d] -> Egress device %s[OUT %d]",
-                    serverIngressPort, serverId, serverEgressPort,
-                    coreSwitchId, coreSwitchEgressPort
-                );
+                msg += String.format(" --> Server [IN %d]%s[OUT %d] --> Egress device %s[OUT %d]",
+                    serverIngressPort, serverId, serverEgressPort, coreSwitchId, egressPort);
             }
+        } else {
+            checkArgument(ingressPort == serverIngressPort, "Wrong ingress ports for server-level deployment");
+            checkArgument(egressPort == serverEgressPort, "Wrong egress ports for server-level deployment");
+            msg = String.format("[%s] \t Path: Server [IN %d]%s[OUT %d]", label, ingressPort, serverId, egressPort);
         }
 
         log.info("{}", msg);
+    }
+
+    /**
+     * Checks whether the given device ID belongs to a server.
+     *
+     * @param deviceId a device ID to check
+     * @return boolean status (true if server, otherwise false)
+     */
+    private boolean isServer(DeviceId deviceId) {
+        checkNotNull(deviceId, "Attempted to check NULL device ID");
+        if (deviceId.toString().contains("rest")) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
