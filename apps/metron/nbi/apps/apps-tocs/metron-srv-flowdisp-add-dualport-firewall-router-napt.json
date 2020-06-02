@@ -58,7 +58,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFilter1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/nbi/apps/apps-tocs/firewall.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/nbi/apps/apps-tocs/firewall.json"
                                     },
                                     {
                                         "block": "EtherEncap",
@@ -167,7 +167,7 @@
                                         "block": "LookupIPRouteMP",
                                         "instance": "nf2_ipLookUp1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/apps/apps-tocs/router.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/apps/apps-tocs/router.json"
                                     },
                                     {
                                         "block": "EtherEncap",

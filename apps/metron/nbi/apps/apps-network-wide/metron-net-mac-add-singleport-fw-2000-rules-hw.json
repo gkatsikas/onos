@@ -46,7 +46,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/nbi/apps/firewall/2000rules.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/nbi/apps/firewall/2000rules.json"
                                     },
                                     {
                                         "block": "Discard",

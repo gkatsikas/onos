@@ -52,7 +52,7 @@
                                         "block": "IPFilter",
                                         "instance": "nf1_ipFilter1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/nbi/apps/firewall/3rules-flowdisp.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/nbi/apps/firewall/3rules-flowdisp.json"
                                     },
                                     {
                                         "block": "EtherEncap",

@@ -17,7 +17,6 @@
 package org.onosproject.metron.server;
 
 // Metron Libraries
-import org.onosproject.metron.api.common.Constants;
 import org.onosproject.metron.api.exceptions.ProtocolException;
 import org.onosproject.metron.api.monitor.MonitorService;
 import org.onosproject.metron.api.server.ServerService;
@@ -83,6 +82,24 @@ import javax.ws.rs.ProcessingException;
 import static org.slf4j.LoggerFactory.getLogger;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkArgument;
+import static org.onosproject.drivers.server.Constants.JSON;
+import static org.onosproject.drivers.server.Constants.PARAM_AUTOSCALE;
+import static org.onosproject.drivers.server.Constants.PARAM_CPUS;
+import static org.onosproject.drivers.server.Constants.PARAM_CPUS_MAX;
+import static org.onosproject.drivers.server.Constants.PARAM_ID;
+import static org.onosproject.drivers.server.Constants.PARAM_NICS;
+import static org.onosproject.drivers.server.Constants.PARAM_STATUS;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_FILTER;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_FLOW;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_MAC;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_MPLS;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_RSS;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_VLAN;
+import static org.onosproject.drivers.server.Constants.PARAM_NIC_RX_METHOD_VALUES;
+import static org.onosproject.drivers.server.Constants.SLASH;
+import static org.onosproject.drivers.server.Constants.URL_BASE;
+import static org.onosproject.metron.api.common.Constants.SYSTEM_PREFIX;
 import static org.onosproject.metron.server.DefaultTrafficClassRuntimeInfo.AVAILABLE_CPU_CORE;
 
 /**
@@ -100,38 +117,23 @@ public class ServerManager implements ServerService {
      * Application ID, name and label for the Server Manager.
      */
     private ApplicationId appId = null;
-    private static final String APP_NAME = Constants.SYSTEM_PREFIX + ".drivers.server.manager";
+    private static final String APP_NAME = SYSTEM_PREFIX + ".drivers.server.manager";
     private static final String COMPONET_LABEL = "Server Manager";
 
     /**
-     * Resource endpoints of the NFV agent (server-side).
+     * Resource endpoints of the server agent.
      */
-    private static final String SERVICE_CHAINS_DEPLOY_URL       = BasicServerDriver.BASE_URL + "/chains";
-    private static final String SERVICE_CHAINS_RUNTIME_INFO_URL = SERVICE_CHAINS_DEPLOY_URL; // + /ID
-    private static final String SERVICE_CHAINS_DELETE_URL       = SERVICE_CHAINS_DEPLOY_URL; // + /ID
-    private static final String SLASH = "/";
+    private static final String URL_SERVICE_CHAINS_DEPLOY       = URL_BASE + "/service_chains";
+    private static final String URL_SERVICE_CHAINS_RUNTIME_INFO = URL_SERVICE_CHAINS_DEPLOY; // + /ID
+    private static final String URL_SERVICE_CHAINS_DELETE       = URL_SERVICE_CHAINS_DEPLOY; // + /ID
 
     /**
-     * Resources to be asked/passed from/to the NFV agent.
+     * Resources to be asked/passed from/to the server agent.
      */
-    private static final String PARAM_TITLE                = "serviceChains";
+    private static final String PARAM_TITLE       = "serviceChains";
 
-    private static final String PARAM_MAX_CPUS             = "maxCpus";
-    private static final String PARAM_AUTOSCALE            = "autoScale";
-    private static final String PARAM_CONFIG_TYPE          = "configType";
-    private static final String PARAM_CONFIG               = "config";
-    private static final String PARAM_STATUS               = "status";
-
-    private static final String NIC_PARAM_RX_METHOD_VALUES = "values";
-
-    /**
-     * Rx filtering methods usually implemented by NICs in commodity servers.
-     */
-    private static final String NIC_PARAM_RX_METHOD_MAC    = "mac";
-    private static final String NIC_PARAM_RX_METHOD_MPLS   = "mpls";
-    private static final String NIC_PARAM_RX_METHOD_VLAN   = "vlan";
-    private static final String NIC_PARAM_RX_METHOD_FLOW   = "flow";
-    private static final String NIC_PARAM_RX_METHOD_RSS    = "rss";
+    private static final String PARAM_CONFIG_TYPE = "configType";
+    private static final String PARAM_CONFIG      = "config";
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
@@ -296,13 +298,13 @@ public class ServerManager implements ServerService {
         ObjectNode chainObjNode = mapper.createObjectNode();
 
         // Add the service chain's traffic class ID
-        chainObjNode.put(BasicServerDriver.PARAM_ID, tcId.toString());
+        chainObjNode.put(PARAM_ID, tcId.toString());
 
         // Add the Rx filter method
         ObjectNode rxFilterMethodNode = mapper.createObjectNode().put(
-            BasicServerDriver.NIC_PARAM_RX_METHOD, rxFilterMethodStr
+            PARAM_NIC_RX_METHOD, rxFilterMethodStr
         );
-        chainObjNode.put(BasicServerDriver.NIC_PARAM_RX_FILTER, rxFilterMethodNode);
+        chainObjNode.put(PARAM_NIC_RX_FILTER, rxFilterMethodNode);
 
         // Add the service chain's configuration type
         chainObjNode.put(PARAM_CONFIG_TYPE, configurationType);
@@ -311,19 +313,19 @@ public class ServerManager implements ServerService {
         chainObjNode.put(PARAM_CONFIG, configuration);
 
         // Add the list of CPUs
-        ArrayNode cpuArrayNode = chainObjNode.putArray(BasicServerDriver.PARAM_CPUS);
+        ArrayNode cpuArrayNode = chainObjNode.putArray(PARAM_CPUS);
         for (Integer cpu : newCpuSet) {
             cpuArrayNode.add(cpu);
         }
 
         // Add an estimation of the maximum the number of CPUs you might need
-        chainObjNode.put(PARAM_MAX_CPUS, Integer.toString(maxNumberOfCores));
+        chainObjNode.put(PARAM_CPUS_MAX, Integer.toString(maxNumberOfCores));
 
         // Set the autoscale mode: If true, the agent can load balance itself
         chainObjNode.put(PARAM_AUTOSCALE, new Boolean(autoscale));
 
         // Add the list of NICs
-        ArrayNode nicArrayNode = chainObjNode.putArray(BasicServerDriver.PARAM_NICS);
+        ArrayNode nicArrayNode = chainObjNode.putArray(PARAM_NICS);
         for (String nic : nicIds) {
             nicArrayNode.add(nic);
         }
@@ -333,10 +335,8 @@ public class ServerManager implements ServerService {
 
         // Post the service chain
         int response = controller.post(
-            deviceId, SERVICE_CHAINS_DEPLOY_URL,
-            new ByteArrayInputStream(sendObjNode.toString().getBytes()),
-            BasicServerDriver.JSON
-        );
+            deviceId, URL_SERVICE_CHAINS_DEPLOY,
+            new ByteArrayInputStream(sendObjNode.toString().getBytes()), JSON);
 
         if (!BasicServerDriver.checkStatusCode(response)) {
             log.error(
@@ -400,24 +400,22 @@ public class ServerManager implements ServerService {
         }
 
         // Add the list of CPUs
-        ArrayNode cpuArrayNode = sendObjNode.putArray(BasicServerDriver.PARAM_CPUS);
+        ArrayNode cpuArrayNode = sendObjNode.putArray(PARAM_CPUS);
         for (Integer cpu : newCpuMap) {
             cpuArrayNode.add(cpu);
         }
 
             // Add a new estimation of the maximum the number of CPUs. Negative means that it has not changed.
         if (maxNumberOfCores > 0) {
-            sendObjNode.put(PARAM_MAX_CPUS, Integer.toString(maxNumberOfCores));
+            sendObjNode.put(PARAM_CPUS_MAX, Integer.toString(maxNumberOfCores));
         }
 
         // Post the service chain
-        String url = SERVICE_CHAINS_DEPLOY_URL + SLASH + tcId.toString();
+        String url = URL_SERVICE_CHAINS_DEPLOY + SLASH + tcId.toString();
 
         int response = controller.put(
             deviceId, url,
-            new ByteArrayInputStream(sendObjNode.toString().getBytes()),
-            BasicServerDriver.JSON
-        );
+            new ByteArrayInputStream(sendObjNode.toString().getBytes()), JSON);
 
         if (!BasicServerDriver.checkStatusCode(response)) {
             log.error(
@@ -457,12 +455,12 @@ public class ServerManager implements ServerService {
             return null;
         }
 
-        String scUrl = SERVICE_CHAINS_RUNTIME_INFO_URL + SLASH + tcId.toString();
+        String scUrl = URL_SERVICE_CHAINS_RUNTIME_INFO + SLASH + tcId.toString();
 
         // Hit the path that provides the resources for this service chain
         InputStream response = null;
         try {
-            response = controller.get(deviceId, scUrl, BasicServerDriver.JSON);
+            response = controller.get(deviceId, scUrl, JSON);
         } catch (ProcessingException pEx) {
             log.error("[{}] \t Failed to retrieve runtime information for traffic class {} of service chain {}",
                 label(), tcId, scId);
@@ -486,7 +484,7 @@ public class ServerManager implements ServerService {
         checkNotNull(jsonMap, "[" + label() + "] Received NULL runtime information object");
 
         // Get the ID of the service chain
-        String id = BasicServerDriver.get(jsonNode, BasicServerDriver.PARAM_ID);
+        String id = BasicServerDriver.get(jsonNode, PARAM_ID);
 
         // And verify that this is the traffic class we want to monitor
         if (!id.equals(tcId.toString())) {
@@ -494,10 +492,10 @@ public class ServerManager implements ServerService {
                 tcId + " of service chain " + scId + ". Traffic class chain ID does not agree.");
         }
 
-        JsonNode    tagNode = objNode.path(BasicServerDriver.NIC_PARAM_RX_FILTER);
-        String    tagMethod = BasicServerDriver.get(tagNode, BasicServerDriver.NIC_PARAM_RX_METHOD);
+        JsonNode    tagNode = objNode.path(PARAM_NIC_RX_FILTER);
+        String    tagMethod = BasicServerDriver.get(tagNode, PARAM_NIC_RX_METHOD);
 
-        JsonNode tagValNode = tagNode.path(NIC_PARAM_RX_METHOD_VALUES);
+        JsonNode tagValNode = tagNode.path(PARAM_NIC_RX_METHOD_VALUES);
         String          nic = tcInfo.nicsOfDevice(deviceId).iterator().next();
 
         // Check if the Rx filter type conforms to what we have
@@ -530,9 +528,9 @@ public class ServerManager implements ServerService {
 
         String    configType = BasicServerDriver.get(jsonNode, PARAM_CONFIG_TYPE);
         String    config     = BasicServerDriver.get(jsonNode, PARAM_CONFIG);
-        JsonNode cpuNode     = objNode.path(BasicServerDriver.PARAM_CPUS);
+        JsonNode cpuNode     = objNode.path(PARAM_CPUS);
         boolean   status     = objNode.path(PARAM_STATUS).asInt() == 1 ? true : false;
-        JsonNode nicNode     = objNode.path(BasicServerDriver.PARAM_NICS);
+        JsonNode nicNode     = objNode.path(PARAM_NICS);
 
         // The service chain is expected to be active
         if (!status) {
@@ -751,10 +749,10 @@ public class ServerManager implements ServerService {
             return false;
         }
 
-        String scUrl = SERVICE_CHAINS_DELETE_URL + SLASH + tcId.toString();
+        String scUrl = URL_SERVICE_CHAINS_DELETE + SLASH + tcId.toString();
 
         // Delete this traffic class
-        int response = controller.delete(deviceId, scUrl, null, BasicServerDriver.JSON);
+        int response = controller.delete(deviceId, scUrl, null, JSON);
 
         if (!BasicServerDriver.checkStatusCode(response)) {
             log.error("[{}] \t Failed to delete traffic class {} of service chain {} on device {} with status {}",
@@ -830,19 +828,19 @@ public class ServerManager implements ServerService {
                 continue;
             }
 
-            if (tagMethod.equals(NIC_PARAM_RX_METHOD_MAC)) {
+            if (tagMethod.equals(PARAM_NIC_RX_METHOD_MAC)) {
                 MacAddress mac = MacAddress.valueOf(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MacRxFilterValue(mac, coreId));
-            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_MPLS)) {
+            } else if (tagMethod.equals(PARAM_NIC_RX_METHOD_MPLS)) {
                 MplsLabel mplsLabel = MplsLabel.mplsLabel(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new MplsRxFilterValue(mplsLabel, coreId));
-            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_VLAN)) {
+            } else if (tagMethod.equals(PARAM_NIC_RX_METHOD_VLAN)) {
                 VlanId vlanId = VlanId.vlanId(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new VlanRxFilterValue(vlanId, coreId));
-            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_FLOW)) {
+            } else if (tagMethod.equals(PARAM_NIC_RX_METHOD_FLOW)) {
                 long physCoreId = Long.parseLong(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new FlowRxFilterValue(physCoreId, coreId));
-            } else if (tagMethod.equals(NIC_PARAM_RX_METHOD_RSS)) {
+            } else if (tagMethod.equals(PARAM_NIC_RX_METHOD_RSS)) {
                 int physCoreId = Integer.parseInt(tagValue);
                 tcInfo.addRxFilterToDeviceToNic(deviceId, nicName, new RssRxFilterValue(physCoreId, coreId));
             } else {

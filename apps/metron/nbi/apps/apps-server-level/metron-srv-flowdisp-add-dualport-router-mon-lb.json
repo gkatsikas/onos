@@ -52,7 +52,7 @@
                                         "block": "LookupIPRouteMP",
                                         "instance": "nf1_ipLookUp1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/nbi/apps/classifiers/lookup-conf.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/nbi/apps/classifiers/lookup-conf.json"
                                     },
                                     {
                                         "block": "EtherEncap",

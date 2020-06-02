@@ -52,7 +52,7 @@
                                         "block": "IPClassifier",
                                         "instance": "nf1_ipCl1",
                                         "configArgs": "FILE",
-                                        "configFile": "/home/katsikas/nfv/onos/apps/metron/nbi/apps/firewall/9rules-sw-conf.json"
+                                        "configFile": "/home/katsikas/projects/nfv/onos/apps/metron/nbi/apps/firewall/9rules-sw-conf.json"
                                     },
                                     {
                                         "block": "EtherEncap",
