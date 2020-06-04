@@ -1091,7 +1091,7 @@ public class Filter {
 
     /**
      * Translates a (complex) condition on IP src/dst address fields to
-     * a format understandable by Intel's Flow Director classifiers.
+     * a format understandable by DPDK's Flow API classifiers.
      *
      * @param keyword the keyword to translate
      * @return translated keyword

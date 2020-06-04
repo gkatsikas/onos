@@ -69,7 +69,7 @@ public class ServiceChainInfoViewMessageHandler extends UiMessageHandler {
     private static final String SCOPE_NETWORK = "Network";
 
     private static final String DISPATCHER_RSS = "NIC RSS";
-    private static final String DISPATCHER_FD = "NIC Flow Director";
+    private static final String DISPATCHER_FLOW = "NIC Flow API";
     private static final String DISPATCHER_VMDQ_MAC = "OpenFlow + NIC MAC-based VMDQ";
     private static final String DISPATCHER_VMDQ_VLAN = "OpenFlow + NIC VLAN-based VMDQ";
     private static final String DISPATCHER_UNKNOWN = "Unknown";
@@ -215,7 +215,7 @@ public class ServiceChainInfoViewMessageHandler extends UiMessageHandler {
             if (scScope == ServiceChainScope.SERVER_RSS) {
                 return DISPATCHER_RSS;
             } else if (scScope == ServiceChainScope.SERVER_RULES) {
-                return DISPATCHER_FD;
+                return DISPATCHER_FLOW;
             } else if (scScope == ServiceChainScope.NETWORK_MAC) {
                 return DISPATCHER_VMDQ_MAC;
             } else if (scScope == ServiceChainScope.NETWORK_VLAN) {
